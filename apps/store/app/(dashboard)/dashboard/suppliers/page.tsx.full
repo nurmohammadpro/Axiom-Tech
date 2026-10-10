@@ -1,0 +1,1034 @@
+"use client";
+
+import { useState, useMemo, useRef } from "react";
+import Link from "next/link";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { Card, Stat, Pill, Table, SortableTable } from "@/components/dashboard/dashboard-shell";
+import { Button } from "@/components/ui/button";
+import { bdt } from "@/lib/utils";
+import { generatePDF, downloadCSV, bdtPDF, type StoreInfo } from "@/lib/pdf-utils";
+import { useSettings } from "@/lib/hooks";
+import {
+  useSupplierTypes,
+  useCreateSupplierType,
+  useUpdateSupplierType,
+  useDeleteSupplierType,
+  type SupplierType,
+} from "@/lib/hooks-supplier-types";
+import { Plus, Pencil, Trash2, Phone, Mail, MapPin, Download, X, Upload, Settings2, Tag } from "lucide-react";
+import { SearchInput } from "@/components/ui/search-input";
+import { toast } from "sonner";
+
+interface Supplier {
+  id: string;
+  name: string;
+  type: string;
+  contactPerson: string | null;
+  email: string | null;
+  phone: string | null;
+  address: string | null;
+  city: string | null;
+  notes: string | null;
+  openingBalance: number | null;
+  nidNumber: number | null;
+  dob: string | null;
+  nidImages: string[];
+  isActive: boolean;
+  totalPurchases: number;
+  totalPaid: number;
+  balance: number;
+  createdAt: string;
+}
+
+const fallbackTypeLabels: Record<string, string> = {
+  company: "Company",
+  importer: "Importer",
+  individual: "Individual",
+  customer: "Customer",
+  dealer: "Dealer",
+};
+
+const fallbackTypeTones: Record<string, "info" | "success" | "warn" | "muted"> = {
+  company: "info",
+  importer: "success",
+  individual: "warn",
+  customer: "muted",
+  dealer: "info",
+};
+
+export default function SuppliersPage() {
+  const qc = useQueryClient();
+  const { data: suppliers = [], isLoading } = useQuery<Supplier[]>({
+    queryKey: ["dashboard", "suppliers"],
+    queryFn: () => fetch("/api/dashboard/suppliers").then((r) => r.json()),
+  });
+
+  const { data: supplierTypes = [] } = useSupplierTypes();
+
+  const safeTypes: SupplierType[] = Array.isArray(supplierTypes) ? supplierTypes : [];
+  const typeLabels: Record<string, string> = useMemo(() => {
+    if (safeTypes.length === 0) return fallbackTypeLabels;
+    const m: Record<string, string> = {};
+    for (const t of safeTypes) m[t.slug] = t.name;
+    return m;
+  }, [safeTypes]);
+
+  const typeTones: Record<string, "info" | "success" | "warn" | "muted"> = useMemo(() => {
+    if (safeTypes.length === 0) return fallbackTypeTones;
+    const m: Record<string, "info" | "success" | "warn" | "muted"> = {};
+    for (const t of safeTypes) m[t.slug] = (t.tone as any) || "muted";
+    return m;
+  }, [safeTypes]);
+
+  const availableTypes = useMemo(() => {
+    if (safeTypes.length === 0) return ["company", "importer", "individual", "customer", "dealer"];
+    return safeTypes.filter((t) => t.isActive).map((t) => t.slug);
+  }, [safeTypes]);
+
+  const [search, setSearch] = useState("");
+  const [typeFilter, setTypeFilter] = useState<string>("all");
+  const [showForm, setShowForm] = useState(false);
+  const [editingSupplier, setEditingSupplier] = useState<Supplier | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<Supplier | null>(null);
+  const [showTypeManager, setShowTypeManager] = useState(false);
+  const { data: settings } = useSettings();
+
+  const storeInfo: StoreInfo = useMemo(
+    () => ({
+      name: settings?.storeName || "PlayStore",
+      address: settings?.storeAddress || "Dhaka, Bangladesh",
+      phone: settings?.storePhone || "01727811918",
+      email: settings?.storeEmail || "info@playstore.com.bd",
+    }),
+    [settings],
+  );
+
+  const filtered = suppliers.filter((s) => {
+    if (typeFilter !== "all" && s.type !== typeFilter) return false;
+    if (search) {
+      const q = search.toLowerCase();
+      return (
+        s.name.toLowerCase().includes(q) ||
+        s.contactPerson?.toLowerCase().includes(q) ||
+        s.phone?.includes(q) ||
+        s.email?.toLowerCase().includes(q) ||
+        String(s.nidNumber ?? "").includes(q)
+      );
+    }
+    return true;
+  });
+
+  const totalPayable = suppliers.reduce((sum, s) => sum + Math.max(0, s.balance), 0);
+  const totalReceivable = suppliers.reduce((sum, s) => sum + Math.min(0, s.balance), 0);
+  const activeCount = suppliers.filter((s) => s.isActive).length;
+
+  function handleEdit(supplier: Supplier) {
+    setEditingSupplier(supplier);
+    setShowForm(true);
+  }
+
+  async function handleDelete() {
+    if (!deleteTarget) return;
+    try {
+      const res = await fetch(`/api/dashboard/suppliers/${deleteTarget.id}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) throw new Error("Delete failed");
+      toast.success("Supplier deactivated");
+      void qc.invalidateQueries({ queryKey: ["dashboard", "suppliers"] });
+      setDeleteTarget(null);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Delete failed");
+    }
+  }
+
+  return (
+    <>
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+        <Stat
+          label="Total Suppliers"
+          value={String(suppliers.length)}
+          hint={`${activeCount} active`}
+        />
+        <Stat label="Total Payable" value={bdt(totalPayable)} hint="Owed to suppliers" />
+        <Stat label="Total Receivable" value={bdt(totalReceivable)} hint="Credit from suppliers" />
+        <Stat
+          label="This Month"
+          value={bdt(suppliers.reduce((s, sup) => s + sup.totalPurchases, 0))}
+          hint="Total purchases"
+        />
+      </div>
+
+      <div className="mt-4 flex flex-wrap items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <SearchInput
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search suppliers…"
+            label="Search Suppliers"
+            description="search by name, contact, phone, or email"
+          />
+          <div className="flex flex-wrap gap-1">
+            {["all", ...availableTypes].map((t) => (
+              <button
+                key={t}
+                onClick={() => setTypeFilter(t)}
+                className={
+                  "border px-2.5 py-1 text-xs transition-colors " +
+                  (typeFilter === t
+                    ? "border-primary bg-primary text-primary-foreground"
+                    : "border-border text-muted-foreground hover:text-foreground")
+                }
+              >
+                {t === "all" ? "All" : typeLabels[t] || t}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          {filtered.length > 0 && (
+            <>
+              <button
+                onClick={() => {
+                  generatePDF({
+                    title: "Suppliers Report",
+                    storeInfo,
+                    kpis: [
+                      { label: "Total Suppliers", value: String(suppliers.length) },
+                      { label: "Total Payable", value: bdtPDF(totalPayable) },
+                      { label: "Total Receivable", value: bdtPDF(Math.abs(totalReceivable)) },
+                    ],
+                    columns: [
+                      { header: "Supplier", key: "name" },
+                      { header: "Type", key: "type", width: 18 },
+                      { header: "Contact", key: "contact" },
+                      { header: "Phone", key: "phone", width: 22 },
+                      { header: "Purchases", key: "purchases", width: 24, align: "right" },
+                      { header: "Paid", key: "paid", width: 22, align: "right" },
+                      { header: "Balance", key: "balance", width: 22, align: "right" },
+                    ],
+                    rows: filtered.map((s) => ({
+                      name: s.name,
+                      type: typeLabels[s.type] || s.type,
+                      contact: s.contactPerson || "—",
+                      phone: s.phone || "—",
+                      purchases: bdtPDF(s.totalPurchases),
+                      paid: bdtPDF(s.totalPaid),
+                      balance: bdtPDF(s.balance),
+                    })),
+                    grandTotal: { label: "Total Balance", value: bdtPDF(totalPayable) },
+                  });
+                  toast.success("PDF exported");
+                }}
+                className="flex items-center gap-1 border border-border bg-background px-2.5 py-1 text-xs hover:bg-surface"
+              >
+                <Download size={12} /> PDF
+              </button>
+              <button
+                onClick={() => {
+                  downloadCSV(
+                    [
+                      "Supplier",
+                      "Type",
+                      "Contact",
+                      "Phone",
+                      "Email",
+                      "City",
+                      "Purchases",
+                      "Paid",
+                      "Balance",
+                    ],
+                    filtered.map((s) => [
+                      s.name,
+                      typeLabels[s.type] || s.type,
+                      s.contactPerson || "",
+                      s.phone || "",
+                      s.email || "",
+                      s.city || "",
+                      s.totalPurchases,
+                      s.totalPaid,
+                      s.balance,
+                    ]),
+                    `suppliers-report-${new Date().toISOString().split("T")[0]}.csv`,
+                  );
+                  toast.success("CSV exported");
+                }}
+                className="flex items-center gap-1 border border-border bg-background px-2.5 py-1 text-xs hover:bg-surface"
+              >
+                <Download size={12} /> CSV
+              </button>
+            </>
+          )}
+          <Button variant="outline" onClick={() => setShowTypeManager(true)}>
+            <Settings2 size={13} /> Manage Types
+          </Button>
+          <Button
+            variant="default"
+            onClick={() => {
+              setEditingSupplier(null);
+              setShowForm(true);
+            }}
+          >
+            <Plus size={13} /> Add Supplier
+          </Button>
+        </div>
+      </div>
+
+      <div className="mt-3">
+        <SortableTable<Supplier>
+          columns={[
+            {
+              key: "name",
+              header: "Supplier",
+              sortable: true,
+              render: (_v, s) => (
+                <>
+                  <Link
+                    href={`/dashboard/suppliers/${s.id}`}
+                    className="font-medium hover:underline"
+                  >
+                    {s.name}
+                  </Link>
+                  {s.city && <div className="text-xs text-muted-foreground">{s.city}</div>}
+                  {s.nidNumber && (
+                    <div className="text-xs text-muted-foreground">NID: {s.nidNumber}</div>
+                  )}
+                </>
+              ),
+            },
+            {
+              key: "type",
+              header: "Type",
+              sortable: true,
+              render: (_v, s) => (
+                <Pill tone={typeTones[s.type] || "muted"}>{typeLabels[s.type] || s.type}</Pill>
+              ),
+            },
+            {
+              key: "contactPerson",
+              header: "Contact",
+              sortable: true,
+              render: (_v, s) => (
+                <>
+                  <div className="flex items-center gap-1">
+                    {s.contactPerson && <span>{s.contactPerson}</span>}
+                  </div>
+                  {s.phone && (
+                    <div className="flex items-center gap-1">
+                      <Phone size={10} /> {s.phone}
+                    </div>
+                  )}
+                  {s.email && (
+                    <div className="flex items-center gap-1">
+                      <Mail size={10} /> {s.email}
+                    </div>
+                  )}
+                </>
+              ),
+            },
+            {
+              key: "totalPurchases",
+              header: "Purchases",
+              sortable: true,
+              render: (_v, s) => <span className="font-medium">{bdt(s.totalPurchases)}</span>,
+            },
+            {
+              key: "totalPaid",
+              header: "Paid",
+              sortable: true,
+              render: (_v, s) => <span className="text-muted-foreground">{bdt(s.totalPaid)}</span>,
+            },
+            {
+              key: "balance",
+              header: "Balance",
+              sortable: true,
+              render: (_v, s) => (
+                <span
+                  className={
+                    s.balance > 0
+                      ? "text-sale font-medium"
+                      : s.balance < 0
+                        ? "text-emerald-600 font-medium"
+                        : ""
+                  }
+                >
+                  {bdt(s.balance)}
+                </span>
+              ),
+            },
+            {
+              key: "actions",
+              header: "",
+              sortable: false,
+              render: (_v, s) => (
+                <div className="flex items-center justify-end gap-1">
+                  <button
+                    onClick={() => handleEdit(s)}
+                    className="border border-border p-1.5 text-muted-foreground hover:bg-surface hover:text-foreground"
+                    title="Edit"
+                  >
+                    <Pencil size={12} />
+                  </button>
+                  <button
+                    onClick={() => setDeleteTarget(s)}
+                    className="border border-border p-1.5 text-muted-foreground hover:bg-surface hover:text-sale"
+                    title="Deactivate"
+                  >
+                    <Trash2 size={12} />
+                  </button>
+                </div>
+              ),
+            },
+          ]}
+          data={filtered}
+          rowKey={(s) => s.id}
+          defaultSortColumn="totalPurchases"
+          defaultSortDirection="desc"
+          emptyMessage={
+            search || typeFilter !== "all"
+              ? "No suppliers match your filters."
+              : "No suppliers yet. Add your first supplier to get started."
+          }
+        />
+      </div>
+
+      {/* Add/Edit Modal */}
+      {showForm && (
+        <SupplierForm
+          supplier={editingSupplier}
+          supplierTypes={safeTypes}
+          onClose={() => {
+            setShowForm(false);
+            setEditingSupplier(null);
+          }}
+          onSaved={() => {
+            setShowForm(false);
+            setEditingSupplier(null);
+            void qc.invalidateQueries({ queryKey: ["dashboard", "suppliers"] });
+          }}
+        />
+      )}
+
+      {/* Supplier Type Manager */}
+      {showTypeManager && (
+        <SupplierTypeManager onClose={() => setShowTypeManager(false)} />
+      )}
+
+      {/* Delete Confirmation */}
+      {deleteTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="w-full max-w-sm border border-border bg-background p-4">
+            <div className="text-sm font-medium">Deactivate Supplier</div>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Deactivate &quot;{deleteTarget.name}&quot;? They will be hidden from dropdowns but
+              their data is preserved.
+            </p>
+            <div className="mt-4 flex justify-end gap-2">
+              <Button variant="surface" onClick={() => setDeleteTarget(null)}>
+                Cancel
+              </Button>
+              <Button variant="default" onClick={handleDelete} className="bg-sale hover:bg-sale/90">
+                Deactivate
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+
+function SupplierForm({
+  supplier,
+  supplierTypes,
+  onClose,
+  onSaved,
+}: {
+  supplier: Supplier | null;
+  supplierTypes: SupplierType[];
+  onClose: () => void;
+  onSaved: () => void;
+}) {
+  const effectiveTypes = supplierTypes.length ? supplierTypes.filter((t) => t.isActive) : [];
+  const fallback = ["company", "importer", "dealer", "individual", "customer"].map((slug) => ({
+    slug,
+    name: fallbackTypeLabels[slug] || slug,
+  }));
+  const typeOptions = effectiveTypes.length ? effectiveTypes : (fallback as any);
+  const [name, setName] = useState(supplier?.name || "");
+  const [type, setType] = useState(supplier?.type || typeOptions[0]?.slug || "company");
+  const [contactPerson, setContactPerson] = useState(supplier?.contactPerson || "");
+  const [email, setEmail] = useState(supplier?.email || "");
+  const [phone, setPhone] = useState(supplier?.phone || "");
+  const [address, setAddress] = useState(supplier?.address || "");
+  const [city, setCity] = useState(supplier?.city || "");
+  const [notes, setNotes] = useState(supplier?.notes || "");
+  const [openingBalance, setOpeningBalance] = useState(String(supplier?.openingBalance || ""));
+  const [nidNumber, setNidNumber] = useState(supplier?.nidNumber ? String(supplier.nidNumber) : "");
+  const [dob, setDob] = useState(supplier?.dob || "");
+  const [nidImages, setNidImages] = useState<string[]>(supplier?.nidImages || []);
+  const [uploading, setUploading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!name.trim()) {
+      toast.error("Supplier name is required");
+      return;
+    }
+    setSaving(true);
+    try {
+      const body = {
+        name,
+        type,
+        contactPerson: contactPerson || null,
+        email: email || null,
+        phone: phone || null,
+        address: address || null,
+        city: city || null,
+        notes: notes || null,
+        openingBalance: openingBalance ? Number(openingBalance) : 0,
+        nidNumber: nidNumber ? Number(nidNumber) : null,
+        dob: dob || null,
+        nidImages,
+      };
+
+      const url = supplier ? `/api/dashboard/suppliers/${supplier.id}` : "/api/dashboard/suppliers";
+      const res = await fetch(url, {
+        method: supplier ? "PATCH" : "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || `HTTP ${res.status}`);
+      }
+
+      toast.success(supplier ? "Supplier updated" : "Supplier created");
+      onSaved();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Save failed");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleNidUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(e.target.files ?? []);
+    e.target.value = "";
+    if (files.length === 0) return;
+    if (nidImages.length + files.length > 2) {
+      toast.error("NID has only 2 parts (front & back). Max 2 images.");
+      return;
+    }
+    setUploading(true);
+    try {
+      for (const file of files) {
+        const formData = new FormData();
+        formData.append("file", file);
+        const res = await fetch("/api/dashboard/upload", {
+          method: "POST",
+          body: formData,
+        });
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error(err.error || `Upload failed (HTTP ${res.status})`);
+        }
+        const data = await res.json();
+        setNidImages((prev) => [...prev, data.url]);
+      }
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Upload failed");
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  const inputCls =
+    "w-full border border-border bg-background px-3 py-1.5 text-sm outline-none focus:border-foreground";
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
+      onClick={onClose}
+    >
+      <form
+        onSubmit={handleSubmit}
+        onClick={(e) => e.stopPropagation()}
+        className="relative w-full max-w-lg border border-border bg-background p-4 max-h-[90vh] overflow-y-auto"
+      >
+        <button
+          type="button"
+          onClick={onClose}
+          className="absolute right-2 top-2 text-muted-foreground hover:text-foreground"
+          title="Close"
+        >
+          <X size={16} />
+        </button>
+
+        <div className="mb-3 pr-6 text-sm font-medium">
+          {supplier ? "Edit Supplier" : "Add Supplier"}
+        </div>
+
+        <div className="grid gap-3">
+          <div>
+            <label className="mb-1 block text-xs uppercase tracking-widest text-muted-foreground">
+              Name *
+            </label>
+            <input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="e.g. Samsung Bangladesh"
+              className={inputCls}
+              autoFocus
+            />
+          </div>
+
+          <div>
+            <label className="mb-1 block text-xs uppercase tracking-widest text-muted-foreground">
+              Type
+            </label>
+            <select value={type} onChange={(e) => setType(e.target.value)} className={inputCls}>
+              {typeOptions.map((t: any) => (
+                <option key={t.slug} value={t.slug}>
+                  {t.name}
+                </option>
+              ))}
+            </select>
+            {effectiveTypes.length === 0 && (
+              <p className="mt-1 text-[10px] text-muted-foreground">Using fallback types — create custom types via Manage Types.</p>
+            )}
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="mb-1 block text-xs uppercase tracking-widest text-muted-foreground">
+                Contact Person
+              </label>
+              <input
+                value={contactPerson}
+                onChange={(e) => setContactPerson(e.target.value)}
+                placeholder="Name"
+                className={inputCls}
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-xs uppercase tracking-widest text-muted-foreground">
+                Phone
+              </label>
+              <input
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                placeholder="+880..."
+                className={inputCls}
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="mb-1 block text-xs uppercase tracking-widest text-muted-foreground">
+                Email
+              </label>
+              <input
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="email@example.com"
+                className={inputCls}
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-xs uppercase tracking-widest text-muted-foreground">
+                City
+              </label>
+              <input
+                value={city}
+                onChange={(e) => setCity(e.target.value)}
+                placeholder="e.g. Dhaka"
+                className={inputCls}
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="mb-1 block text-xs uppercase tracking-widest text-muted-foreground">
+              Address
+            </label>
+            <input
+              value={address}
+              onChange={(e) => setAddress(e.target.value)}
+              placeholder="Full address"
+              className={inputCls}
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="mb-1 block text-xs uppercase tracking-widest text-muted-foreground">
+                NID Number
+              </label>
+              <input
+                value={nidNumber}
+                onChange={(e) => setNidNumber(e.target.value)}
+                inputMode="numeric"
+                placeholder="e.g. 1234567890"
+                className={inputCls}
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-xs uppercase tracking-widest text-muted-foreground">
+                Date of Birth
+              </label>
+              <input
+                type="date"
+                value={dob}
+                onChange={(e) => setDob(e.target.value)}
+                className={inputCls}
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="mb-1 block text-xs uppercase tracking-widest text-muted-foreground">
+              Upload NID <span className="normal-case">(optional)</span>
+            </label>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              multiple
+              onChange={handleNidUpload}
+              disabled={uploading}
+              className="sr-only"
+            />
+            <div className="flex items-center gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={uploading}
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <Upload size={13} /> {uploading ? "Uploading…" : "Choose Files"}
+              </Button>
+              {nidImages.length > 0 && (
+                <span className="text-xs text-muted-foreground">{nidImages.length}/2 uploaded</span>
+              )}
+            </div>
+            <p className="mt-0.5 text-[10px] text-muted-foreground">
+              Front &amp; back — 1 to 2 images
+            </p>
+            {nidImages.length > 0 && (
+              <div className="mt-2 flex flex-wrap gap-2">
+                {nidImages.map((url, i) => (
+                  <div key={url} className="relative">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={url}
+                      alt={`NID ${i + 1}`}
+                      className="h-16 w-24 border border-border object-cover"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setNidImages((prev) => prev.filter((_, idx) => idx !== i))}
+                      className="absolute -right-1.5 -top-1.5 border border-border bg-background p-0.5 text-muted-foreground hover:text-sale"
+                      title="Remove"
+                    >
+                      <X size={12} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="mb-1 block text-xs uppercase tracking-widest text-muted-foreground">
+                Opening Balance (৳)
+              </label>
+              <input
+                type="number"
+                value={openingBalance}
+                onChange={(e) => setOpeningBalance(e.target.value)}
+                placeholder="0"
+                className={inputCls}
+              />
+              <p className="mt-0.5 text-[10px] text-muted-foreground">
+                Amount owed from before (if migrating)
+              </p>
+            </div>
+            <div>
+              <label className="mb-1 block text-xs uppercase tracking-widest text-muted-foreground">
+                Notes
+              </label>
+              <input
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                placeholder="Optional notes"
+                className={inputCls}
+              />
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-4 flex justify-end gap-2">
+          <Button type="button" variant="surface" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button type="submit" variant="default" disabled={saving}>
+            {saving ? "Saving…" : supplier ? "Update" : "Create"}
+          </Button>
+        </div>
+      </form>
+    </div>
+  );
+}
+
+function SupplierTypeManager({ onClose }: { onClose: () => void }) {
+  const { data: types = [], isLoading } = useSupplierTypes();
+  const createMut = useCreateSupplierType();
+  const updateMut = useUpdateSupplierType();
+  const deleteMut = useDeleteSupplierType();
+
+  const [editing, setEditing] = useState<SupplierType | null>(null);
+  const [name, setName] = useState("");
+  const [slug, setSlug] = useState("");
+  const [description, setDescription] = useState("");
+  const [tone, setTone] = useState<SupplierType["tone"]>("info");
+  const [sortOrder, setSortOrder] = useState("0");
+  const [isActive, setIsActive] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [pendingDelete, setPendingDelete] = useState<SupplierType | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
+  function resetForm() {
+    setEditing(null);
+    setName("");
+    setSlug("");
+    setDescription("");
+    setTone("info");
+    setSortOrder("0");
+    setIsActive(true);
+  }
+
+  function startEdit(t: SupplierType) {
+    setEditing(t);
+    setName(t.name);
+    setSlug(t.slug);
+    setDescription(t.description || "");
+    setTone(t.tone);
+    setSortOrder(String(t.sortOrder));
+    setIsActive(t.isActive);
+  }
+
+  function slugify(v: string) {
+    return v.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!name.trim() || !slug.trim()) {
+      toast.error("Name and slug are required");
+      return;
+    }
+    setSaving(true);
+    try {
+      if (editing) {
+        await updateMut.mutateAsync({
+          id: editing.id,
+          data: { name: name.trim(), slug: slugify(slug), description: description.trim() || null, tone, sortOrder: Number(sortOrder) || 0, isActive },
+        });
+        toast.success("Supplier type updated");
+      } else {
+        await createMut.mutateAsync({
+          name: name.trim(),
+          slug: slugify(slug),
+          description: description.trim() || null,
+          tone,
+          sortOrder: Number(sortOrder) || 0,
+          isActive,
+        } as any);
+        toast.success("Supplier type created");
+      }
+      resetForm();
+    } catch (err: any) {
+      toast.error(err?.message || "Save failed");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function confirmDelete() {
+    if (!pendingDelete) return;
+    setDeleting(true);
+    try {
+      await deleteMut.mutateAsync(pendingDelete.id);
+      toast.success("Supplier type deleted");
+      setPendingDelete(null);
+    } catch (err: any) {
+      toast.error(err?.message || "Delete failed");
+    } finally {
+      setDeleting(false);
+    }
+  }
+
+  const inputCls = "w-full border border-border bg-background px-3 py-1.5 text-sm outline-none focus:border-foreground";
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={onClose}>
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="relative w-full max-w-2xl border border-border bg-background p-4 max-h-[90vh] overflow-y-auto"
+      >
+        <button onClick={onClose} className="absolute right-2 top-2 text-muted-foreground hover:text-foreground">
+          <X size={16} />
+        </button>
+        <div className="mb-3 flex items-center gap-2 pr-6">
+          <Tag size={16} />
+          <h2 className="text-sm font-semibold">Manage Supplier Types</h2>
+          <span className="text-xs text-muted-foreground">{types.length} types</span>
+        </div>
+
+        <form onSubmit={handleSubmit} className="mb-6 rounded border border-border bg-surface/50 p-3">
+          <div className="mb-2 text-xs font-medium uppercase tracking-widest text-muted-foreground">
+            {editing ? `Edit: ${editing.name}` : "Add New Type"}
+          </div>
+          <div className="grid gap-3">
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="mb-1 block text-xs uppercase tracking-widest text-muted-foreground">Name *</label>
+                <input
+                  value={name}
+                  onChange={(e) => {
+                    setName(e.target.value);
+                    if (!editing) setSlug(slugify(e.target.value));
+                  }}
+                  placeholder="e.g. Wholesaler"
+                  className={inputCls}
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-xs uppercase tracking-widest text-muted-foreground">Slug *</label>
+                <input
+                  value={slug}
+                  onChange={(e) => setSlug(e.target.value)}
+                  placeholder="e.g. wholesaler"
+                  className={inputCls + " font-mono"}
+                />
+              </div>
+            </div>
+            <div>
+              <label className="mb-1 block text-xs uppercase tracking-widest text-muted-foreground">Description</label>
+              <input value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Optional" className={inputCls} />
+            </div>
+            <div className="grid grid-cols-3 gap-3">
+              <div>
+                <label className="mb-1 block text-xs uppercase tracking-widest text-muted-foreground">Tone</label>
+                <select value={tone} onChange={(e) => setTone(e.target.value as any)} className={inputCls}>
+                  <option value="info">Info (blue)</option>
+                  <option value="success">Success (green)</option>
+                  <option value="warn">Warn (amber)</option>
+                  <option value="muted">Muted (gray)</option>
+                </select>
+              </div>
+              <div>
+                <label className="mb-1 block text-xs uppercase tracking-widest text-muted-foreground">Sort Order</label>
+                <input type="number" value={sortOrder} onChange={(e) => setSortOrder(e.target.value)} className={inputCls} />
+              </div>
+              <div className="flex flex-col justify-end">
+                <label className="flex items-center gap-2 text-xs">
+                  <input type="checkbox" checked={isActive} onChange={(e) => setIsActive(e.target.checked)} className="h-3.5 w-3.5" />
+                  Active
+                </label>
+              </div>
+            </div>
+          </div>
+          <div className="mt-3 flex justify-end gap-2">
+            {editing && (
+              <Button type="button" variant="surface" onClick={resetForm}>
+                Cancel Edit
+              </Button>
+            )}
+            <Button type="submit" variant="default" disabled={saving}>
+              {saving ? "Saving…" : editing ? "Update Type" : "Add Type"}
+            </Button>
+          </div>
+        </form>
+
+        <div className="space-y-2">
+          <div className="text-xs font-medium uppercase tracking-widest text-muted-foreground">Existing Types</div>
+          {isLoading ? (
+            <div className="py-6 text-center text-sm text-muted-foreground">Loading…</div>
+          ) : types.length === 0 ? (
+            <div className="py-6 text-center text-sm text-muted-foreground">No supplier types yet. Add one above.</div>
+          ) : (
+            <div className="overflow-x-auto border border-border">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-border bg-surface text-left text-xs uppercase tracking-widest text-muted-foreground">
+                    <th className="px-3 py-2 font-medium">Name</th>
+                    <th className="px-3 py-2 font-medium">Slug</th>
+                    <th className="px-3 py-2 font-medium">Tone</th>
+                    <th className="px-3 py-2 font-medium">Active</th>
+                    <th className="px-3 py-2 font-medium" />
+                  </tr>
+                </thead>
+                <tbody>
+                  {types.map((t) => (
+                    <tr key={t.id} className="border-b border-border last:border-b-0 hover:bg-surface">
+                      <td className="px-3 py-2">
+                        <div className="font-medium">{t.name}</div>
+                        {t.description && <div className="text-xs text-muted-foreground">{t.description}</div>}
+                      </td>
+                      <td className="px-3 py-2 font-mono text-xs">{t.slug}</td>
+                      <td className="px-3 py-2">
+                        <Pill tone={t.tone}>{t.tone}</Pill>
+                      </td>
+                      <td className="px-3 py-2 text-xs">{t.isActive ? "Yes" : "No"}</td>
+                      <td className="px-3 py-2">
+                        <div className="flex justify-end gap-1">
+                          <button onClick={() => startEdit(t)} className="border border-border p-1.5 text-muted-foreground hover:bg-surface hover:text-foreground" title="Edit">
+                            <Pencil size={12} />
+                          </button>
+                          <button onClick={() => setPendingDelete(t)} className="border border-border p-1.5 text-muted-foreground hover:bg-surface hover:text-sale" title="Delete">
+                            <Trash2 size={12} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      </div>
+      {pendingDelete && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40" onClick={() => !deleting && setPendingDelete(null)}>
+          <div onClick={(e) => e.stopPropagation()} className="w-full max-w-sm border border-border bg-background p-4 shadow-lg">
+            <div className="mb-2 flex items-center gap-2">
+              <div className="grid h-8 w-8 place-items-center rounded-full bg-red-50 text-sale">
+                <Trash2 size={16} />
+              </div>
+              <h3 className="text-sm font-semibold">Delete supplier type?</h3>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              Delete <span className="font-medium text-foreground">"{pendingDelete.name}"</span> ({pendingDelete.slug})? This cannot be undone. Types in use by suppliers cannot be deleted — reassign those suppliers first.
+            </p>
+            <div className="mt-4 flex justify-end gap-2">
+              <Button variant="surface" onClick={() => setPendingDelete(null)} disabled={deleting}>
+                Cancel
+              </Button>
+              <Button variant="default" onClick={confirmDelete} disabled={deleting} className="bg-sale hover:bg-sale/90">
+                {deleting ? "Deleting…" : "Delete"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

@@ -1,0 +1,25 @@
+-- Rich staff profiles: personal info, employment, education/experience, salary.
+-- `staff.user_id` stays nullable so a person can exist without system access.
+ALTER TABLE "staff"
+  ADD COLUMN IF NOT EXISTS "first_name" text,
+  ADD COLUMN IF NOT EXISTS "last_name" text,
+  ADD COLUMN IF NOT EXISTS "phone" text,
+  ADD COLUMN IF NOT EXISTS "personal_email" text,
+  ADD COLUMN IF NOT EXISTS "date_of_birth" date,
+  ADD COLUMN IF NOT EXISTS "gender" text,
+  ADD COLUMN IF NOT EXISTS "address" text,
+  ADD COLUMN IF NOT EXISTS "city" text,
+  ADD COLUMN IF NOT EXISTS "nid_number" text,
+  ADD COLUMN IF NOT EXISTS "emergency_contact_name" text,
+  ADD COLUMN IF NOT EXISTS "emergency_contact_phone" text,
+  ADD COLUMN IF NOT EXISTS "photo_url" text,
+  ADD COLUMN IF NOT EXISTS "designation" text,
+  ADD COLUMN IF NOT EXISTS "department" text,
+  ADD COLUMN IF NOT EXISTS "joined_at" date,
+  ADD COLUMN IF NOT EXISTS "employment_type" text DEFAULT 'full_time',
+  ADD COLUMN IF NOT EXISTS "education" jsonb DEFAULT '[]'::jsonb,
+  ADD COLUMN IF NOT EXISTS "experience" jsonb DEFAULT '[]'::jsonb,
+  ADD COLUMN IF NOT EXISTS "monthly_salary" integer,
+  ADD COLUMN IF NOT EXISTS "salary_effective_from" date,
+  ADD COLUMN IF NOT EXISTS "created_at" timestamptz DEFAULT now(),
+  ADD COLUMN IF NOT EXISTS "updated_at" timestamptz DEFAULT now();

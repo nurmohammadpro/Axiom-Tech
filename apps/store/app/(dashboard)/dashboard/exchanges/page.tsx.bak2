@@ -1,0 +1,1421 @@
+"use client";
+
+import { useState, useRef } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { Card, Stat, Pill } from "@/components/dashboard/dashboard-shell";
+import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { SearchInput } from "@/components/ui/search-input";
+import { AdvanceSelect } from "@/components/ui/advance-select";
+import { bdt } from "@/lib/utils";
+import {
+  ArrowLeft,
+  Plus,
+  Trash2,
+  Phone,
+  Mail,
+  MapPin,
+  Shield,
+  Upload,
+  X,
+  Package,
+  RefreshCw,
+  User,
+  Calendar,
+  CheckCircle,
+  XCircle,
+  Pencil,
+  FileText,
+} from "lucide-react";
+import Link from "next/link";
+import { toast } from "sonner";
+import { useRouter } from "next/navigation";
+
+// ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
+
+interface ProductVariant {
+  id: number;
+  productId: string;
+  productName: string;
+  name: string;
+  sku: string;
+  costPrice: number | null;
+  sellingPrice: number;
+  costCode: string | null;
+  sellCode: string | null;
+  quantity: number;
+}
+
+interface Location {
+  id: string;
+  name: string;
+}
+
+interface ExchangeUnit {
+  id: number;
+  imei1: string;
+  imei2: string;
+  serial: string;
+  batteryHealth: string;
+  conditionGrade: string;
+}
+
+const CONDITION_OPTIONS = ["New", "As Like New", "Good", "Average", "Low Average", "Bad"];
+
+type Tab = "process" | "customers" | "inventory";
+
+const TABS = [
+  { key: "process" as Tab, label: "Process Exchange", icon: RefreshCw },
+  { key: "history" as Tab, label: "Exchange History", icon: FileText },
+  { key: "inventory" as Tab, label: "Exchange Inventory", icon: Package },
+];
+
+// ---------------------------------------------------------------------------
+// Page
+// ---------------------------------------------------------------------------
+
+export default function ExchangesPage() {
+  const [tab, setTab] = useState<Tab>("process");
+  const router = useRouter();
+
+  return (
+    <>
+      <div className="flex items-center gap-3 mb-4">
+        <Link href="/dashboard">
+          <Button size="sm" variant="ghost">
+            <ArrowLeft size={16} />
+          </Button>
+        </Link>
+        <div>
+          <h2 className="text-lg font-semibold">Device Exchange</h2>
+          <p className="text-sm text-muted-foreground">
+            Process device exchanges with customer verification
+          </p>
+        </div>
+      </div>
+
+      {/* Tabs */}
+      <div className="flex gap-1 border-b border-border">
+        {TABS.map((t) => {
+          const Icon = t.icon;
+          const active = tab === t.key;
+          return (
+            <button
+              key={t.key}
+              onClick={() => setTab(t.key)}
+              className={
+                "flex items-center gap-1.5 border-b-2 px-4 py-2 text-sm transition-colors " +
+                (active
+                  ? "border-foreground text-foreground"
+                  : "border-transparent text-muted-foreground hover:text-foreground")
+              }
+            >
+              <Icon size={14} />
+              {t.label}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Tab content */}
+      <div className="mt-4">
+        {tab === "process" && <ProcessExchangeTab />}
+        {tab === "history" && <ExchangeHistoryTab />}
+        {tab === "inventory" && <ExchangeInventoryTab />}
+      </div>
+    </>
+  );
+}
+
+// ===========================================================================
+// Tab 1: Process Exchange
+// ===========================================================================
+
+function ProcessExchangeTab() {
+  const qc = useQueryClient();
+  const [showForm, setShowForm] = useState(false);
+
+  const { data: locations = [] } = useQuery<Location[]>({
+    queryKey: ["dashboard", "locations"],
+    queryFn: () => fetch("/api/dashboard/locations").then((r) => r.json()),
+  });
+
+  return (
+    <>
+      <div className="mb-4">
+        <Button variant="default" onClick={() => setShowForm(true)}>
+          <Plus size={14} /> Process Exchange
+        </Button>
+      </div>
+
+      {showForm && (
+        <ExchangeForm
+          locations={locations}
+          onClose={() => setShowForm(false)}
+          onCompleted={() => {
+            setShowForm(false);
+            qc.invalidateQueries({ queryKey: ["dashboard", "exchanges"] });
+            qc.invalidateQueries({ queryKey: ["dashboard", "exchange-customers"] });
+          }}
+        />
+      )}
+    </>
+  );
+}
+
+// ===========================================================================
+// Tab 2: Exchange History
+// ===========================================================================
+
+interface ExchangeRecord {
+  id: string;
+  createdAt: string;
+  customerName: string;
+  customerPhone: string;
+  customerEmail: string | null;
+  tradeInCostCode: string | null;
+  tradeInSellCode: string | null;
+  tradeInAgreedValue: number;
+  newDeviceName: string;
+  newDeviceVariant: string;
+  newProductPrice: number;
+  paymentAmount: number;
+  paymentMethod: string;
+  locationId: string | null;
+  status: string;
+  tradeInItems: any[];
+}
+
+function ExchangeHistoryTab() {
+  const { data: exchanges = [], isLoading } = useQuery<ExchangeRecord[]>({
+    queryKey: ["dashboard", "exchange-history"],
+    queryFn: () => fetch("/api/dashboard/exchange-history").then((r) => r.json()),
+  });
+
+  const [search, setSearch] = useState("");
+
+  const filtered = exchanges.filter((e) => {
+    if (!search) return true;
+    const q = search.toLowerCase();
+    return (
+      e.customerName?.toLowerCase().includes(q) ||
+      e.customerPhone?.includes(q) ||
+      e.customerEmail?.toLowerCase().includes(q) ||
+      e.tradeInItems?.some((item: any) =>
+        item.imei1?.includes(q) ||
+        item.imei2?.includes(q) ||
+        item.serial?.includes(q)
+      )
+    );
+  });
+
+  const totalExchanges = exchanges.length;
+  const totalTradeInValue = exchanges.reduce((sum, e) => sum + e.tradeInAgreedValue, 0);
+  const totalRevenue = exchanges.reduce((sum, e) => sum + e.paymentAmount, 0);
+
+  return (
+    <>
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
+        <Stat label="Total Exchanges" value={String(totalExchanges)} hint="All time" />
+        <Stat label="Trade-in Value" value={bdt(totalTradeInValue)} hint="Total devices received" />
+        <Stat label="Revenue" value={bdt(totalRevenue)} hint="Total payments collected" />
+      </div>
+
+      <div className="mt-4 flex flex-wrap items-center justify-between gap-2">
+        <SearchInput
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Search by name, mobile, email, IMEI, or serial…"
+          label="Search Exchange History"
+          description="search exchanges"
+        />
+      </div>
+
+      <div className="mt-3 overflow-x-auto border border-border">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b border-border bg-surface text-left text-xs uppercase tracking-widest text-muted-foreground">
+              <th className="px-3 py-2 font-medium">Date</th>
+              <th className="px-3 py-2 font-medium">Customer</th>
+              <th className="px-3 py-2 font-medium">Trade-in Device</th>
+              <th className="px-3 py-2 font-medium">Trade-in Value</th>
+              <th className="px-3 py-2 font-medium">New Device</th>
+              <th className="px-3 py-2 font-medium">Payment</th>
+              <th className="px-3 py-2 font-medium">Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filtered.map((e) => (
+              <tr key={e.id} className="border-b border-border last:border-b-0 hover:bg-surface">
+                <td className="px-3 py-2 text-xs text-muted-foreground">
+                  {e.createdAt ? new Date(e.createdAt).toLocaleDateString() : "-"}
+                </td>
+                <td className="px-3 py-2">
+                  <div className="font-medium">{e.customerName || "Walk-in"}</div>
+                  <div className="text-xs text-muted-foreground">{e.customerPhone}</div>
+                </td>
+                <td className="px-3 py-2">
+                  <div className="text-xs">
+                    <div>Cost: {e.tradeInCostCode || "-"}</div>
+                    <div>Sell: {e.tradeInSellCode || "-"}</div>
+                  </div>
+                </td>
+                <td className="px-3 py-2 font-medium">{bdt(e.tradeInAgreedValue)}</td>
+                <td className="px-3 py-2">
+                  <div className="text-xs">{e.newDeviceName}</div>
+                  <div className="text-xs text-muted-foreground">{bdt(e.newProductPrice)}</div>
+                </td>
+                <td className="px-3 py-2">
+                  <div className="text-xs">{e.paymentMethod}</div>
+                  <div className="font-medium">{bdt(e.paymentAmount)}</div>
+                </td>
+                <td className="px-3 py-2">
+                  <Pill tone={e.status === "complete" ? "success" : "warn"}>
+                    {e.status === "complete" ? "Complete" : e.status}
+                  </Pill>
+                </td>
+              </tr>
+            ))}
+            {filtered.length === 0 && (
+              <tr>
+                <td colSpan={7} className="p-6 text-center text-sm text-muted-foreground">
+                  {search
+                    ? "No exchanges match your search."
+                    : "No exchanges yet. Process your first exchange to see history here."}
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+    </>
+  );
+}
+
+// ===========================================================================
+// Tab 3: Exchange Inventory
+// ===========================================================================
+
+function ExchangeInventoryTab() {
+  // TODO: Implement exchange inventory view
+  return (
+    <div className="p-8 text-center text-sm text-muted-foreground border border-border rounded-lg">
+      Exchange inventory tracking coming soon...
+    </div>
+  );
+}
+
+// ===========================================================================
+// Exchange Form
+// ===========================================================================
+
+function ExchangeForm({
+  locations,
+  onClose,
+  onCompleted,
+}: {
+  locations: Location[];
+  onClose: () => void;
+  onCompleted: () => void;
+}) {
+  const qc = useQueryClient();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Customer selection
+  const [customerId, setCustomerId] = useState<string>("");
+  const [customerName, setCustomerName] = useState("");
+  const [customerPhone, setCustomerPhone] = useState("");
+  const [customerEmail, setCustomerEmail] = useState("");
+  const [customerAddress, setCustomerAddress] = useState("");
+  const [customerCity, setCustomerCity] = useState("");
+  const [customerNidNumber, setCustomerNidNumber] = useState("");
+  const [customerDob, setCustomerDob] = useState("");
+  const [customerNidImages, setCustomerNidImages] = useState<string[]>([]);
+  const [uploadingNid, setUploadingNid] = useState(false);
+
+  // Trade-in device details
+  const [tradeInProductId, setTradeInProductId] = useState("");
+  const [tradeInProductName, setTradeInProductName] = useState("");
+  const [tradeInCostCode, setTradeInCostCode] = useState("");
+  const [tradeInSellCode, setTradeInSellCode] = useState("");
+  const [tradeInAgreedValue, setTradeInAgreedValue] = useState("");
+  const [tradeInQty, setTradeInQty] = useState("1");
+
+  // Device units (IMEI tracking)
+  const [tradeInUnits, setTradeInUnits] = useState<ExchangeUnit[]>([
+    { id: 1, imei1: "", imei2: "", serial: "", batteryHealth: "", conditionGrade: "Good" },
+  ]);
+
+  // New device selection
+  const [newDeviceVariantId, setNewDeviceVariantId] = useState<number | null>(null);
+  const [newDevicePrice, setNewDevicePrice] = useState("");
+  const [locationId, setLocationId] = useState<string>("");
+  const [notes, setNotes] = useState("");
+
+  // Payment
+  const [paymentMethod, setPaymentMethod] = useState<"cash" | "card" | "mfs" | "bank_transfer">(
+    "cash",
+  );
+  const [paymentAmount, setPaymentAmount] = useState("");
+  const [cashReceived, setCashReceived] = useState("");
+
+  const [submitting, setSubmitting] = useState(false);
+
+  // Queries
+  const { data: customers = [] } = useQuery<Customer[]>({
+    queryKey: ["dashboard", "exchange-customers"],
+    queryFn: () => fetch("/api/dashboard/exchange-customers").then((r) => r.json()),
+  });
+
+  const { data: products = [] } = useQuery<any[]>({
+    queryKey: ["dashboard", "products"],
+    queryFn: () => fetch("/api/dashboard/products").then((r) => r.json()),
+  });
+
+  const selectedCustomer = customers.find((c) => c.id === customerId);
+
+  // Calculate payment required
+  const tradeInValue = Number(tradeInAgreedValue) || 0;
+  const newDevicePriceValue = Number(newDevicePrice) || 0;
+  const paymentRequired = Math.max(0, newDevicePriceValue - tradeInValue);
+  const changeAmount = Math.max(0, Number(cashReceived) - paymentRequired);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+
+    if (!selectedCustomer && (!customerName.trim() || !customerPhone.trim())) {
+      toast.error("Customer name and phone are required");
+      return;
+    }
+
+    if (!tradeInProductName.trim()) {
+      toast.error("Trade-in device name is required");
+      return;
+    }
+
+    if (!tradeInCostCode.trim() || !tradeInSellCode.trim()) {
+      toast.error("Cost code and sell code are required");
+      return;
+    }
+
+    if (!tradeInAgreedValue || Number(tradeInAgreedValue) <= 0) {
+      toast.error("Agreed value is required");
+      return;
+    }
+
+    if (!newDeviceVariantId) {
+      toast.error("Please select a new device");
+      return;
+    }
+
+    if (!locationId) {
+      toast.error("Please select a location");
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      // Step 1: Create/update customer if needed
+      let finalCustomerId = customerId;
+      if (!finalCustomerId) {
+        const customerRes = await fetch("/api/dashboard/exchange-customers", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: customerName.trim(),
+            phone: customerPhone.trim(),
+            email: customerEmail || null,
+            address: customerAddress || null,
+            city: customerCity || null,
+            nidNumber: customerNidNumber ? Number(customerNidNumber) : null,
+            dob: customerDob || null,
+            nidImages: customerNidImages,
+          }),
+        });
+        if (!customerRes.ok) throw new Error("Failed to create customer");
+        const customerData = await customerRes.json();
+        finalCustomerId = customerData.id;
+      }
+
+      // Step 2: Process exchange
+      const exchangeRes = await fetch("/api/dashboard/exchanges", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          customerId: finalCustomerId,
+          tradeIn: {
+            productName: tradeInProductName.trim(),
+            costCode: tradeInCostCode.trim(),
+            sellCode: tradeInSellCode.trim(),
+            agreedValue: Number(tradeInAgreedValue),
+            qty: Number(tradeInQty),
+            units: tradeInUnits.filter((u) => u.imei1.trim() || u.serial.trim()),
+          },
+          newDevice: {
+            variantId: newDeviceVariantId,
+            price: Number(newDevicePrice),
+          },
+          payment: {
+            amount: paymentRequired,
+            method: paymentMethod,
+            reference: cashReceived || null,
+          },
+          locationId,
+          notes: notes || null,
+        }),
+      });
+
+      if (!exchangeRes.ok) {
+        const err = await exchangeRes.json().catch(() => ({}));
+        throw new Error(err.error || "Exchange processing failed");
+      }
+
+      toast.success("Exchange processed successfully!");
+      onCompleted();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Exchange processing failed");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  async function handleNidUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(e.target.files ?? []);
+    e.target.value = "";
+    if (files.length === 0) return;
+    if (customerNidImages.length + files.length > 2) {
+      toast.error("NID has only 2 parts (front & back). Max 2 images.");
+      return;
+    }
+    setUploadingNid(true);
+    try {
+      for (const file of files) {
+        const formData = new FormData();
+        formData.append("file", file);
+        const res = await fetch("/api/dashboard/upload", {
+          method: "POST",
+          body: formData,
+        });
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error(err.error || `Upload failed (HTTP ${res.status})`);
+        }
+        const data = await res.json();
+        setCustomerNidImages((prev) => [...prev, data.url]);
+      }
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Upload failed");
+    } finally {
+      setUploadingNid(false);
+    }
+  }
+
+  const inputCls =
+    "w-full border border-border bg-background px-3 py-1.5 text-sm outline-none transition-colors hover:border-border/80 focus:border-foreground/80";
+
+  // Enter key navigation
+  const handleEnterKey = (e: React.KeyboardEvent, nextFieldId?: string) => {
+    if (e.key === "Enter" && nextFieldId) {
+      e.preventDefault();
+      const nextElement = document.getElementById(nextFieldId);
+      if (nextElement) {
+        nextElement.focus();
+        if (nextElement instanceof HTMLInputElement) {
+          nextElement.select();
+        }
+      }
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+      <form
+        onSubmit={handleSubmit}
+        className="w-full max-w-4xl border border-border bg-background p-4 max-h-[90vh] overflow-y-auto"
+      >
+        <div className="mb-3 text-sm font-medium">Process Device Exchange</div>
+
+        <div className="grid gap-4 lg:grid-cols-2">
+          {/* Customer Details */}
+          <Card className="p-4">
+            <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
+              <User size={14} /> Customer Details
+            </h3>
+
+            <div className="space-y-3">
+              <div>
+                <label className="mb-1 block text-xs uppercase tracking-widest text-muted-foreground">
+                  Search Existing Customer
+                </label>
+                <AdvanceSelect
+                  value={customerId}
+                  onValueChange={setCustomerId}
+                  placeholder="Select customer..."
+                >
+                  {customers.map((c) => (
+                    <SelectItem key={c.id} value={c.id}>
+                      {c.name} - {c.phone}
+                    </SelectItem>
+                  ))}
+                </AdvanceSelect>
+              </div>
+
+              <div className="text-xs text-muted-foreground text-center">OR ADD NEW CUSTOMER</div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="mb-1 block text-xs uppercase tracking-widest text-muted-foreground">
+                    Name *
+                  </label>
+                  <input
+                    id="customer-name"
+                    value={customerName}
+                    onChange={(e) => setCustomerName(e.target.value)}
+                    onKeyDown={(e) => handleEnterKey(e, "customer-phone")}
+                    disabled={!!customerId}
+                    placeholder="Full name"
+                    className={inputCls}
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs uppercase tracking-widest text-muted-foreground">
+                    Phone *
+                  </label>
+                  <input
+                    id="customer-phone"
+                    value={customerPhone}
+                    onChange={(e) => setCustomerPhone(e.target.value)}
+                    onKeyDown={(e) => handleEnterKey(e, "customer-email")}
+                    disabled={!!customerId}
+                    placeholder="017xxxxxxxx"
+                    className={inputCls}
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="mb-1 block text-xs uppercase tracking-widest text-muted-foreground">
+                    Email
+                  </label>
+                  <input
+                    id="customer-email"
+                    value={customerEmail}
+                    onChange={(e) => setCustomerEmail(e.target.value)}
+                    onKeyDown={(e) => handleEnterKey(e, "customer-city")}
+                    disabled={!!customerId}
+                    placeholder="email@example.com"
+                    className={inputCls}
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs uppercase tracking-widest text-muted-foreground">
+                    City
+                  </label>
+                  <input
+                    id="customer-city"
+                    value={customerCity}
+                    onChange={(e) => setCustomerCity(e.target.value)}
+                    onKeyDown={(e) => handleEnterKey(e, "customer-address")}
+                    disabled={!!customerId}
+                    placeholder="e.g. Dhaka"
+                    className={inputCls}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="mb-1 block text-xs uppercase tracking-widest text-muted-foreground">
+                  Address
+                </label>
+                <input
+                  id="customer-address"
+                  value={customerAddress}
+                  onChange={(e) => setCustomerAddress(e.target.value)}
+                  onKeyDown={(e) => handleEnterKey(e, "customer-nid")}
+                  disabled={!!customerId}
+                  placeholder="Street address"
+                  className={inputCls}
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="mb-1 block text-xs uppercase tracking-widest text-muted-foreground">
+                    NID Number
+                  </label>
+                  <input
+                    id="customer-nid"
+                    value={customerNidNumber}
+                    onChange={(e) => setCustomerNidNumber(e.target.value)}
+                    onKeyDown={(e) => handleEnterKey(e, "customer-dob")}
+                    disabled={!!customerId}
+                    inputMode="numeric"
+                    placeholder="1234567890"
+                    className={inputCls}
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs uppercase tracking-widest text-muted-foreground">
+                    Date of Birth
+                  </label>
+                  <input
+                    id="customer-dob"
+                    type="date"
+                    value={customerDob}
+                    onChange={(e) => setCustomerDob(e.target.value)}
+                    onKeyDown={(e) => handleEnterKey(e, "tradein-product")}
+                    disabled={!!customerId}
+                    className={inputCls}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="mb-1 block text-xs uppercase tracking-widest text-muted-foreground">
+                  Upload NID <span className="normal-case">(optional)</span>
+                </label>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  onChange={handleNidUpload}
+                  disabled={uploadingNid || !!customerId}
+                  className="sr-only"
+                />
+                <div className="flex items-center gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    disabled={uploadingNid || !!customerId}
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    <Upload size={13} /> {uploadingNid ? "Uploading…" : "Choose Files"}
+                  </Button>
+                  {customerNidImages.length > 0 && (
+                    <span className="text-xs text-muted-foreground">
+                      {customerNidImages.length}/2 uploaded
+                    </span>
+                  )}
+                </div>
+                {customerNidImages.length > 0 && (
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {customerNidImages.map((url, i) => (
+                      <div key={url} className="relative">
+                        <img
+                          src={url}
+                          alt={`NID ${i + 1}`}
+                          className="h-16 w-24 border border-border object-cover"
+                        />
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setCustomerNidImages((prev) => prev.filter((_, idx) => idx !== i))
+                          }
+                          className="absolute -right-1.5 -top-1.5 border border-border bg-background p-0.5 text-muted-foreground hover:text-sale"
+                          title="Remove"
+                        >
+                          <X size={12} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {selectedCustomer && (
+                <div className="flex items-center gap-2 p-2 bg-muted rounded">
+                  <Shield size={14} />
+                  <span className="text-xs">
+                    {selectedCustomer.verificationStatus === "verified"
+                      ? "✓ Verified Customer"
+                      : selectedCustomer.verificationStatus === "rejected"
+                        ? "✗ Rejected Customer"
+                        : "⚠ Unverified Customer"}
+                  </span>
+                </div>
+              )}
+            </div>
+          </Card>
+
+          {/* Trade-in Device */}
+          <Card className="p-4">
+            <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
+              <Package size={14} /> Trade-in Device
+            </h3>
+
+            <div className="space-y-3">
+              <div>
+                <label className="mb-1 block text-xs uppercase tracking-widest text-muted-foreground">
+                  Device Name *
+                </label>
+                <AdvanceSelect
+                  value={tradeInProductId}
+                  onValueChange={(val) => {
+                    setTradeInProductId(val);
+                    const product = products.find((p) => p.id === val);
+                    if (product) {
+                      setTradeInProductName(product.name);
+                      if (product.costCode) setTradeInCostCode(product.costCode);
+                      if (product.sellCode) setTradeInSellCode(product.sellCode);
+                    }
+                  }}
+                  placeholder="Search or add device..."
+                >
+                  {products.map((p) => (
+                    <SelectItem key={p.id} value={p.id}>
+                      {p.name}
+                    </SelectItem>
+                  ))}
+                </AdvanceSelect>
+              </div>
+
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <label className="mb-1 block text-xs uppercase tracking-widest text-muted-foreground">
+                    Cost Code *
+                  </label>
+                  <input
+                    id="tradein-costcode"
+                    value={tradeInCostCode}
+                    onChange={(e) => setTradeInCostCode(e.target.value)}
+                    onKeyDown={(e) => handleEnterKey(e, "tradein-sellcode")}
+                    placeholder="e.g., A12"
+                    className={inputCls}
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs uppercase tracking-widest text-muted-foreground">
+                    Sell Code *
+                  </label>
+                  <input
+                    id="tradein-sellcode"
+                    value={tradeInSellCode}
+                    onChange={(e) => setTradeInSellCode(e.target.value)}
+                    onKeyDown={(e) => handleEnterKey(e, "tradein-value")}
+                    placeholder="e.g., B25"
+                    className={inputCls}
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs uppercase tracking-widest text-muted-foreground">
+                    Agreed Value *
+                  </label>
+                  <input
+                    id="tradein-value"
+                    type="number"
+                    value={tradeInAgreedValue}
+                    onChange={(e) => setTradeInAgreedValue(e.target.value)}
+                    onKeyDown={(e) => handleEnterKey(e, "tradein-qty")}
+                    placeholder="30000"
+                    className={inputCls}
+                    required
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="mb-1 block text-xs uppercase tracking-widest text-muted-foreground">
+                  Quantity
+                </label>
+                <input
+                  id="tradein-qty"
+                  type="number"
+                  min="1"
+                  value={tradeInQty}
+                  onChange={(e) => setTradeInQty(e.target.value)}
+                  onKeyDown={(e) => handleEnterKey(e, "new-device-variant")}
+                  className={inputCls}
+                />
+              </div>
+
+              {/* Device Units */}
+              {tradeInUnits.map((unit, index) => (
+                <div key={unit.id} className="p-3 border border-border rounded space-y-2">
+                  <div className="text-xs font-medium">Unit {index + 1}</div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="mb-1 block text-[10px] text-muted-foreground">
+                        IMEI 1 *
+                      </label>
+                      <input
+                        type="text"
+                        value={unit.imei1}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setTradeInUnits((prev) =>
+                            prev.map((u, i) => (i === index ? { ...u, imei1: val } : u)),
+                          );
+                        }}
+                        placeholder="123456789012345"
+                        className="w-full border border-border bg-background px-2 py-1 text-sm"
+                      />
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-[10px] text-muted-foreground">IMEI 2</label>
+                      <input
+                        type="text"
+                        value={unit.imei2}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setTradeInUnits((prev) =>
+                            prev.map((u, i) => (i === index ? { ...u, imei2: val } : u)),
+                          );
+                        }}
+                        placeholder="123456789012346"
+                        className="w-full border border-border bg-background px-2 py-1 text-sm"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-[10px] text-muted-foreground">Serial</label>
+                    <input
+                      type="text"
+                      value={unit.serial}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setTradeInUnits((prev) =>
+                          prev.map((u, i) => (i === index ? { ...u, serial: val } : u)),
+                        );
+                      }}
+                      placeholder="Serial number"
+                      className="w-full border border-border bg-background px-2 py-1 text-sm"
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="mb-1 block text-[10px] text-muted-foreground">
+                        Battery %
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        max="100"
+                        value={unit.batteryHealth}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setTradeInUnits((prev) =>
+                            prev.map((u, i) => (i === index ? { ...u, batteryHealth: val } : u)),
+                          );
+                        }}
+                        placeholder="85"
+                        className="w-full border border-border bg-background px-2 py-1 text-sm"
+                      />
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-[10px] text-muted-foreground">
+                        Condition
+                      </label>
+                      <select
+                        value={unit.conditionGrade}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setTradeInUnits((prev) =>
+                            prev.map((u, i) => (i === index ? { ...u, conditionGrade: val } : u)),
+                          );
+                        }}
+                        className="w-full border border-border bg-background px-2 py-1 text-sm"
+                      >
+                        {CONDITION_OPTIONS.map((opt) => (
+                          <option key={opt} value={opt}>
+                            {opt}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                </div>
+              ))}
+
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    const newId = Math.max(...tradeInUnits.map((u) => u.id), 0) + 1;
+                    setTradeInUnits([
+                      ...tradeInUnits,
+                      {
+                        id: newId,
+                        imei1: "",
+                        imei2: "",
+                        serial: "",
+                        batteryHealth: "",
+                        conditionGrade: "Good",
+                      },
+                    ]);
+                  }}
+                >
+                  <Plus size={12} /> Add Unit
+                </Button>
+                {tradeInUnits.length > 1 && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setTradeInUnits((prev) => prev.slice(0, -1))}
+                  >
+                    <Trash2 size={12} /> Remove Last
+                  </Button>
+                )}
+              </div>
+            </div>
+          </Card>
+
+          {/* New Device & Payment */}
+          <Card className="p-4 lg:col-span-2">
+            <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
+              <RefreshCw size={14} /> New Device & Payment
+            </h3>
+
+            <div className="space-y-3">
+              <div>
+                <label className="mb-1 block text-xs uppercase tracking-widest text-muted-foreground">
+                  Select New Device from Stock *
+                </label>
+                <AdvanceSelect
+                  value={newDeviceVariantId ? String(newDeviceVariantId) : ""}
+                  onValueChange={(val) => setNewDeviceVariantId(Number(val))}
+                  placeholder="Search products..."
+                >
+                  {products
+                    .filter((p) => p.variants && p.variants.some((v: any) => v.quantity > 0))
+                    .map((p) => (
+                      <div key={p.id}>
+                        <div className="font-medium">{p.name}</div>
+                        {p.variants?.map(
+                          (v: any) =>
+                            v.quantity > 0 && (
+                              <SelectItem key={v.id} value={String(v.id)}>
+                                {v.name} - {bdt(v.sellingPrice)} (Qty: {v.quantity})
+                              </SelectItem>
+                            ),
+                        )}
+                      </div>
+                    ))}
+                </AdvanceSelect>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="mb-1 block text-xs uppercase tracking-widest text-muted-foreground">
+                    Final Price *
+                  </label>
+                  <input
+                    id="new-device-price"
+                    type="number"
+                    value={newDevicePrice}
+                    onChange={(e) => setNewDevicePrice(e.target.value)}
+                    onKeyDown={(e) => handleEnterKey(e, "cash-received")}
+                    placeholder="70000"
+                    className={inputCls}
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs uppercase tracking-widest text-muted-foreground">
+                    Location *
+                  </label>
+                  <AdvanceSelect
+                    value={locationId}
+                    onValueChange={setLocationId}
+                    placeholder="Select location"
+                  >
+                    {locations.map((l) => (
+                      <SelectItem key={l.id} value={l.id}>
+                        {l.name}
+                      </SelectItem>
+                    ))}
+                  </AdvanceSelect>
+                </div>
+              </div>
+
+              {/* Exchange Summary */}
+              <div className="p-3 bg-muted rounded">
+                <div className="text-xs font-semibold mb-2">EXCHANGE SUMMARY</div>
+                <div className="space-y-1 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Trade-in Value:</span>
+                    <span className="font-medium">- {bdt(tradeInValue)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">New Device Price:</span>
+                    <span className="font-medium">+ {bdt(newDevicePriceValue)}</span>
+                  </div>
+                  <div className="flex justify-between border-t border-border pt-1 mt-1">
+                    <span className="font-medium">Customer pays:</span>
+                    <span className="font-bold text-lg">{bdt(paymentRequired)}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="mb-1 block text-xs uppercase tracking-widest text-muted-foreground">
+                    Payment Method
+                  </label>
+                  <select
+                    value={paymentMethod}
+                    onChange={(e) => setPaymentMethod(e.target.value as any)}
+                    className={inputCls}
+                  >
+                    <option value="cash">Cash</option>
+                    <option value="card">Card</option>
+                    <option value="mfs">Mobile Financial Service</option>
+                    <option value="bank_transfer">Bank Transfer</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs uppercase tracking-widest text-muted-foreground">
+                    Cash Received
+                  </label>
+                  <input
+                    id="cash-received"
+                    type="number"
+                    value={cashReceived}
+                    onChange={(e) => setCashReceived(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        // Focus on submit button
+                        const submitBtn = document.querySelector(
+                          'button[type="submit"]',
+                        ) as HTMLButtonElement;
+                        if (submitBtn) submitBtn.focus();
+                      }
+                    }}
+                    placeholder={String(paymentRequired)}
+                    className={inputCls}
+                  />
+                </div>
+              </div>
+
+              {paymentMethod === "cash" && cashReceived && (
+                <div className="p-2 bg-emerald-50 dark:bg-emerald-900/20 rounded text-center">
+                  <span className="text-xs text-muted-foreground">Change: </span>
+                  <span className="font-bold text-emerald-600">{bdt(changeAmount)}</span>
+                </div>
+              )}
+
+              <div>
+                <label className="mb-1 block text-xs uppercase tracking-widest text-muted-foreground">
+                  Notes
+                </label>
+                <textarea
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  placeholder="Exchange notes..."
+                  rows={2}
+                  className={inputCls}
+                />
+              </div>
+            </div>
+          </Card>
+        </div>
+
+        <div className="mt-4 flex justify-end gap-2">
+          <Button type="button" variant="surface" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button type="submit" variant="default" disabled={submitting}>
+            {submitting ? "Processing..." : "Process Exchange"}
+          </Button>
+        </div>
+      </form>
+    </div>
+  );
+}
+
+// ===========================================================================
+// Customer Form
+// ===========================================================================
+
+function CustomerForm({
+  customer,
+  onClose,
+  onSaved,
+}: {
+  customer: Customer | null;
+  onClose: () => void;
+  onSaved: () => void;
+}) {
+  const [name, setName] = useState(customer?.name || "");
+  const [phone, setPhone] = useState(customer?.phone || "");
+  const [email, setEmail] = useState(customer?.email || "");
+  const [address, setAddress] = useState(customer?.address || "");
+  const [city, setCity] = useState(customer?.city || "");
+  const [notes, setNotes] = useState(customer?.notes || "");
+  const [nidNumber, setNidNumber] = useState(customer?.nidNumber ? String(customer.nidNumber) : "");
+  const [dob, setDob] = useState(customer?.dob || "");
+  const [nidImages, setNidImages] = useState<string[]>(customer?.nidImages || []);
+  const [uploading, setUploading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!name.trim() || !phone.trim()) {
+      toast.error("Name and phone are required");
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const body = {
+        name,
+        phone,
+        email: email || null,
+        address: address || null,
+        city: city || null,
+        notes: notes || null,
+        nidNumber: nidNumber ? Number(nidNumber) : null,
+        dob: dob || null,
+        nidImages,
+      };
+
+      const url = customer
+        ? `/api/dashboard/exchange-customers/${customer.id}`
+        : "/api/dashboard/exchange-customers";
+      const res = await fetch(url, {
+        method: customer ? "PATCH" : "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || `HTTP ${res.status}`);
+      }
+
+      toast.success(customer ? "Customer updated" : "Customer created");
+      onSaved();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Save failed");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleNidUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(e.target.files ?? []);
+    e.target.value = "";
+    if (files.length === 0) return;
+    if (nidImages.length + files.length > 2) {
+      toast.error("NID has only 2 parts (front & back). Max 2 images.");
+      return;
+    }
+    setUploading(true);
+    try {
+      for (const file of files) {
+        const formData = new FormData();
+        formData.append("file", file);
+        const res = await fetch("/api/dashboard/upload", {
+          method: "POST",
+          body: formData,
+        });
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error(err.error || `Upload failed (HTTP ${res.status})`);
+        }
+        const data = await res.json();
+        setNidImages((prev) => [...prev, data.url]);
+      }
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Upload failed");
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  const inputCls =
+    "w-full border border-border bg-background px-3 py-1.5 text-sm outline-none transition-colors hover:border-border/80 focus:border-foreground/80";
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+      <form
+        onSubmit={handleSubmit}
+        className="w-full max-w-lg border border-border bg-background p-4 max-h-[90vh] overflow-y-auto"
+      >
+        <div className="mb-3 text-sm font-medium">
+          {customer ? "Edit Customer" : "Add Customer"}
+        </div>
+
+        <div className="grid gap-3">
+          <div>
+            <label className="mb-1 block text-xs uppercase tracking-widest text-muted-foreground">
+              Name *
+            </label>
+            <input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Full name"
+              className={inputCls}
+              autoFocus
+            />
+          </div>
+
+          <div>
+            <label className="mb-1 block text-xs uppercase tracking-widest text-muted-foreground">
+              Phone *
+            </label>
+            <input
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              placeholder="017xxxxxxxx"
+              className={inputCls}
+            />
+          </div>
+
+          <div>
+            <label className="mb-1 block text-xs uppercase tracking-widest text-muted-foreground">
+              Email
+            </label>
+            <input
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="email@example.com"
+              className={inputCls}
+            />
+          </div>
+
+          <div>
+            <label className="mb-1 block text-xs uppercase tracking-widest text-muted-foreground">
+              City
+            </label>
+            <input
+              value={city}
+              onChange={(e) => setCity(e.target.value)}
+              placeholder="e.g. Dhaka"
+              className={inputCls}
+            />
+          </div>
+
+          <div>
+            <label className="mb-1 block text-xs uppercase tracking-widest text-muted-foreground">
+              Address
+            </label>
+            <input
+              value={address}
+              onChange={(e) => setAddress(e.target.value)}
+              placeholder="Full address"
+              className={inputCls}
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="mb-1 block text-xs uppercase tracking-widest text-muted-foreground">
+                NID Number
+              </label>
+              <input
+                value={nidNumber}
+                onChange={(e) => setNidNumber(e.target.value)}
+                inputMode="numeric"
+                placeholder="e.g. 1234567890"
+                className={inputCls}
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-xs uppercase tracking-widest text-muted-foreground">
+                Date of Birth
+              </label>
+              <input
+                type="date"
+                value={dob}
+                onChange={(e) => setDob(e.target.value)}
+                className={inputCls}
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="mb-1 block text-xs uppercase tracking-widest text-muted-foreground">
+              Upload NID <span className="normal-case">(optional)</span>
+            </label>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              multiple
+              onChange={handleNidUpload}
+              disabled={uploading}
+              className="sr-only"
+            />
+            <div className="flex items-center gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={uploading}
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <Upload size={13} /> {uploading ? "Uploading…" : "Choose Files"}
+              </Button>
+              {nidImages.length > 0 && (
+                <span className="text-xs text-muted-foreground">{nidImages.length}/2 uploaded</span>
+              )}
+            </div>
+            <p className="mt-0.5 text-[10px] text-muted-foreground">
+              Front &amp; back — 1 to 2 images
+            </p>
+            {nidImages.length > 0 && (
+              <div className="mt-2 flex flex-wrap gap-2">
+                {nidImages.map((url, i) => (
+                  <div key={url} className="relative">
+                    <img
+                      src={url}
+                      alt={`NID ${i + 1}`}
+                      className="h-16 w-24 border border-border object-cover"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setNidImages((prev) => prev.filter((_, idx) => idx !== i))}
+                      className="absolute -right-1.5 -top-1.5 border border-border bg-background p-0.5 text-muted-foreground hover:text-sale"
+                      title="Remove"
+                    >
+                      <X size={12} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div>
+            <label className="mb-1 block text-xs uppercase tracking-widest text-muted-foreground">
+              Notes
+            </label>
+            <input
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="Optional notes"
+              className={inputCls}
+            />
+          </div>
+        </div>
+
+        <div className="mt-4 flex justify-end gap-2">
+          <Button type="button" variant="surface" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button type="submit" variant="default" disabled={saving}>
+            {saving ? "Saving…" : customer ? "Update" : "Create"}
+          </Button>
+        </div>
+      </form>
+    </div>
+  );
+}

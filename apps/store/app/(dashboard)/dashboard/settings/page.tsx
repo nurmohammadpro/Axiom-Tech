@@ -1,0 +1,729 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { Card } from "@/components/dashboard/dashboard-shell";
+import { Button } from "@/components/ui/button";
+import { LocationsManager } from "@/components/dashboard/locations-manager";
+import { useSettings, useUpdateSettings } from "@/lib/hooks";
+import type { PaymentAccount, PaymentAccountsByMethod } from "@/lib/store-settings";
+import { toast } from "sonner";
+import { Save, RotateCcw, CreditCard, Receipt, Gift, Plus, X, Upload, Trash2 } from "lucide-react";
+
+const tabs = [
+  { id: "General", icon: null },
+  { id: "Locations", icon: null },
+  { id: "Taxes", icon: null },
+  { id: "Payments", icon: CreditCard },
+  { id: "Receipts", icon: Receipt },
+  { id: "Loyalty", icon: Gift },
+];
+
+/** Downscale an oversized raster image so it fits Cloudinary's 10MB cap. */
+async function shrinkImage(file: File, maxDim = 2048): Promise<File> {
+  const bitmap = await createImageBitmap(file);
+  const scale = Math.min(1, maxDim / Math.max(bitmap.width, bitmap.height));
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.max(1, Math.round(bitmap.width * scale));
+  canvas.height = Math.max(1, Math.round(bitmap.height * scale));
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return file;
+  ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+  const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/png"));
+  bitmap.close();
+  if (!blob || blob.size >= file.size) return file;
+  return new File([blob], file.name.replace(/\.\w+$/, "") + ".png", { type: "image/png" });
+}
+
+export default function Settings() {
+  const [tab, setTab] = useState("General");
+  const { data: settings } = useSettings();
+  const updateSettings = useUpdateSettings();
+
+  return (
+    <>
+      <div className="grid grid-cols-1 gap-3 lg:grid-cols-[220px_1fr]">
+        <nav className="border border-border bg-background p-2 overflow-x-auto">
+          <div className="min-w-max">
+            {tabs.map((t) => {
+              const Icon = t.icon;
+              return (
+                <button
+                  key={t.id}
+                  onClick={() => setTab(t.id)}
+                  className={
+                    "flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-left text-sm " +
+                    (tab === t.id
+                      ? "bg-surface text-foreground"
+                      : "text-muted-foreground hover:bg-surface hover:text-foreground")
+                  }
+                >
+                  {Icon && <Icon size={14} className="shrink-0" />}
+                  {t.id}
+                </button>
+              );
+            })}
+          </div>
+        </nav>
+
+        <Card className="p-5">
+          {tab === "General" && (
+            <GeneralTab settings={settings} onSave={updateSettings.mutateAsync} />
+          )}
+          {tab === "Locations" && (
+            <div>
+              <div className="text-sm font-medium">Locations</div>
+              <LocationsManager />
+            </div>
+          )}
+          {tab === "Taxes" && <TaxesTab settings={settings} onSave={updateSettings.mutateAsync} />}
+          {tab === "Payments" && (
+            <PaymentsTab settings={settings} onSave={updateSettings.mutateAsync} />
+          )}
+          {tab === "Receipts" && (
+            <ReceiptsTab settings={settings} onSave={updateSettings.mutateAsync} />
+          )}
+          {tab === "Loyalty" && (
+            <LoyaltyTab settings={settings} onSave={updateSettings.mutateAsync} />
+          )}
+        </Card>
+      </div>
+    </>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Shared form component — reads/writes a section of the store_info object
+// ---------------------------------------------------------------------------
+
+function StoreInfoForm({
+  section,
+  fields,
+  settings,
+  onSave,
+}: {
+  section: string;
+  fields: {
+    key: string;
+    label: string;
+    type?: string;
+    placeholder?: string;
+    options?: string[];
+    fullWidth?: boolean;
+  }[];
+  settings?: Record<string, any>;
+  onSave: (data: Record<string, any>) => Promise<any>;
+}) {
+  // settings has shape { store_info: { name, email, ... }, ... }
+  const storeInfo = (settings?.store_info ?? {}) as Record<string, any>;
+  const [form, setForm] = useState<Record<string, any>>({});
+  const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
+
+  useEffect(() => {
+    const initial: Record<string, any> = {};
+    for (const f of fields) {
+      initial[f.key] = storeInfo[f.key] ?? "";
+    }
+    setForm(initial);
+  }, [settings, fields]);
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      // Merge form into existing store_info so other tabs aren't overwritten
+      const merged = { ...storeInfo, ...form };
+      await onSave({ store_info: merged });
+      toast.success(`${section} settings saved`);
+    } catch {
+      toast.error("Failed to save settings");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleReset = () => {
+    const initial: Record<string, any> = {};
+    for (const f of fields) {
+      initial[f.key] = storeInfo[f.key] ?? "";
+    }
+    setForm(initial);
+  };
+
+  return (
+    <div>
+      <div className="mb-4 text-sm font-medium">{section}</div>
+      <div className="grid gap-4 md:grid-cols-2">
+        {fields.map((f) => (
+          <label
+            key={f.key}
+            className={"grid gap-1 text-sm" + (f.fullWidth ? " md:col-span-2" : "")}
+          >
+            <span className="text-xs text-muted-foreground">{f.label}</span>
+            {f.type === "select" && f.options ? (
+              <select
+                value={form[f.key] ?? ""}
+                onChange={(e) => setForm((prev) => ({ ...prev, [f.key]: e.target.value }))}
+                className="rounded border border-border bg-background px-2 py-1.5 text-sm"
+              >
+                {f.options.map((opt) => (
+                  <option key={opt} value={opt}>
+                    {opt}
+                  </option>
+                ))}
+              </select>
+            ) : f.type === "toggle" ? (
+              <button
+                type="button"
+                onClick={() => setForm((prev) => ({ ...prev, [f.key]: !prev[f.key] }))}
+                className={
+                  "flex h-6 w-11 items-center rounded-full transition-colors " +
+                  (form[f.key] ? "bg-primary" : "bg-border")
+                }
+              >
+                <span
+                  className={
+                    "h-4 w-4 rounded-full bg-background transition-transform " +
+                    (form[f.key] ? "translate-x-6" : "translate-x-1")
+                  }
+                />
+              </button>
+            ) : f.type === "logo" ? (
+              <div className="flex flex-wrap items-center gap-2">
+                {form[f.key] ? (
+                  <div className="flex items-center gap-2">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={form[f.key]}
+                      alt="Store logo"
+                      className="h-10 w-10 rounded border border-border bg-background object-contain"
+                    />
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setForm((prev) => ({ ...prev, [f.key]: "" }))}
+                    >
+                      <Trash2 size={13} /> Remove
+                    </Button>
+                  </div>
+                ) : null}
+                <input
+                  type="file"
+                  accept="image/*"
+                  disabled={uploading}
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    setUploading(true);
+                    try {
+                      // Cloudinary rejects images over 10MB — shrink oversized
+                      // rasters client-side instead of failing the upload.
+                      let uploadFile = file;
+                      if (uploadFile.size > 10 * 1024 * 1024 && !uploadFile.type.includes("svg")) {
+                        uploadFile = await shrinkImage(uploadFile);
+                      }
+                      const fd = new FormData();
+                      fd.append("file", uploadFile);
+                      fd.append("folder", "logos");
+                      const res = await fetch("/api/dashboard/upload", {
+                        method: "POST",
+                        body: fd,
+                      });
+                      const data = await res.json();
+                      if (!res.ok) throw new Error(data.error || "Upload failed");
+                      setForm((prev) => ({ ...prev, [f.key]: data.url }));
+                      toast.success("Logo uploaded");
+                    } catch (err) {
+                      toast.error(err instanceof Error ? err.message : "Logo upload failed");
+                    } finally {
+                      setUploading(false);
+                    }
+                  }}
+                  className="text-xs text-muted-foreground file:mr-2 file:rounded file:border file:border-border file:bg-surface file:px-2 file:py-1 file:text-xs"
+                />
+              </div>
+            ) : f.type === "textarea" ? (
+              <textarea
+                value={form[f.key] ?? ""}
+                onChange={(e) => setForm((prev) => ({ ...prev, [f.key]: e.target.value }))}
+                placeholder={f.placeholder}
+                rows={8}
+                className="rounded border border-border bg-background px-2 py-1.5 text-sm"
+              />
+            ) : (
+              <input
+                type={f.type || "text"}
+                value={form[f.key] ?? ""}
+                onChange={(e) => setForm((prev) => ({ ...prev, [f.key]: e.target.value }))}
+                placeholder={f.placeholder}
+                className="rounded border border-border bg-background px-2 py-1.5 text-sm"
+              />
+            )}
+          </label>
+        ))}
+      </div>
+      <div className="mt-4 flex justify-end gap-2">
+        <Button variant="ghost" size="sm" onClick={handleReset}>
+          <RotateCcw size={13} /> Reset
+        </Button>
+        <Button variant="default" size="sm" onClick={() => void handleSave()} disabled={saving}>
+          <Save size={13} /> {saving ? "Saving…" : "Save"}
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Tabs
+// ---------------------------------------------------------------------------
+
+function GeneralTab({
+  settings,
+  onSave,
+}: {
+  settings?: Record<string, any>;
+  onSave: (data: Record<string, any>) => Promise<any>;
+}) {
+  return (
+    <StoreInfoForm
+      section="General"
+      settings={settings}
+      onSave={onSave}
+      fields={[
+        { key: "name", label: "Business name", placeholder: "Play Store" },
+        { key: "tagline", label: "Tagline", placeholder: "Your one-stop phone shop" },
+        { key: "email", label: "Contact email", type: "email", placeholder: "hello@store.com" },
+        { key: "phone", label: "Support phone", placeholder: "+880 1XXX-XXXXXX" },
+        { key: "address", label: "Business address", placeholder: "Dhaka, Bangladesh" },
+        { key: "website", label: "Web address", placeholder: "https://yourstore.com" },
+        { key: "logo", label: "Shop logo", type: "logo" },
+        {
+          key: "currency",
+          label: "Currency",
+          type: "select",
+          options: ["BDT", "USD", "EUR", "GBP", "INR"],
+        },
+      ]}
+    />
+  );
+}
+
+function TaxesTab({
+  settings,
+  onSave,
+}: {
+  settings?: Record<string, any>;
+  onSave: (data: Record<string, any>) => Promise<any>;
+}) {
+  return (
+    <div>
+      <StoreInfoForm
+        section="Taxes"
+        settings={settings}
+        onSave={onSave}
+        fields={[
+          { key: "taxRate", label: "Default tax rate (%)", type: "number", placeholder: "15" },
+          { key: "taxRegNumber", label: "Tax registration number" },
+          { key: "vatInclusive", label: "VAT inclusive pricing", type: "toggle" },
+        ]}
+      />
+      <p className="mt-4 text-xs text-muted-foreground">
+        Tax overrides can be set per product and per location. VAT inclusive pricing includes tax in
+        the displayed price.
+      </p>
+    </div>
+  );
+}
+
+type AccountFieldKey = "name" | "number" | "bank";
+type AccountField = {
+  key: AccountFieldKey;
+  label: string;
+  placeholder?: string;
+  required?: boolean;
+};
+
+const ACCOUNT_FIELD_SETS: Record<string, AccountField[]> = {
+  bkash: [
+    { key: "name", label: "Label", placeholder: "e.g. bKash Personal" },
+    { key: "number", label: "bKash number", placeholder: "01XXXXXXXXX", required: true },
+  ],
+  nagad: [
+    { key: "name", label: "Label", placeholder: "e.g. Nagad Main" },
+    { key: "number", label: "Nagad number", placeholder: "01XXXXXXXXX", required: true },
+  ],
+  card: [
+    { key: "name", label: "Terminal name", placeholder: "e.g. POS Terminal 1", required: true },
+    { key: "bank", label: "Bank name", placeholder: "e.g. City Bank", required: true },
+    { key: "number", label: "Terminal ID", placeholder: "Optional terminal ref" },
+  ],
+  bank: [
+    { key: "name", label: "Account name", placeholder: "e.g. Business A/C", required: true },
+    { key: "bank", label: "Bank name", placeholder: "e.g. Dutch-Bangla Bank", required: true },
+    { key: "number", label: "Account number", placeholder: "e.g. 123-456-789", required: true },
+  ],
+};
+
+function AccountGroupEditor({
+  title,
+  accounts,
+  fields,
+  onChange,
+}: {
+  title: string;
+  accounts: PaymentAccount[];
+  fields: AccountField[];
+  onChange: (next: PaymentAccount[]) => void;
+}) {
+  const [draft, setDraft] = useState<Record<AccountFieldKey, string>>({
+    name: "",
+    number: "",
+    bank: "",
+  });
+  const [adding, setAdding] = useState(false);
+
+  const canAdd = fields.filter((f) => f.required).every((f) => draft[f.key].trim().length > 0);
+
+  const addAccount = () => {
+    if (!canAdd) return;
+    onChange([
+      ...accounts,
+      {
+        id: crypto.randomUUID(),
+        name: draft.name.trim(),
+        number: draft.number.trim(),
+        bank: draft.bank.trim(),
+        isDefault: accounts.length === 0,
+      },
+    ]);
+    setDraft({ name: "", number: "", bank: "" });
+    setAdding(false);
+  };
+
+  const setDefault = (id: string) =>
+    onChange(accounts.map((a) => ({ ...a, isDefault: a.id === id })));
+
+  const remove = (id: string) => {
+    const next = accounts.filter((a) => a.id !== id);
+    if (next.length > 0 && !next.some((a) => a.isDefault)) next[0].isDefault = true;
+    onChange(next);
+  };
+
+  const updateField = (id: string, key: AccountFieldKey, value: string) =>
+    onChange(accounts.map((a) => (a.id === id ? { ...a, [key]: value } : a)));
+
+  return (
+    <div className="mt-5">
+      <div className="mb-2 flex items-center justify-between">
+        <div className="text-sm font-medium">{title}</div>
+        {!adding && (
+          <Button variant="surface" size="sm" onClick={() => setAdding(true)}>
+            <Plus size={13} /> Add
+          </Button>
+        )}
+      </div>
+
+      {adding && (
+        <div className="mb-3 grid gap-2 rounded border border-border bg-surface/50 p-3 sm:grid-cols-3">
+          {fields.map((f) => (
+            <label key={f.key} className="grid gap-1 text-sm">
+              <span className="text-xs text-muted-foreground">{f.label}</span>
+              <input
+                value={draft[f.key]}
+                onChange={(e) => setDraft((d) => ({ ...d, [f.key]: e.target.value }))}
+                placeholder={f.placeholder}
+                className="rounded border border-border bg-background px-2 py-1.5 text-sm"
+              />
+            </label>
+          ))}
+          <div className="flex items-end gap-2 sm:col-span-3">
+            <Button variant="default" size="sm" onClick={addAccount} disabled={!canAdd}>
+              Add account
+            </Button>
+            <Button variant="ghost" size="sm" onClick={() => setAdding(false)}>
+              Cancel
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {accounts.length === 0 && !adding ? (
+        <div className="rounded border border-dashed border-border px-3 py-2 text-xs text-muted-foreground">
+          No {title.toLowerCase()} accounts configured yet.
+        </div>
+      ) : (
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b border-border text-left text-xs uppercase tracking-widest text-muted-foreground">
+              {fields.map((f) => (
+                <th key={f.key} className="px-2 py-1 font-medium">
+                  {f.label}
+                </th>
+              ))}
+              <th className="px-2 py-1 font-medium">Default</th>
+              <th className="px-2 py-1" />
+            </tr>
+          </thead>
+          <tbody>
+            {accounts.map((a) => (
+              <tr key={a.id} className="border-b border-border last:border-b-0">
+                {fields.map((f) => (
+                  <td key={f.key} className="px-2 py-1">
+                    <input
+                      value={a[f.key] ?? ""}
+                      onChange={(e) => updateField(a.id, f.key, e.target.value)}
+                      className="w-full rounded border border-border bg-background px-2 py-1 text-sm"
+                    />
+                  </td>
+                ))}
+                <td className="px-2 py-1">
+                  <button
+                    type="button"
+                    onClick={() => setDefault(a.id)}
+                    className={
+                      a.isDefault
+                        ? "font-medium text-emerald-600"
+                        : "text-muted-foreground hover:text-foreground"
+                    }
+                  >
+                    {a.isDefault ? "✓ Default" : "Set default"}
+                  </button>
+                </td>
+                <td className="px-2 py-1 text-right">
+                  <button
+                    type="button"
+                    onClick={() => remove(a.id)}
+                    className="text-muted-foreground hover:text-sale"
+                    aria-label="Remove account"
+                  >
+                    <X size={14} />
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+    </div>
+  );
+}
+
+function PaymentsTab({
+  settings,
+  onSave,
+}: {
+  settings?: Record<string, any>;
+  onSave: (data: Record<string, any>) => Promise<any>;
+}) {
+  const storeInfo = (settings?.store_info ?? {}) as Record<string, any>;
+  const [toggles, setToggles] = useState({
+    acceptCash: (storeInfo.acceptCash ?? true) as boolean,
+    acceptCard: (storeInfo.acceptCard ?? false) as boolean,
+    acceptMobile: (storeInfo.acceptMobile ?? false) as boolean,
+  });
+  const [accounts, setAccounts] = useState<PaymentAccountsByMethod>(
+    (storeInfo.paymentAccounts as PaymentAccountsByMethod) ?? {
+      bkash: [],
+      nagad: [],
+      card: [],
+      bank: [],
+    },
+  );
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    setToggles({
+      acceptCash: (storeInfo.acceptCash ?? true) as boolean,
+      acceptCard: (storeInfo.acceptCard ?? false) as boolean,
+      acceptMobile: (storeInfo.acceptMobile ?? false) as boolean,
+    });
+    setAccounts(
+      (storeInfo.paymentAccounts as PaymentAccountsByMethod) ?? {
+        bkash: [],
+        nagad: [],
+        card: [],
+        bank: [],
+      },
+    );
+  }, [settings]);
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      const merged = {
+        ...storeInfo,
+        ...toggles,
+        paymentAccounts: accounts,
+      };
+      await onSave({ store_info: merged });
+      toast.success("Payment settings saved");
+    } catch {
+      toast.error("Failed to save settings");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const Toggle = ({
+    label,
+    checked,
+    onChange,
+  }: {
+    label: string;
+    checked: boolean;
+    onChange: (v: boolean) => void;
+  }) => (
+    <div className="flex items-center gap-2 text-sm">
+      <button
+        type="button"
+        onClick={() => onChange(!checked)}
+        className={
+          "flex h-6 w-11 items-center rounded-full transition-colors " +
+          (checked ? "bg-primary" : "bg-border")
+        }
+      >
+        <span
+          className={
+            "h-4 w-4 rounded-full bg-background transition-transform " +
+            (checked ? "translate-x-6" : "translate-x-1")
+          }
+        />
+      </button>
+      <span className="text-muted-foreground">{label}</span>
+    </div>
+  );
+
+  return (
+    <div>
+      <div className="mb-1 text-sm font-medium">Payments</div>
+      <p className="mb-3 text-xs text-muted-foreground">
+        Enable methods and configure the account, terminal, or number used for each. One account per
+        method is marked as default — the one used at checkout.
+      </p>
+
+      <div className="grid gap-3 sm:grid-cols-3">
+        <Toggle
+          label="Accept cash payments"
+          checked={toggles.acceptCash}
+          onChange={(v) => setToggles((t) => ({ ...t, acceptCash: v }))}
+        />
+        <Toggle
+          label="Accept card payments"
+          checked={toggles.acceptCard}
+          onChange={(v) => setToggles((t) => ({ ...t, acceptCard: v }))}
+        />
+        <Toggle
+          label="Accept mobile payments"
+          checked={toggles.acceptMobile}
+          onChange={(v) => setToggles((t) => ({ ...t, acceptMobile: v }))}
+        />
+      </div>
+
+      <AccountGroupEditor
+        title="bKash"
+        accounts={accounts.bkash}
+        fields={ACCOUNT_FIELD_SETS.bkash}
+        onChange={(next) => setAccounts((a) => ({ ...a, bkash: next }))}
+      />
+      <AccountGroupEditor
+        title="Nagad"
+        accounts={accounts.nagad}
+        fields={ACCOUNT_FIELD_SETS.nagad}
+        onChange={(next) => setAccounts((a) => ({ ...a, nagad: next }))}
+      />
+      <AccountGroupEditor
+        title="Card (terminals)"
+        accounts={accounts.card}
+        fields={ACCOUNT_FIELD_SETS.card}
+        onChange={(next) => setAccounts((a) => ({ ...a, card: next }))}
+      />
+      <AccountGroupEditor
+        title="Bank accounts"
+        accounts={accounts.bank}
+        fields={ACCOUNT_FIELD_SETS.bank}
+        onChange={(next) => setAccounts((a) => ({ ...a, bank: next }))}
+      />
+
+      <div className="mt-5 flex justify-end gap-2">
+        <Button variant="default" size="sm" onClick={() => void handleSave()} disabled={saving}>
+          <Save size={13} /> {saving ? "Saving…" : "Save"}
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+function ReceiptsTab({
+  settings,
+  onSave,
+}: {
+  settings?: Record<string, any>;
+  onSave: (data: Record<string, any>) => Promise<any>;
+}) {
+  return (
+    <StoreInfoForm
+      section="Receipts"
+      settings={settings}
+      onSave={onSave}
+      fields={[
+        {
+          key: "receiptHeader",
+          label: "Receipt header text",
+          placeholder: "Thank you for shopping!",
+        },
+        {
+          key: "receiptFooter",
+          label: "Receipt footer text",
+          placeholder: "Returns accepted within 7 days",
+        },
+        { key: "showLogo", label: "Show logo on receipt", type: "toggle" },
+        { key: "showTaxBreakdown", label: "Show tax breakdown", type: "toggle" },
+        { key: "receiptCopies", label: "Default print copies", type: "number", placeholder: "1" },
+        {
+          key: "receiptPolicies",
+          label: "Terms & conditions (one item per line)",
+          type: "textarea",
+          fullWidth: true,
+        },
+      ]}
+    />
+  );
+}
+
+function LoyaltyTab({
+  settings,
+  onSave,
+}: {
+  settings?: Record<string, any>;
+  onSave: (data: Record<string, any>) => Promise<any>;
+}) {
+  return (
+    <StoreInfoForm
+      section="Loyalty"
+      settings={settings}
+      onSave={onSave}
+      fields={[
+        { key: "loyaltyEnabled", label: "Enable loyalty program", type: "toggle" },
+        {
+          key: "pointsPer100BDT",
+          label: "Points per 100 BDT spent",
+          type: "number",
+          placeholder: "1",
+        },
+        {
+          key: "redemptionRate",
+          label: "Points redemption rate (1 point = ? BDT)",
+          type: "number",
+          placeholder: "0.10",
+        },
+        {
+          key: "minRedemption",
+          label: "Minimum points to redeem",
+          type: "number",
+          placeholder: "100",
+        },
+        { key: "welcomeBonus", label: "Welcome bonus points", type: "number", placeholder: "50" },
+      ]}
+    />
+  );
+}
