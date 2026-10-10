@@ -18,12 +18,12 @@ The store app code in `apps/store` was copied once from playstore-storefront (no
 - Plans: Starter, Growth, Pro. Prices in BDT.
 - DB host: Neon (API provisioning). Hosting: Hostinger KVM 2 + Dokploy (Traefik).
 - Billing at launch: BanglaQR, manual verification (transaction ID, amount, proof); admin records payment.
-- Shops at `shopname.<root-domain>`.
+- Shops at `shopname.<ROOT_DOMAIN>`; for now ROOT_DOMAIN = `axiom.appbrainer.tech` (admin at `admin.axiom.appbrainer.tech`), wildcard DNS + DNS-01 TLS. Keep it an env var so the later dedicated domain is a config change. Do not use axiompos.app.
 - Self-signup and admin-created shops start a 7-day trial.
 - Paid sign-up fee + first month fee (physical or BanglaQR) -> admin runs "Activate to Production" (no trial).
 
 ## Open
-- Root domain (recommendation in docs/PLAN.md), BDT price points.
+- Plan feature split + limits (docs/PRICING.md draft); dedicated domain purchase later.
 
 ## Known issues inherited in apps/store (fix in this repo)
 - Hard-coded fallback session secret in `src/lib/auth.ts` and `proxy.ts`
