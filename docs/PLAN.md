@@ -34,3 +34,6 @@ UI/UX updates from Nur slot in as supplied.
 - Best: a dedicated product domain (e.g. axiomtech.app) with `*.axiomtech.app` for shops, `admin.axiomtech.app` for the platform, "by AppBrainer" in the footer; appbrainer.tech stays the corporate owner/marketing parent.
 - If no new domain: `*.axiom.appbrainer.tech` (shops) and `admin.axiom.appbrainer.tech`.
 - Wildcard TLS needs DNS-01 (Cloudflare API token in Dokploy/Traefik).
+
+## Status 2026-10-10
+Phase 0 done. Phase 1 platform foundation done (see CLAUDE.md). Next: Neon provisioning pipeline, tenant-aware store runtime + gate client, white-label, then Dokploy deployment.

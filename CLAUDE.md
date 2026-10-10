@@ -11,7 +11,7 @@ The store app code in `apps/store` was copied once from playstore-storefront (no
 
 ## Layout
 - `apps/store`    - store-level app (Next.js 16, Drizzle, Neon serverless driver). Will become tenant-aware (db resolved per hostname).
-- `apps/platform` - Platform Admin (to build): registry, plans, billing, trials, provisioning, support.
+- `apps/platform` - Platform Admin (Next.js 16, Drizzle + postgres-js, own Postgres). Built: tenant registry, plans, 7-day trial lifecycle, BanglaQR payment records, Activate to Production, expiry cron, gate API, roles. Run: `bun run dev` (port 3100), `bun run db:migrate && bun run db:seed`, `bun test` (needs DATABASE_URL to a throwaway Postgres).
 - `docs/`         - PLAN.md, store-design-spec.md
 
 ## Approved decisions (Nur)
@@ -29,7 +29,14 @@ The store app code in `apps/store` was copied once from playstore-storefront (no
 - DONE: fallback secret removed (AUTH_SECRET required in production), AUTH_ALLOW_LEGACY and plaintext-password acceptance removed, debug / migrate-fix-prices / seed-supplier-types routes deleted, db:push/db:seed/db:cleanup scripts removed, Lovable deps and TanStack Start leftovers removed, bun.lock regenerated from the public registry.
 - DONE: fresh migrations `apps/store/src/db/migrations` (0000_baseline from schema.ts, 0001_perf_indexes); applied cleanly to an empty Postgres 16 (68 tables, 125 indexes). Old files archived in `src/db/legacy-migrations` (reference only, never run).
 - DONE: `tsc --noEmit` clean, `bun run build` green.
-- TODO: white-label (~40 "PlayStore" literals), tenant-aware db, subscription gate, platform app.
+- TODO: white-label (~40 "PlayStore" literals), tenant-aware db in store app, store-side gate client, Neon provisioning pipeline, self-signup, Dockerfiles + Dokploy deploy.
+
+## Phase 1 status: platform app (done 2026-10-10)
+- DONE: schema + migration (plans, tenants, payments, invoices, tenant_events, platform_users); lifecycle in `src/lib/tenants.ts` (create=7-day trial, activate needs fee+first month, monthly renewal, suspend/resume/extend/cancel/change plan, expiry job with 3-day grace); duplicate transaction IDs rejected; gate `getGate(host)` checks time itself so a missed cron never leaves an expired shop open; roles super_admin/billing/support.
+- DONE: admin UI (login with rate limit, dashboard, shops list/search, new shop, shop detail with all actions, plans editor); API `GET /api/gate?host=` (header x-gate-secret), `POST /api/cron/expire` (Bearer CRON_SECRET), `GET /api/health`.
+- VERIFIED: 15 integration tests on Postgres 16; tsc clean; production build green; Playwright run of login, create, duplicate slug, underpay rejected, activate, suspend, resume.
+- Gate returns `not_ready` until `provision_status = ready` (set by the provisioning pipeline, not built yet).
+- Amounts are whole BDT in the platform DB (store app uses its own units).
 
 ## Stack
 Next.js + TypeScript + Tailwind + shadcn/ui, Drizzle + Postgres, bun. Prefer production-ready, opinionated output.
