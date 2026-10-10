@@ -1,6 +1,7 @@
 import postgres from "postgres";
 import { drizzle, type PostgresJsDatabase } from "drizzle-orm/postgres-js";
 import * as schema from "./schema";
+import { connectionUrl } from "./url";
 
 export type Db = PostgresJsDatabase<typeof schema>;
 export type Tx = Parameters<Parameters<Db["transaction"]>[0]>[0];
@@ -8,8 +9,7 @@ export type Tx = Parameters<Parameters<Db["transaction"]>[0]>[0];
 const g = globalThis as unknown as { __axiomDb?: Db };
 
 function create(): Db {
-  const url = process.env.DATABASE_URL;
-  if (!url) throw new Error("DATABASE_URL is required");
+  const url = connectionUrl();
   // prepare:false keeps this compatible with pooled (pgbouncer) endpoints such as Neon's.
   return drizzle(postgres(url, { max: 10, prepare: false }), { schema });
 }
