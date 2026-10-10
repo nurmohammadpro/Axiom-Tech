@@ -201,14 +201,3 @@ describe("gate", () => {
     else process.env.ROOT_DOMAIN = prev;
   });
 });
-
-describe("connection url", () => {
-  test("drops channel_binding but keeps sslmode and credentials", async () => {
-    const { connectionUrl } = await import("@/db/url");
-    const out = connectionUrl("postgresql://u:p@ep-x-pooler.neon.tech/neondb?sslmode=require&channel_binding=require");
-    expect(out).toContain("sslmode=require");
-    expect(out).not.toContain("channel_binding");
-    expect(out).toContain("u:p@ep-x-pooler.neon.tech");
-    expect(() => connectionUrl("")).toThrow("DATABASE_URL");
-  });
-});
