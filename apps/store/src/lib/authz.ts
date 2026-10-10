@@ -26,17 +26,10 @@ const UNSCOPED: SessionScope = {
 
 /**
  * Resolve the caller's user id from the signed session token (httpOnly cookie
- * or `x-session-token` header). A bare `x-user-id` header is accepted only
- * when AUTH_ALLOW_LEGACY=1 — transition escape hatch, off by default.
+ * or `x-session-token` header). A bare `x-user-id` header is never trusted.
  */
 export function requestUserId(headers: Headers): string | null {
-  const userId = verifySessionToken(sessionTokenFromHeaders(headers));
-  if (userId) return userId;
-
-  if (process.env.AUTH_ALLOW_LEGACY === "1") {
-    return headers.get("x-user-id");
-  }
-  return null;
+  return verifySessionToken(sessionTokenFromHeaders(headers));
 }
 
 /**

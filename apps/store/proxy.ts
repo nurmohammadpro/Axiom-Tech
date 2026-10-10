@@ -1,7 +1,7 @@
 /**
  * Edge authentication gate.
  *
- * Every /api/dashboard/*, /api/admin/*, /api/debug/* call and every
+ * Every /api/dashboard/* and /api/admin/* call and every
  * /dashboard/* page now requires a valid signed session token (`ps_session`
  * cookie or `x-session-token` header — same format as src/lib/auth.ts).
  * API routes answer 401 JSON; pages redirect to /signin.
@@ -13,8 +13,14 @@
 
 import { NextRequest, NextResponse } from "next/server";
 
-const SECRET =
-  process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET || "playstore-insecure-dev-secret";
+function getSecret(): string {
+  const secret = process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET;
+  if (secret) return secret;
+  if (process.env.NODE_ENV === "production") {
+    throw new Error("AUTH_SECRET is required in production");
+  }
+  return "axiom-insecure-dev-secret";
+}
 
 const SESSION_COOKIE = "ps_session";
 
@@ -34,7 +40,7 @@ async function verifySessionToken(token: string | undefined): Promise<string | n
   try {
     const key = await crypto.subtle.importKey(
       "raw",
-      new TextEncoder().encode(SECRET),
+      new TextEncoder().encode(getSecret()),
       { name: "HMAC", hash: "SHA-256" },
       false,
       ["sign"],
@@ -67,8 +73,6 @@ export const config = {
   matcher: [
     "/api/dashboard/:path*",
     "/api/admin/:path*",
-    "/api/debug/:path*",
-    "/api/seed-supplier-types",
     "/dashboard/:path*",
   ],
 };

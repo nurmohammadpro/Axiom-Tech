@@ -5,22 +5,15 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1786214074721,
-      "tag": "0000_greedy_paper_doll",
+      "when": 1791651383727,
+      "tag": "0000_baseline",
       "breakpoints": true
     },
     {
       "idx": 1,
       "version": "7",
-      "when": 1786564425020,
-      "tag": "0001_public_nico_minoru",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1786565087599,
-      "tag": "0002_premium_darwin",
+      "when": 1791651552684,
+      "tag": "0001_perf_indexes",
       "breakpoints": true
     }
   ]

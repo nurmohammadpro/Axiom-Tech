@@ -1,10 +1,8 @@
 /**
  * Authentication primitives: password hashing and signed session tokens.
  *
- * - Passwords are hashed with scrypt (node:crypto, no external deps). Users
- *   created before this change stored their password in plaintext; verify()
- *   accepts the legacy format and reports it so the caller can transparently
- *   upgrade the row on the next successful login.
+ * - Passwords are hashed with scrypt (node:crypto, no external deps). Non-scrypt
+ *   stored values are always rejected.
  * - Sessions are opaque signed tokens: `v1.<userId>.<expiry>.<hmac>`. The
  *   token is set as an httpOnly cookie at sign-in and can also be sent as an
  *   `x-session-token` header. The server never trusts a bare user id header.
@@ -12,8 +10,19 @@
 
 import { createHmac, randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
 
-const SECRET =
-  process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET || "playstore-insecure-dev-secret";
+/**
+ * Session signing secret. Required in production (fail closed); a fixed dev
+ * secret is allowed only outside production. Resolved lazily so `next build`
+ * does not need runtime env.
+ */
+function getSecret(): string {
+  const secret = process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET;
+  if (secret) return secret;
+  if (process.env.NODE_ENV === "production") {
+    throw new Error("AUTH_SECRET is required in production");
+  }
+  return "axiom-insecure-dev-secret";
+}
 
 export const SESSION_COOKIE = "ps_session";
 /** Session lifetime in seconds (7 days). */
@@ -45,14 +54,14 @@ export function verifyPassword(password: string, stored: string): PasswordCheck 
       return { ok: false, needsUpgrade: false };
     }
   }
-  // Legacy plaintext row — compare directly and flag for upgrade.
-  return { ok: password === stored, needsUpgrade: true };
+  // Anything that is not a scrypt hash is rejected (no plaintext rows exist in Axiom Tech).
+  return { ok: false, needsUpgrade: false };
 }
 
 // ── Session tokens ─────────────────────────────────────────────────────────
 
 function sign(payload: string): string {
-  return createHmac("sha256", SECRET).update(payload).digest("base64url");
+  return createHmac("sha256", getSecret()).update(payload).digest("base64url");
 }
 
 /** Create a signed session token for a user id. */

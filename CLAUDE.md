@@ -25,12 +25,11 @@ The store app code in `apps/store` was copied once from playstore-storefront (no
 ## Open
 - Feature split confirmation (docs/PRICING.md); dedicated domain purchase later.
 
-## Known issues inherited in apps/store (fix in this repo)
-- Hard-coded fallback session secret in `src/lib/auth.ts` and `proxy.ts`
-- `app/api/debug/*`, `app/api/admin/migrate-fix-prices`, `app/api/seed-supplier-types` routes
-- `AUTH_ALLOW_LEGACY` bare `x-user-id` path in `src/lib/authz.ts`
-- Drizzle journal lists only 3 of 19 migration files; `db:push` was used. Create a fresh baseline migration from `schema.ts` before provisioning.
-- "PlayStore" literals in ~40 files (white-label)
+## Phase 0 status (done 2026-10-10)
+- DONE: fallback secret removed (AUTH_SECRET required in production), AUTH_ALLOW_LEGACY and plaintext-password acceptance removed, debug / migrate-fix-prices / seed-supplier-types routes deleted, db:push/db:seed/db:cleanup scripts removed, Lovable deps and TanStack Start leftovers removed, bun.lock regenerated from the public registry.
+- DONE: fresh migrations `apps/store/src/db/migrations` (0000_baseline from schema.ts, 0001_perf_indexes); applied cleanly to an empty Postgres 16 (68 tables, 125 indexes). Old files archived in `src/db/legacy-migrations` (reference only, never run).
+- DONE: `tsc --noEmit` clean, `bun run build` green.
+- TODO: white-label (~40 "PlayStore" literals), tenant-aware db, subscription gate, platform app.
 
 ## Stack
 Next.js + TypeScript + Tailwind + shadcn/ui, Drizzle + Postgres, bun. Prefer production-ready, opinionated output.
