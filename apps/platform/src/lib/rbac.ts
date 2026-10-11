@@ -7,11 +7,12 @@ export type Permission =
   | "tenant:extend_trial"
   | "tenant:change_plan"
   | "tenant:cancel"
+  | "tenant:provision"
   | "plans:edit";
 
 const MATRIX: Record<Role, readonly Permission[]> = {
-  super_admin: ["tenant:create", "tenant:payment", "tenant:suspend", "tenant:extend_trial", "tenant:change_plan", "tenant:cancel", "plans:edit"],
-  billing: ["tenant:create", "tenant:payment", "tenant:suspend", "tenant:extend_trial", "tenant:change_plan"],
+  super_admin: ["tenant:create", "tenant:payment", "tenant:suspend", "tenant:extend_trial", "tenant:change_plan", "tenant:cancel", "tenant:provision", "plans:edit"],
+  billing: ["tenant:create", "tenant:payment", "tenant:suspend", "tenant:extend_trial", "tenant:change_plan", "tenant:provision"],
   support: ["tenant:extend_trial"],
 };
 

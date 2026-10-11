@@ -17,6 +17,7 @@ import {
   suspendAction,
 } from "../../actions";
 import { Badge, Field, Notice, td, th } from "../../../ui";
+import { ProvisionPanel } from "./provision-panel";
 
 const UUID = /^[0-9a-f-]{36}$/i;
 const METHODS = [["banglaqr", "BanglaQR"], ["cash", "Cash (physical)"], ["bkash", "bKash"], ["nagad", "Nagad"], ["bank", "Bank"], ["other", "Other"]] as const;
@@ -93,6 +94,10 @@ export default async function TenantDetail({ params, searchParams }: { params: P
         )}
         {t.suspendedReason && t.status !== "active" && t.status !== "trial" ? <div><div className="label">Reason</div><div className="text-sm">{t.suspendedReason.replace("_", " ")}</div></div> : null}
       </section>
+
+      {can(user.role, "tenant:provision") && live && (
+        <ProvisionPanel tenantId={id} status={t.provisionStatus} />
+      )}
 
       {canPay && live && !t.activatedAt && t.status !== "active" && (
         <form action={activate} className="card space-y-4 p-5">

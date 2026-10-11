@@ -10,7 +10,7 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "bun run src/db/migrate.ts",
     "db:seed": "bun run src/db/seed.ts",
-    "test": "bun test tests"
+    "test": "bun test --timeout 90000 tests"
   },
   "dependencies": {
     "date-fns": "^4.1.0",

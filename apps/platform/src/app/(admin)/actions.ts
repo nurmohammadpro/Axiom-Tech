@@ -8,6 +8,7 @@ import { db } from "@/db";
 import { plans, type PlatformUser } from "@/db/schema";
 import { SESSION_COOKIE } from "@/lib/auth";
 import { DomainError } from "@/lib/domain";
+import { provisionTenant } from "@/lib/provision";
 import type { Permission } from "@/lib/rbac";
 import { requirePermission } from "@/lib/session";
 import {
@@ -141,4 +142,25 @@ export async function updatePlanAction(planId: string, fd: FormData) {
 export async function logoutAction() {
   (await cookies()).delete(SESSION_COOKIE);
   redirect("/login");
+}
+
+export interface ProvisionState {
+  ok: boolean;
+  error?: string;
+  shopUrl?: string;
+  ownerEmail?: string;
+  /** Shown once; never persisted by the platform. */
+  tempPassword?: string | null;
+}
+
+export async function provisionAction(tenantId: string, _prev: ProvisionState, _fd: FormData): Promise<ProvisionState> {
+  try {
+    const user = await requirePermission("tenant:provision");
+    const r = await provisionTenant(tenantId, user.id);
+    revalidatePath(`/tenants/${tenantId}`);
+    return { ok: true, ...r };
+  } catch (e) {
+    if (e instanceof DomainError) return { ok: false, error: e.message };
+    throw e;
+  }
 }

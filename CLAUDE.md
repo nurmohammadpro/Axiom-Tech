@@ -29,14 +29,22 @@ The store app code in `apps/store` was copied once from playstore-storefront (no
 - DONE: fallback secret removed (AUTH_SECRET required in production), AUTH_ALLOW_LEGACY and plaintext-password acceptance removed, debug / migrate-fix-prices / seed-supplier-types routes deleted, db:push/db:seed/db:cleanup scripts removed, Lovable deps and TanStack Start leftovers removed, bun.lock regenerated from the public registry.
 - DONE: fresh migrations `apps/store/src/db/migrations` (0000_baseline from schema.ts, 0001_perf_indexes); applied cleanly to an empty Postgres 16 (68 tables, 125 indexes). Old files archived in `src/db/legacy-migrations` (reference only, never run).
 - DONE: `tsc --noEmit` clean, `bun run build` green.
-- TODO: white-label (~40 "PlayStore" literals), tenant-aware db in store app, store-side gate client, Neon provisioning pipeline, self-signup, Dockerfiles + Dokploy deploy.
+- TODO: white-label (~40 "PlayStore" literals), tenant-aware db in store app, store-side gate client, self-signup, Dockerfiles + Dokploy deploy.
 
 ## Phase 1 status: platform app (done 2026-10-10)
 - DONE: schema + migration (plans, tenants, payments, invoices, tenant_events, platform_users); lifecycle in `src/lib/tenants.ts` (create=7-day trial, activate needs fee+first month, monthly renewal, suspend/resume/extend/cancel/change plan, expiry job with 3-day grace); duplicate transaction IDs rejected; gate `getGate(host)` checks time itself so a missed cron never leaves an expired shop open; roles super_admin/billing/support.
 - DONE: admin UI (login with rate limit, dashboard, shops list/search, new shop, shop detail with all actions, plans editor); API `GET /api/gate?host=` (header x-gate-secret), `POST /api/cron/expire` (Bearer CRON_SECRET), `GET /api/health`.
 - VERIFIED: 15 integration tests on Postgres 16; tsc clean; production build green; Playwright run of login, create, duplicate slug, underpay rejected, activate, suspend, resume.
-- Gate returns `not_ready` until `provision_status = ready` (set by the provisioning pipeline, not built yet).
+- Gate returns `not_ready` until `provision_status = ready` (set by the provisioning pipeline below).
 - Amounts are whole BDT in the platform DB (store app uses its own units).
+
+## Provisioning (done 2026-10-11, `apps/platform/src/lib/provision.ts`)
+- Admin clicks "Set up shop" on a shop: claim (atomic, stale after 10 min) -> Neon API creates role + database `shop_<slug>` (`neon.ts`) -> store migrations from `apps/store/src/db/migrations` applied over the direct host -> idempotent seed (owner, store_info, MAIN location, 5 supplier types, 11 categories with parents, 26 expense categories) -> status ready. Shop DB URL stored AES-256-GCM encrypted (`SECRETS_KEY`). Failure keeps the DB and retry resumes (never recreates); errors are scrubbed of URLs/tokens.
+- Owner temp password (14 chars) is shown ONCE in the admin UI and never stored. No reset-owner-password action exists yet (TODO, also needed for support).
+- Env: `SECRETS_KEY`, `NEON_API_KEY`, `NEON_PROJECT_ID` (+ optional `NEON_BRANCH_ID`, `NEON_API_BASE_URL` for tests, `STORE_MIGRATIONS_DIR`).
+- VERIFIED: 35 tests (real Postgres stand-in for Neon + mocked Neon HTTP) and a Playwright run against a mock Neon API (create shop -> set up -> credentials shown -> password verifies against the shop DB -> gate allows). That run caught a bug (credentials panel unmounted after success); fixed.
+- NOT VERIFIED against live Neon: needs a real NEON_API_KEY. Neon docs confirm the role/connection_uri endpoints but not the response bodies; code falls back to the role password if the URI has none.
+- Neon Free plan: 1 GB storage and 100 CU-hours per project, shared by all shop databases. Move to a paid plan before real customers. Neon Data API / neon-js are not used and should stay disabled.
 
 ## Stack
 Next.js + TypeScript + Tailwind + shadcn/ui, Drizzle + Postgres, bun. Prefer production-ready, opinionated output.

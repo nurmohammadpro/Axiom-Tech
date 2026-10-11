@@ -67,6 +67,10 @@ export const tenants = pgTable(
     provisionError: text("provision_error"),
     neonProjectId: text("neon_project_id"),
     neonDatabase: text("neon_database"),
+    neonRole: text("neon_role"),
+    /** AES-GCM encrypted pooled connection URL of the shop database. */
+    dbUrlEncrypted: text("db_url_encrypted"),
+    provisionedAt: timestamp("provisioned_at", { withTimezone: true }),
     createdBy: uuid("created_by").references(() => platformUsers.id),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),

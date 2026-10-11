@@ -37,3 +37,6 @@ UI/UX updates from Nur slot in as supplied.
 
 ## Status 2026-10-10
 Phase 0 done. Phase 1 platform foundation done (see CLAUDE.md). Next: Neon provisioning pipeline, tenant-aware store runtime + gate client, white-label, then Dokploy deployment.
+
+## Status 2026-10-11
+Provisioning pipeline built and tested locally (see CLAUDE.md). Next: live Neon check with a real API key, tenant-aware store runtime + gate client, white-label, owner password reset, self-signup, Dockerfiles for Dokploy.
