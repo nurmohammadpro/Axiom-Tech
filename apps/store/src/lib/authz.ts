@@ -1,7 +1,7 @@
 import { db } from "@/db";
 import { staff, users } from "@/db/schema";
 import { eq } from "drizzle-orm";
-import { sessionTokenFromHeaders, verifySessionToken } from "./auth";
+import { requestTenantId, sessionTokenFromHeaders, verifySessionToken } from "./auth";
 import { canAccessFeature, type FeatureKey, type Role } from "./feature-permissions";
 
 export type ScopeRole = "owner" | "manager" | "salesman" | "customer" | string | null;
@@ -29,7 +29,7 @@ const UNSCOPED: SessionScope = {
  * or `x-session-token` header). A bare `x-user-id` header is never trusted.
  */
 export function requestUserId(headers: Headers): string | null {
-  return verifySessionToken(sessionTokenFromHeaders(headers));
+  return verifySessionToken(sessionTokenFromHeaders(headers), requestTenantId(headers));
 }
 
 /**

@@ -9,6 +9,7 @@
  */
 
 import { createHmac, randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
+import { SINGLE_TENANT_ID, TENANT_HEADER, tenancyMode } from "./tenancy/config";
 
 /**
  * Session signing secret. Required in production (fail closed); a fixed dev
@@ -60,34 +61,46 @@ export function verifyPassword(password: string, stored: string): PasswordCheck 
 
 // ── Session tokens ─────────────────────────────────────────────────────────
 
-function sign(payload: string): string {
-  return createHmac("sha256", getSecret()).update(payload).digest("base64url");
+/**
+ * Each shop signs with its own key derived from AUTH_SECRET and the tenant id, so a session
+ * issued by one shop never verifies on another (even for an identical user id).
+ */
+function signingKey(tenantId: string): Buffer {
+  return createHmac("sha256", getSecret()).update(`axiom-session-v1:${tenantId}`).digest();
 }
 
-/** Create a signed session token for a user id. */
-export function createSessionToken(userId: string): string {
+function sign(payload: string, tenantId: string): string {
+  return createHmac("sha256", signingKey(tenantId)).update(payload).digest("base64url");
+}
+
+/** Create a signed session token for a user of the given shop. */
+export function createSessionToken(userId: string, tenantId: string): string {
   const exp = Math.floor(Date.now() / 1000) + SESSION_TTL;
   const payload = `v1.${userId}.${exp}`;
-  return `${payload}.${sign(payload)}`;
+  return `${payload}.${sign(payload, tenantId)}`;
 }
 
-/** Verify a session token and return the user id, or null when invalid/expired. */
-export function verifySessionToken(token: string | undefined | null): string | null {
-  if (!token) return null;
+/** Verify a session token for a shop and return the user id, or null when invalid/expired. */
+export function verifySessionToken(token: string | undefined | null, tenantId: string | null | undefined): string | null {
+  if (!token || !tenantId) return null;
   const parts = token.split(".");
   if (parts.length !== 4 || parts[0] !== "v1") return null;
   const [, userId, exp, sig] = parts;
   const payload = `v1.${userId}.${exp}`;
-  const expected = Buffer.from(sign(payload));
-  let actual: Buffer;
-  try {
-    actual = Buffer.from(sig);
-  } catch {
-    return null;
-  }
+  const expected = Buffer.from(sign(payload, tenantId));
+  const actual = Buffer.from(sig);
   if (expected.length !== actual.length || !timingSafeEqual(expected, actual)) return null;
   if (Number(exp) * 1000 < Date.now()) return null;
   return userId;
+}
+
+/**
+ * The shop a request belongs to. In multi mode this is set by proxy.ts after the gate passed
+ * (client-supplied values are overwritten); in single mode it is a constant.
+ */
+export function requestTenantId(headers: Headers): string | null {
+  if (tenancyMode() === "single") return SINGLE_TENANT_ID;
+  return headers.get(TENANT_HEADER);
 }
 
 /** Extract a session token from request headers (cookie or x-session-token). */

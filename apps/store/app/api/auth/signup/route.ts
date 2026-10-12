@@ -4,9 +4,11 @@ import { db } from "@/db";
 import { users } from "@/db/schema";
 import { NextRequest, NextResponse } from "next/server";
 import { eq } from "drizzle-orm";
-import { SESSION_COOKIE, SESSION_TTL, createSessionToken, hashPassword } from "@/lib/auth";
+import { SESSION_COOKIE, SESSION_TTL, createSessionToken, hashPassword, requestTenantId } from "@/lib/auth";
 
 export async function POST(request: NextRequest) {
+  const tenantId = requestTenantId(request.headers);
+  if (!tenantId) return NextResponse.json({ error: "Shop not found" }, { status: 404 });
   const { email, password, firstName, lastName } = await request.json();
 
   const existing = await db.select().from(users).where(eq(users.email, email));
@@ -29,7 +31,7 @@ export async function POST(request: NextRequest) {
       lastName: users.lastName,
     });
 
-  const sessionToken = createSessionToken(user.id);
+  const sessionToken = createSessionToken(user.id, tenantId);
   const res = NextResponse.json({ ...user, sessionToken }, { status: 201 });
   res.cookies.set(SESSION_COOKIE, sessionToken, {
     httpOnly: true,

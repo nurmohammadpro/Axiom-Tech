@@ -8,11 +8,14 @@ import {
   SESSION_COOKIE,
   SESSION_TTL,
   createSessionToken,
+  requestTenantId,
   hashPassword,
   verifyPassword,
 } from "@/lib/auth";
 
 export async function POST(request: NextRequest) {
+  const tenantId = requestTenantId(request.headers);
+  if (!tenantId) return NextResponse.json({ error: "Shop not found" }, { status: 404 });
   const { email, password } = await request.json();
 
   const [user] = await db.select().from(users).where(eq(users.email, email));
@@ -33,7 +36,7 @@ export async function POST(request: NextRequest) {
       .where(eq(users.id, user.id));
   }
 
-  const sessionToken = createSessionToken(user.id);
+  const sessionToken = createSessionToken(user.id, tenantId);
   const res = NextResponse.json({
     id: user.id,
     email: user.email,

@@ -188,6 +188,23 @@ describe("gate", () => {
     expect((await getGate(host("gate2"), addDays(addMonths(T0, 1), 4))).reason).toBe("payment_overdue");
   });
 
+  test("encrypted db url is returned only to allowed shops", async () => {
+    process.env.SECRETS_KEY = Buffer.alloc(32, 7).toString("base64");
+    const { encryptSecret } = await import("@/lib/crypto");
+    const t = await createTenant(input("gate4", "starter"), null, T0);
+    await ready(t.id);
+    await db.update(tenants).set({ dbUrlEncrypted: encryptSecret("postgres://u:p@h/db") }).where(eq(tenants.id, t.id));
+    const ok = await getGate(host("gate4"), T0);
+    expect(ok.allowed).toBe(true);
+    expect(ok.dbUrlEncrypted).toBeTruthy();
+    expect(ok.dbUrlEncrypted).not.toContain("postgres://");
+    const expired = await getGate(host("gate4"), addDays(T0, 8));
+    expect(expired.allowed).toBe(false);
+    expect(expired.dbUrlEncrypted).toBeUndefined();
+    await suspendTenant(t.id, "x", null);
+    expect((await getGate(host("gate4"), T0)).dbUrlEncrypted).toBeUndefined();
+  });
+
   test("suspended and cancelled shops are blocked with a reason; plan limits are exposed", async () => {
     const t = await createTenant(input("gate3", "starter"), null, T0);
     await ready(t.id);

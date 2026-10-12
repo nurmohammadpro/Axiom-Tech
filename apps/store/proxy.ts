@@ -1,78 +1,81 @@
 /**
- * Edge authentication gate.
+ * Request gate (Next.js proxy, Node runtime).
  *
- * Every /api/dashboard/* and /api/admin/* call and every
- * /dashboard/* page now requires a valid signed session token (`ps_session`
- * cookie or `x-session-token` header — same format as src/lib/auth.ts).
- * API routes answer 401 JSON; pages redirect to /signin.
+ * 1. Multi-shop mode: the request host must belong to a shop the platform currently allows.
+ *    Unknown host -> 404, suspended/expired/cancelled -> 402, platform down with nothing
+ *    cached -> 503. On success the shop id is forwarded in `x-axiom-tenant`; any value the
+ *    client sent for that header is discarded first.
+ * 2. /api/dashboard, /api/admin and /dashboard additionally require a valid session for
+ *    THAT shop (sessions are signed with a per-shop key).
  *
- * Authorization (owner-only, feature toggles, store scoping) still happens in
- * the route handlers via src/lib/authz.ts — this layer only guarantees that
- * the caller is authenticated.
+ * Authorization (owner-only, feature toggles, store scoping) stays in the route handlers
+ * (src/lib/authz.ts).
  */
 
 import { NextRequest, NextResponse } from "next/server";
+import { SESSION_COOKIE, verifySessionToken } from "@/lib/auth";
+import { SINGLE_TENANT_ID, TENANT_HEADER, tenancyMode } from "@/lib/tenancy/config";
+import { GateUnavailableError, gateClient } from "@/lib/tenancy/gate-client";
 
-function getSecret(): string {
-  const secret = process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET;
-  if (secret) return secret;
-  if (process.env.NODE_ENV === "production") {
-    throw new Error("AUTH_SECRET is required in production");
+const REASONS: Record<string, string> = {
+  trial_expired: "This shop's free trial has ended.",
+  payment_overdue: "This shop's subscription payment is overdue.",
+  suspended: "This shop is currently suspended.",
+  cancelled: "This shop has been closed.",
+  not_ready: "This shop is still being set up.",
+};
+
+function blockedResponse(req: NextRequest, status: number, code: string, message: string) {
+  if (req.nextUrl.pathname.startsWith("/api/")) {
+    return NextResponse.json({ error: message, code }, { status, headers: { "cache-control": "no-store" } });
   }
-  return "axiom-insecure-dev-secret";
+  const html = `<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${status === 404 ? "Shop not found" : "Unavailable"}</title><body style="font-family:system-ui,sans-serif;display:grid;place-items:center;min-height:100vh;margin:0;background:#fafafa;color:#111"><main style="max-width:28rem;padding:1.5rem;text-align:center"><h1 style="font-size:1.25rem">${status === 404 ? "Shop not found" : "Service unavailable"}</h1><p>${message}</p></main></body></html>`;
+  return new NextResponse(html, { status, headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" } });
 }
 
-const SESSION_COOKIE = "ps_session";
-
-function base64url(bytes: Uint8Array): string {
-  let binary = "";
-  for (const byte of bytes) binary += String.fromCharCode(byte);
-  return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
-}
-
-/** Web-Crypto port of verifySessionToken (edge runtime has no node:crypto). */
-async function verifySessionToken(token: string | undefined): Promise<string | null> {
-  if (!token) return null;
-  const parts = token.split(".");
-  if (parts.length !== 4 || parts[0] !== "v1") return null;
-  const [, userId, exp, sig] = parts;
-  const payload = `v1.${userId}.${exp}`;
-  try {
-    const key = await crypto.subtle.importKey(
-      "raw",
-      new TextEncoder().encode(getSecret()),
-      { name: "HMAC", hash: "SHA-256" },
-      false,
-      ["sign"],
-    );
-    const mac = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(payload));
-    if (base64url(new Uint8Array(mac)) !== sig) return null;
-  } catch {
-    return null;
-  }
-  if (Number(exp) * 1000 < Date.now()) return null;
-  return userId;
-}
+const needsSession = (path: string) =>
+  path.startsWith("/api/dashboard") || path.startsWith("/api/admin") || path.startsWith("/dashboard");
 
 export default async function proxy(request: NextRequest) {
-  const headerToken = request.headers.get("x-session-token");
-  const token = headerToken || request.cookies.get(SESSION_COOKIE)?.value;
-  const authed = (await verifySessionToken(token)) !== null;
-  if (authed) return NextResponse.next();
+  const fwd = new Headers(request.headers);
+  fwd.delete(TENANT_HEADER);
+  let tenantId = SINGLE_TENANT_ID;
 
-  if (request.nextUrl.pathname.startsWith("/api/")) {
-    return NextResponse.json({ error: "Authentication required" }, { status: 401 });
+  if (tenancyMode() === "multi") {
+    const host = request.headers.get("host");
+    if (!host) return blockedResponse(request, 404, "unknown_shop", "No shop exists at this address.");
+    try {
+      const shop = await gateClient().resolve(host);
+      if (shop.kind === "unknown") return blockedResponse(request, 404, "unknown_shop", "No shop exists at this address.");
+      if (shop.kind === "blocked") {
+        return blockedResponse(request, 402, shop.reason, REASONS[shop.reason] ?? "This shop is not available right now.");
+      }
+      tenantId = shop.tenantId;
+    } catch (e) {
+      if (e instanceof GateUnavailableError) {
+        return blockedResponse(request, 503, "gate_unavailable", "Please try again in a moment.");
+      }
+      throw e;
+    }
+    fwd.set(TENANT_HEADER, tenantId);
   }
-  const url = request.nextUrl.clone();
-  url.pathname = "/signin";
-  url.search = `?next=${encodeURIComponent(request.nextUrl.pathname)}`;
-  return NextResponse.redirect(url);
+
+  if (needsSession(request.nextUrl.pathname)) {
+    const token = request.headers.get("x-session-token") || request.cookies.get(SESSION_COOKIE)?.value;
+    if (verifySessionToken(token, tenantId) === null) {
+      if (request.nextUrl.pathname.startsWith("/api/")) {
+        return NextResponse.json({ error: "Authentication required" }, { status: 401 });
+      }
+      const url = request.nextUrl.clone();
+      url.pathname = "/signin";
+      url.search = `?next=${encodeURIComponent(request.nextUrl.pathname)}`;
+      return NextResponse.redirect(url);
+    }
+  }
+  return NextResponse.next({ request: { headers: fwd } });
 }
 
 export const config = {
-  matcher: [
-    "/api/dashboard/:path*",
-    "/api/admin/:path*",
-    "/dashboard/:path*",
-  ],
+  // Everything except static assets and the health probe.
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|api/health|.*\\.(?:png|jpg|jpeg|gif|svg|webp|ico|css|js|map|txt|woff2?)$).*)"],
 };

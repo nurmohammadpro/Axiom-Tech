@@ -176,7 +176,7 @@ export async function GET(request: NextRequest) {
     channel: string;
     status: string;
     total: number;
-    created_at: string;
+    created_at: string | Date | null;
     customer_name: string | null;
     customer_phone: string | null;
     customer_email: string | null;
@@ -229,7 +229,7 @@ export async function GET(request: NextRequest) {
             : [{ method: "cash", amount: Number(r.total), reference: null }]
           : [{ method: r.payment_method ?? "—", amount: Number(r.total), reference: null }],
       total: Number(r.total),
-      createdAt: r.created_at,
+      createdAt: r.created_at ? new Date(r.created_at).toISOString() : null,
       warehouse: r.warehouse,
     };
   });
