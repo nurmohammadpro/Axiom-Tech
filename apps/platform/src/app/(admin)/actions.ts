@@ -8,6 +8,7 @@ import { db } from "@/db";
 import { plans, type PlatformUser } from "@/db/schema";
 import { SESSION_COOKIE } from "@/lib/auth";
 import { DomainError } from "@/lib/domain";
+import { resetOwnerPassword } from "@/lib/owner";
 import { provisionTenant } from "@/lib/provision";
 import type { Permission } from "@/lib/rbac";
 import { requirePermission } from "@/lib/session";
@@ -157,6 +158,27 @@ export async function provisionAction(tenantId: string, _prev: ProvisionState, _
   try {
     const user = await requirePermission("tenant:provision");
     const r = await provisionTenant(tenantId, user.id);
+    revalidatePath(`/tenants/${tenantId}`);
+    return { ok: true, ...r };
+  } catch (e) {
+    if (e instanceof DomainError) return { ok: false, error: e.message };
+    throw e;
+  }
+}
+
+export interface OwnerResetState {
+  ok: boolean;
+  error?: string;
+  ownerEmail?: string;
+  /** Shown once; never persisted by the platform. */
+  tempPassword?: string;
+}
+
+export async function resetOwnerAction(tenantId: string, _prev: OwnerResetState, fd: FormData): Promise<OwnerResetState> {
+  try {
+    const user = await requirePermission("tenant:reset_owner");
+    if (fd.get("confirm") !== "on") throw new DomainError("Tick the box to confirm the reset");
+    const r = await resetOwnerPassword(tenantId, user.id);
     revalidatePath(`/tenants/${tenantId}`);
     return { ok: true, ...r };
   } catch (e) {

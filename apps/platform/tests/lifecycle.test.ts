@@ -201,3 +201,13 @@ describe("gate", () => {
     else process.env.ROOT_DOMAIN = prev;
   });
 });
+
+describe("permissions", () => {
+  test("only super admin and support can reset an owner password", async () => {
+    const { can } = await import("@/lib/rbac");
+    expect(can("super_admin", "tenant:reset_owner")).toBe(true);
+    expect(can("support", "tenant:reset_owner")).toBe(true);
+    expect(can("billing", "tenant:reset_owner")).toBe(false);
+    expect(can("support", "tenant:payment")).toBe(false);
+  });
+});

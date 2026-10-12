@@ -6,6 +6,7 @@ import { tenantEvents, tenants } from "@/db/schema";
 import { verifyPassword } from "@/lib/auth";
 import { decryptSecret } from "@/lib/crypto";
 import { getGate } from "@/lib/gate";
+import { resetOwnerPassword } from "@/lib/owner";
 import { provisionTenant } from "@/lib/provision";
 import { seedShopDatabase } from "@/lib/shop-seed";
 import { seedPlans } from "@/db/seed-data";
@@ -176,5 +177,72 @@ describe("provisioning pipeline (real Postgres, local stand-in for Neon)", () =>
       expect([users, cats, exp]).toEqual([1, 11, 26]);
       expect(info.value.name).toBe("Shop prov8"); // original branding kept
     });
+  }, T);
+});
+
+describe("owner password reset", () => {
+  test("replaces the owner password, logs without secrets, and survives an owner email change", async () => {
+    const t = await mk("own1");
+    const first = await provisionTenant(t.id, null, { provider });
+    const url = provider.shopUrl("own1");
+
+    // The owner changes their email inside the shop; the reset must still find them by role.
+    await shopQuery("own1", async (s) => {
+      await s`update users set email = 'new-owner@own1.com' where role = 'owner'`;
+    });
+
+    const r = await resetOwnerPassword(t.id, null);
+    expect(r.ownerEmail).toBe("new-owner@own1.com");
+    expect(r.tempPassword).toMatch(/^[A-Za-z2-9]{14}$/);
+    expect(r.tempPassword).not.toBe(first.tempPassword);
+
+    await shopQuery("own1", async (s) => {
+      const [u] = await s`select password_hash from users where role = 'owner'`;
+      expect(verifyPassword(r.tempPassword, u.password_hash)).toBe(true);
+      expect(verifyPassword(first.tempPassword!, u.password_hash)).toBe(false);
+      const [{ n }] = await s`select count(*)::int as n from users`;
+      expect(n).toBe(1);
+    });
+
+    const events = await db.select().from(tenantEvents).where(eq(tenantEvents.tenantId, t.id));
+    const ev = events.find((e) => e.type === "owner_password_reset")!;
+    expect(ev).toBeDefined();
+    expect(JSON.stringify(ev.data)).not.toContain(r.tempPassword);
+    expect(url).toContain("shop_own1");
+  }, T);
+
+  test("refuses shops that are not set up, cancelled, or unknown", async () => {
+    const pending = await mk("own2");
+    await expect(resetOwnerPassword(pending.id, null)).rejects.toThrow("not set up");
+    const done = await mk("own3");
+    await provisionTenant(done.id, null, { provider });
+    await cancelTenant(done.id, "left", null);
+    await expect(resetOwnerPassword(done.id, null)).rejects.toThrow("Cancelled");
+    await expect(resetOwnerPassword("00000000-0000-0000-0000-000000000000", null)).rejects.toThrow("not found");
+  }, T);
+
+  test("simultaneous resets are serialised: exactly one password ends up valid", async () => {
+    const t = await mk("own4");
+    await provisionTenant(t.id, null, { provider });
+    const [a, b] = await Promise.all([resetOwnerPassword(t.id, null), resetOwnerPassword(t.id, null)]);
+    expect(a.tempPassword).not.toBe(b.tempPassword);
+    await shopQuery("own4", async (s) => {
+      const [u] = await s`select password_hash from users where role = 'owner'`;
+      const valid = [a, b].filter((x) => verifyPassword(x.tempPassword, u.password_hash));
+      expect(valid.length).toBe(1);
+    });
+    const events = await db.select().from(tenantEvents).where(eq(tenantEvents.tenantId, t.id));
+    expect(events.filter((e) => e.type === "owner_password_reset").length).toBe(2);
+  }, T);
+
+  test("a shop whose database has no owner reports a clear error and changes nothing", async () => {
+    const t = await mk("own5");
+    await provisionTenant(t.id, null, { provider });
+    await shopQuery("own5", async (s) => {
+      await s`update users set role = 'manager'`;
+    });
+    await expect(resetOwnerPassword(t.id, null)).rejects.toThrow("No owner account");
+    const events = await db.select().from(tenantEvents).where(eq(tenantEvents.tenantId, t.id));
+    expect(events.some((e) => e.type === "owner_password_reset")).toBe(false);
   }, T);
 });

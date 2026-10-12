@@ -17,6 +17,7 @@ import {
   suspendAction,
 } from "../../actions";
 import { Badge, Field, Notice, td, th } from "../../../ui";
+import { OwnerResetPanel } from "./owner-reset-panel";
 import { ProvisionPanel } from "./provision-panel";
 
 const UUID = /^[0-9a-f-]{36}$/i;
@@ -98,6 +99,8 @@ export default async function TenantDetail({ params, searchParams }: { params: P
       {can(user.role, "tenant:provision") && live && (
         <ProvisionPanel tenantId={id} status={t.provisionStatus} />
       )}
+
+      {can(user.role, "tenant:reset_owner") && live && t.provisionStatus === "ready" && <OwnerResetPanel tenantId={id} />}
 
       {canPay && live && !t.activatedAt && t.status !== "active" && (
         <form action={activate} className="card space-y-4 p-5">
