@@ -3,7 +3,7 @@ export const dynamic = "force-dynamic";
 import { db } from "@/db";
 import { dailyExpenses, dailyExpenseItems } from "@/db/schema";
 import { getScope } from "@/lib/authz";
-import { generateDailyExpenseNumber } from "@/lib/expense-utils";
+import { generateDailyExpenseNumber } from "@/lib/expense-numbers";
 import { NextRequest, NextResponse } from "next/server";
 import { eq, desc, and, gte, lte } from "drizzle-orm";
 

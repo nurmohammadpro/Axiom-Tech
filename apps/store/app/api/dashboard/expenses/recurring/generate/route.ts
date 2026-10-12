@@ -3,8 +3,8 @@ export const dynamic = "force-dynamic";
 import { db } from "@/db";
 import { expenses, recurringExpenseTemplates } from "@/db/schema";
 import { getScope } from "@/lib/authz";
+import { generateExpenseNumbers } from "@/lib/expense-numbers";
 import {
-  generateExpenseNumbers,
   nextRunDate,
   recurringPeriodKey,
   type RecurringFrequency,
