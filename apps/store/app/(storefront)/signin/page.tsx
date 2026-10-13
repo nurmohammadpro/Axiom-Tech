@@ -82,7 +82,7 @@ export default function SignIn() {
         </Button>
       </form>
       <p className="mt-4 text-xs text-muted-foreground">
-        New to Play Store?{" "}
+        New here?{" "}
         <Link href="/signup" className="text-foreground underline">
           Create an account
         </Link>

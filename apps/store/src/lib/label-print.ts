@@ -12,7 +12,7 @@ import type { UsbThermalPrinter } from "@/lib/usb-printer";
 
 export type LabelPrintSymbology = "CODE128" | "EAN13" | "UPCA" | "QR";
 
-export const STORE_NAME = "Play Store";
+export const STORE_NAME = "";
 
 export interface LabelPrintProduct {
   name: string;

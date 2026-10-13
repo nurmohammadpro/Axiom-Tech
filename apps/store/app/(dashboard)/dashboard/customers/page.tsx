@@ -100,7 +100,7 @@ export default function Customers() {
     const si = settings?.store_info;
     if (si && typeof si === "object") {
       return {
-        name: si.name || "Play Store",
+        name: si.name || "Your Shop",
         address: si.address || "",
         phone: si.phone || "",
         email: si.email || "",
@@ -108,10 +108,10 @@ export default function Customers() {
       };
     }
     return {
-      name: "Play Store",
+      name: "Your Shop",
       address: "123 Market Street, Dhaka",
-      phone: "01727811918",
-      email: "info@playstore.com.bd",
+      phone: "",
+      email: "",
       tagline: "iPhone, Samsung, Pixel, MacBook & accessories on sale",
     };
   }, [settings]);

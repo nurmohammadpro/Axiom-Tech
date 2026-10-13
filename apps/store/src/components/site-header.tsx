@@ -66,8 +66,8 @@ export function SiteHeader() {
         </button>
         <Link href="/" className="flex items-center gap-2 text-base font-semibold tracking-tight">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/pslogo.png" alt="Play Store logo" className="h-7 w-7 object-contain" />
-          Play Store
+          <img src="/axiom-mark.svg" alt="Axiom Tech logo" className="h-7 w-7 object-contain" />
+          Axiom Tech
         </Link>
         <nav className="hidden flex-1 gap-5 text-sm md:flex">
           <Link href="/store" className="hover:text-primary">

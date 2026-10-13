@@ -1,8 +1,8 @@
 # syntax=docker/dockerfile:1
 
-# Production image for the Play Store storefront (Next.js + bun).
-# Build:  docker build -t playstore-storefront .
-# Run:    docker run -p 3000:3000 -e DATABASE_URL=... playstore-storefront
+# Production image for the Axiom Tech store app (Next.js + bun).
+# Build:  docker build -t axiom-store .
+# Run:    docker run -p 3000:3000 -e DATABASE_URL=... axiom-store
 
 # ---- Base: bun runtime ----
 FROM oven/bun:1 AS base

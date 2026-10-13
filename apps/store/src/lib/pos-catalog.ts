@@ -6,7 +6,7 @@ import type { PosCatalogItem } from "./api";
  * fetch refreshes the cache, so it doubles as a background sync.
  */
 
-const DB_NAME = "playstore-pos";
+const DB_NAME = "axiom-pos";
 const STORE = "catalog";
 /** Cache one snapshot per location so the offline fallback matches the till's view. */
 function cacheKey(location?: string) {

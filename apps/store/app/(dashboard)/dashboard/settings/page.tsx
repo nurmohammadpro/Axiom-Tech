@@ -290,7 +290,7 @@ function GeneralTab({
       settings={settings}
       onSave={onSave}
       fields={[
-        { key: "name", label: "Business name", placeholder: "Play Store" },
+        { key: "name", label: "Business name", placeholder: "Your shop name" },
         { key: "tagline", label: "Tagline", placeholder: "Your one-stop phone shop" },
         { key: "email", label: "Contact email", type: "email", placeholder: "hello@store.com" },
         { key: "phone", label: "Support phone", placeholder: "+880 1XXX-XXXXXX" },

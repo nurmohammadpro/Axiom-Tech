@@ -81,8 +81,7 @@ export async function POST(request: NextRequest) {
   try {
     // Start transaction-like flow (we'll do sequential operations for now)
 
-    // Units and batches key warehouses by location NAME (e.g. "Play Store
-    // 4th Floor"). The client may send the location id ("3") or its code —
+    // Units and batches key warehouses by location NAME (e.g. "Main Store"). The client may send the location id ("3") or its code —
     // resolve whatever arrived to the canonical name.
     let locationName = locationId;
     const [locRow] = await db

@@ -92,10 +92,10 @@ export default function Returns() {
 
   const storeInfo: StoreInfo = useMemo(
     () => ({
-      name: settings?.storeName || "PlayStore",
+      name: settings?.storeName || "Your Shop",
       address: settings?.storeAddress || "Dhaka, Bangladesh",
-      phone: settings?.storePhone || "01727811918",
-      email: settings?.storeEmail || "info@playstore.com.bd",
+      phone: settings?.storePhone || "",
+      email: settings?.storeEmail || "",
     }),
     [settings],
   );

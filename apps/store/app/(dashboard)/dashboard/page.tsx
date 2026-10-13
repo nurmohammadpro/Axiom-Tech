@@ -5,6 +5,7 @@ import { useState, type ReactNode } from "react";
 import { Card, Stat, Pill } from "@/components/dashboard/dashboard-shell";
 import { useDashboardStats, useReports, useAuditLog } from "@/lib/hooks";
 import { bdt } from "@/lib/utils";
+import { UpgradeBanner } from "@/components/dashboard/upgrade-banner";
 import type { DashboardRange } from "@/lib/api";
 import {
   AlertTriangle,
@@ -110,6 +111,7 @@ export default function Overview() {
 
   return (
     <>
+      <UpgradeBanner />
       {/* Alerts */}
       {(outOfStockSample.length > 0 || lowStockSample.length > 0) && (
         <div className="mb-4 space-y-2">

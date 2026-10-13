@@ -5,25 +5,15 @@ import { Providers } from "@/lib/providers";
 import { Toaster } from "@/components/ui/sonner";
 import "@/styles.css";
 
+const APP_NAME = "Axiom Tech";
+const DESCRIPTION = "Inventory, POS and sales management for tech shops.";
+
 export const metadata: Metadata = {
-  metadataBase: new URL("https://playstore.appbrainer.tech"),
-  title: "Play Store — iPhone, Samsung, Pixel, MacBook & accessories on sale",
-  description:
-    "Shop the latest iPhone, Samsung Galaxy, Google Pixel, MacBook, headphones, watches, VR and chargers. Sale prices, official warranty, same-day dispatch.",
-  openGraph: {
-    title: "Play Store — iPhone, Samsung, Pixel, MacBook & accessories on sale",
-    description:
-      "Shop the latest iPhone, Samsung Galaxy, Google Pixel, MacBook, headphones, watches, VR and chargers. Sale prices, official warranty, same-day dispatch.",
-    type: "website",
-    images: ["/pslogo.png"],
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "Play Store — iPhone, Samsung, Pixel, MacBook & accessories on sale",
-    description:
-      "Shop the latest iPhone, Samsung Galaxy, Google Pixel, MacBook, headphones, watches, VR and chargers. Sale prices, official warranty, same-day dispatch.",
-    images: ["/pslogo.png"],
-  },
+  metadataBase: new URL(process.env.APP_URL || `https://${process.env.ROOT_DOMAIN || "axiom.appbrainer.tech"}`),
+  title: APP_NAME,
+  description: DESCRIPTION,
+  openGraph: { title: APP_NAME, description: DESCRIPTION, type: "website", images: ["/axiom-mark.svg"] },
+  twitter: { card: "summary", title: APP_NAME, description: DESCRIPTION, images: ["/axiom-mark.svg"] },
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
@@ -31,8 +21,8 @@ export default function RootLayout({ children }: { children: ReactNode }) {
     <html lang="en">
       <head>
         <link rel="icon" href="/favicon.ico" type="image/x-icon" />
-        <link rel="icon" type="image/png" href="/pslogo.png" />
-        <link rel="apple-touch-icon" href="/pslogo.png" />
+        <link rel="icon" type="image/svg+xml" href="/axiom-mark.svg" />
+        
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link

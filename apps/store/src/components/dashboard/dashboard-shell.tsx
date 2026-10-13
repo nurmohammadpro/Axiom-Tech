@@ -251,8 +251,8 @@ export function DashboardShell({
                 className="flex items-center gap-2 text-sm font-semibold tracking-tight"
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src="/pslogo.png" alt="Play Store logo" className="h-6 w-6 object-contain" />
-                Play Store
+                <img src="/axiom-mark.svg" alt="Axiom Tech logo" className="h-6 w-6 object-contain" />
+                Axiom Tech
               </Link>
               <span className="ml-2 text-[10px] uppercase tracking-widest text-muted-foreground">
                 Admin
@@ -383,7 +383,7 @@ export function DashboardShell({
           </button>
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <span>Play Store</span>
+              <span>Axiom Tech</span>
               <span>/</span>
               <span className="truncate">{title}</span>
             </div>

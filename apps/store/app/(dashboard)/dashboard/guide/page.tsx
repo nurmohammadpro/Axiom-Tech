@@ -150,7 +150,7 @@ function Warning({ children }: { children: React.ReactNode }) {
 function OverviewSection() {
   return (
     <>
-      <Section title="Welcome to Play Store Admin">
+      <Section title="Welcome to Axiom Tech">
         <p>
           The admin dashboard is your central hub for managing the entire store — from catalog and
           inventory to sales, returns, and analytics. This guide walks you through every feature.

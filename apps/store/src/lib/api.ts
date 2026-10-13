@@ -488,7 +488,7 @@ export interface InventoryItem {
     status: string;
     locationId?: string | null;
   }[];
-  /** Per-location stock breakdown, e.g. [{ location: "Play Store 4th Floor", available: 3 }]. */
+  /** Per-location stock breakdown, e.g. [{ location: "Main Store", available: 3 }]. */
   byLocation: { location: string; available: number }[];
 }
 

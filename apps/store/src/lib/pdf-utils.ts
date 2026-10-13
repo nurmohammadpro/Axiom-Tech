@@ -111,10 +111,10 @@ export function fmtNum(amount: number): string {
 
 export function getDefaultStoreInfo(): StoreInfo {
   return {
-    name: "Play Store",
+    name: "Your Shop",
     address: "123 Market Street, Dhaka",
-    phone: "01727811918",
-    email: "info@playstore.com.bd",
+    phone: "",
+    email: "",
     tagline: "iPhone, Samsung, Pixel, MacBook & accessories on sale",
   };
 }

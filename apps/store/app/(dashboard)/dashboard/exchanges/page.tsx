@@ -469,10 +469,10 @@ function ExchangeHistoryTab() {
       date: new Date(e.createdAt),
       barcodeNumber: ref,
       storeInfo: {
-        name: storeInfo.name || "PlayStore",
+        name: storeInfo.name || "Your Shop",
         address: storeInfo.address || "Dhaka, Bangladesh",
-        phone: storeInfo.phone || "01727811918",
-        email: storeInfo.email || "info@playstore.com.bd",
+        phone: storeInfo.phone || "",
+        email: storeInfo.email || "",
         website: storeInfo.website || undefined,
         logo: storeInfo.logo || undefined,
       },

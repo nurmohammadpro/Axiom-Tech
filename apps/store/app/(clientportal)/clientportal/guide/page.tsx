@@ -71,7 +71,7 @@ function Warning({ children }: { children: React.ReactNode }) {
 
 function GettingStartedSection() {
   return (<>
-    <Section title="Welcome to Play Store">
+    <Section title="Welcome to Axiom Tech">
       <p>Your account for browsing, ordering, and tracking iPhones, Samsungs, Pixels, MacBooks, and accessories — all with warranty protection.</p>
       <div className="grid gap-3 md:grid-cols-2">
         {[{ icon: ShoppingCart, label: "Browse & Order", desc: "Explore the catalog and place orders online" }, { icon: Truck, label: "Track Orders", desc: "Monitor your order status from processing to delivery" }, { icon: RotateCcw, label: "Request Returns", desc: "Easy returns for defective or unwanted items" }, { icon: Shield, label: "Warranty Check", desc: "Look up warranty status by IMEI or serial number" }].map((f) => (
@@ -167,7 +167,7 @@ function ReturnsSection() {
 
 function WarrantySection() {
   return (<Section title="Warranty Lookup">
-    <p>Check the warranty status of any device you purchased from Play Store.</p>
+    <p>Check the warranty status of any device you purchased from the shop.</p>
     <h3 className="mt-3 text-sm font-medium text-foreground">How to Check Warranty</h3>
     <ol className="list-decimal pl-5 space-y-1">
       <li>Visit the <strong>Warranty</strong> page on the storefront</li>
@@ -239,7 +239,7 @@ function SupportSection() {
     <p>Need help? Our support team is available to assist you.</p>
     <div className="mt-3 grid gap-3 md:grid-cols-2">
       <div className="flex items-start gap-3 rounded border border-border p-3"><Phone size={16} className="mt-0.5 shrink-0 text-primary" /><div><div className="text-sm font-medium text-foreground">Phone</div><div className="text-xs text-muted-foreground">+880 1XXX-XXXXXX</div><div className="text-xs text-muted-foreground">Sat-Thu, 10am - 8pm</div></div></div>
-      <div className="flex items-start gap-3 rounded border border-border p-3"><Package size={16} className="mt-0.5 shrink-0 text-primary" /><div><div className="text-sm font-medium text-foreground">Email</div><div className="text-xs text-muted-foreground">support@playstore.shop</div><div className="text-xs text-muted-foreground">Response within 24 hours</div></div></div>
+      <div className="flex items-start gap-3 rounded border border-border p-3"><Package size={16} className="mt-0.5 shrink-0 text-primary" /><div><div className="text-sm font-medium text-foreground">Email</div><div className="text-xs text-muted-foreground">the shop where you bought your device</div><div className="text-xs text-muted-foreground">Response within 24 hours</div></div></div>
     </div>
     <h3 className="mt-3 text-sm font-medium text-foreground">When to Contact Support</h3>
     <ul className="list-disc pl-5 space-y-1">

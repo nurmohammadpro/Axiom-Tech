@@ -129,10 +129,10 @@ export default function Reports() {
 
   const storeInfo: StoreInfo = useMemo(
     () => ({
-      name: settings?.store_info?.name || "Play Store",
+      name: settings?.store_info?.name || "Your Shop",
       address: settings?.store_info?.address || "Dhaka, Bangladesh",
-      phone: settings?.store_info?.phone || "01727811918",
-      email: settings?.store_info?.email || "info@playstore.com.bd",
+      phone: settings?.store_info?.phone || "",
+      email: settings?.store_info?.email || "",
       logo: settings?.store_info?.logo || undefined,
     }),
     [settings],

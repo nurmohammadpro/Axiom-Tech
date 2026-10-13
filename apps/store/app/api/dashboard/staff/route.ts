@@ -16,7 +16,7 @@ async function defaultLocation(): Promise<string> {
     .from(locations)
     .where(eq(locations.isDefault, true))
     .limit(1);
-  return def?.name ?? "Play Store Downtown";
+  return def?.name ?? "Main Store";
 }
 
 export async function GET(request: NextRequest) {

@@ -238,7 +238,7 @@ export const staff = pgTable("staff", {
     .unique()
     .references(() => users.id),
   role: text("role").notNull().default("staff"),
-  storeLocation: text("store_location").default("Play Store Downtown"),
+  storeLocation: text("store_location").default("Main Store"),
   isActive: boolean("is_active").default(true),
   // Name lives here so a profile-only staff member (no login) still has one.
   firstName: text("first_name"),

@@ -2,5 +2,5 @@
 set -e
 
 cd "$(dirname "$0")"
-echo "Starting Play Store server..."
+echo "Starting Axiom Tech store server..."
 bun run server

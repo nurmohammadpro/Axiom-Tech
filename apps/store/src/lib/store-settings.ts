@@ -53,7 +53,7 @@ export interface StoreInfo {
 }
 
 export const DEFAULTS: StoreInfo = {
-  name: "Play Store",
+  name: "Your Shop",
   tagline: "",
   email: "",
   phone: "",

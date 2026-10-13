@@ -151,16 +151,7 @@ export default function WarrantyLookup() {
         )}
 
         <div className="text-center text-sm text-muted-foreground">
-          <p>Need help? Contact our customer service</p>
-          <p className="mt-1">
-            <a href="tel:+8801700000000" className="text-primary hover:underline">
-              +880 1700-000000
-            </a>{" "}
-            or{" "}
-            <a href="mailto:support@playstore.com" className="text-primary hover:underline">
-              support@playstore.com
-            </a>
-          </p>
+          <p>Need help? Please contact the shop where you bought your device.</p>
         </div>
       </div>
     </div>

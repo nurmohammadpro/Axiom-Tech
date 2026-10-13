@@ -705,26 +705,21 @@ export function printReceipt(data: ReceiptData) {
 
     <body>
     <main class="invoice">
-      <div class="watermark"><img src="/pslogo.png" alt="" /></div>
+      ${data.storeInfo.logo ? `<div class="watermark"><img src="${data.storeInfo.logo}" alt="" /></div>` : ""}
 
       <!-- ================= HEADER ================= -->
       <header class="header">
         <div>
           ${data.storeInfo.logo ? `<img src="${data.storeInfo.logo}" alt="${data.storeInfo.name || "Store"}" style="max-height: 36px; max-width: 120px; object-fit: contain; display: block; margin-bottom: 3px;" />` : ""}
-          <h1 class="store-name">${data.storeInfo.name || "Play Store"}</h1>
+          <h1 class="store-name">${data.storeInfo.name || "Your Shop"}</h1>
 
           <p class="store-line">
-            ${data.storeInfo.address || "Shop # 27, 4th Floor, Noakhali Super Market"}
+            ${data.storeInfo.address || ""}
           </p>
 
           <p class="store-line">
-            ${data.storeInfo.address ? "" : "Maijdee, Noakhali"}
-          </p>
-
-          <p class="store-line">
-            <span class="agent-num">01727811918 <img src="/bkashAgent.png" alt="bKash" /></span>
-            <span class="agent-num">01308753214 <img src="/nagadAgent.png" alt="Nagad" /></span>
-            ${data.storeInfo.email ? `| Email: ${data.storeInfo.email}` : "| Email: info@playstore.com.bd"}
+            ${data.storeInfo.phone ? `<span class="agent-num">${data.storeInfo.phone}</span>` : ""}
+            ${data.storeInfo.email ? `${data.storeInfo.phone ? "| " : ""}Email: ${data.storeInfo.email}` : ""}
           </p>
 
           <div class="store-links">
@@ -741,27 +736,9 @@ export function printReceipt(data: ReceiptData) {
               ${data.storeInfo.website.replace(/^https?:\/\//, "")}
             </a>
             `
-                : `
-            <!-- Website -->
-            <a class="store-link" href="https://www.playstore.com.bd">
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.8"/>
-                <path d="M3.5 12h17M12 3c2.4 2.5 3.6 5.5 3.6 9s-1.2 6.5-3.6 9c-2.4-2.5-3.6-5.5-3.6-9S9.6 5.5 12 3Z"
-                      fill="none" stroke="currentColor" stroke-width="1.5"/>
-              </svg>
-              www.playstore.com.bd
-            </a>
-            `
+                : ""
             }
 
-            <!-- Facebook -->
-            <a class="store-link" href="https://facebook.com/playstorebd">
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M13.4 21v-8h2.7l.4-3h-3.1V8.1c0-.9.3-1.5 1.6-1.5h1.7V4c-.3 0-1.3-.1-2.4-.1-2.4 0-4 1.5-4 4.1V10H8v3h2.3v8h3.1Z"
-                      fill="currentColor"/>
-              </svg>
-              playstorebd.com
-            </a>
 
           </div>
         </div>
@@ -1134,7 +1111,7 @@ export async function generateReceiptPDF(data: ReceiptData) {
     // Header logo from store settings (best-effort, silently skipped on failure)
     const logoDataUrl = data.storeInfo.logo ? await loadImageAsDataUrl(data.storeInfo.logo) : null;
     // Watermark uses the store's brand logo shipped with the app
-    const watermarkDataUrl = await loadImageAsDataUrl("/pslogo.png");
+    const watermarkDataUrl = data.storeInfo.logo ? await loadImageAsDataUrl(data.storeInfo.logo) : null;
 
     // Logo watermark — centered on the page, painted first so every other
     // element (drawn later) sits on top of it.
@@ -1194,35 +1171,17 @@ export async function generateReceiptPDF(data: ReceiptData) {
       y += addressLines.length * 2.6 + 0.5;
     }
 
-    // Two mobile-payment agent numbers (logo right of each) replace the old
-    // single "Tel:" line — the logo itself identifies the service.
-    const agentNums: Array<[string, string]> = [
-      ["01727811918", "/bkashAgent.png"],
-      ["01308753214", "/nagadAgent.png"],
-    ];
     doc.setFont("helvetica", "bold");
     doc.setFontSize(10);
     doc.setTextColor(100, 100, 100);
     let agentX = margin;
-    for (const [num, logoSrc] of agentNums) {
-      doc.text(num, agentX, y);
-      agentX += doc.getTextWidth(num) + 1;
-      const agentLogo = await loadImageAsDataUrl(logoSrc);
-      if (agentLogo) {
-        try {
-          const agentProps = doc.getImageProperties(agentLogo);
-          const logoH = 3;
-          const logoW = (logoH * agentProps.width) / agentProps.height;
-          doc.addImage(agentLogo, agentProps.fileType || "PNG", agentX, y - 2.4, logoW, logoH);
-          agentX += logoW + 3;
-        } catch {
-          // logo is cosmetic — ignore any failure
-        }
-      }
+    if (data.storeInfo.phone) {
+      doc.text(data.storeInfo.phone, agentX, y);
+      agentX += doc.getTextWidth(data.storeInfo.phone) + 3;
     }
     doc.setFont("helvetica", "normal");
     if (data.storeInfo.email) {
-      doc.text(`| Email: ${data.storeInfo.email}`, agentX, y);
+      doc.text(`Email: ${data.storeInfo.email}`, agentX, y);
     }
     y += 2.5;
 
