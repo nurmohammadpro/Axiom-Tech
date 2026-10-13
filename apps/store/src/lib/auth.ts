@@ -9,7 +9,7 @@
  */
 
 import { createHmac, randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
-import { SINGLE_TENANT_ID, TENANT_HEADER, tenancyMode } from "./tenancy/config";
+import { SINGLE_TENANT_ID, TENANT_HEADER, VALID_AFTER_HEADER, tenancyMode } from "./tenancy/config";
 
 /**
  * Session signing secret. Required in production (fail closed); a fixed dev
@@ -81,7 +81,11 @@ export function createSessionToken(userId: string, tenantId: string): string {
 }
 
 /** Verify a session token for a shop and return the user id, or null when invalid/expired. */
-export function verifySessionToken(token: string | undefined | null, tenantId: string | null | undefined): string | null {
+export function verifySessionToken(
+  token: string | undefined | null,
+  tenantId: string | null | undefined,
+  validAfterSec = 0,
+): string | null {
   if (!token || !tenantId) return null;
   const parts = token.split(".");
   if (parts.length !== 4 || parts[0] !== "v1") return null;
@@ -91,7 +95,15 @@ export function verifySessionToken(token: string | undefined | null, tenantId: s
   const actual = Buffer.from(sig);
   if (expected.length !== actual.length || !timingSafeEqual(expected, actual)) return null;
   if (Number(exp) * 1000 < Date.now()) return null;
+  // Issue time = expiry - lifetime. Sessions issued before the shop revoked them are rejected.
+  if (Number(exp) - SESSION_TTL < validAfterSec) return null;
   return userId;
+}
+
+/** Revocation cut-off for this request's shop (seconds), forwarded by proxy.ts. */
+export function requestValidAfter(headers: Headers): number {
+  if (tenancyMode() === "single") return 0;
+  return Number(headers.get(VALID_AFTER_HEADER)) || 0;
 }
 
 /**

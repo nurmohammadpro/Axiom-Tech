@@ -196,6 +196,14 @@ describe("owner password reset", () => {
     expect(r.tempPassword).toMatch(/^[A-Za-z2-9]{14}$/);
     expect(r.tempPassword).not.toBe(first.tempPassword);
 
+    // Existing sessions of this shop are revoked through the gate.
+    const before = Date.now();
+    process.env.ROOT_DOMAIN = "axiom.appbrainer.tech";
+    const g = await getGate("own1.axiom.appbrainer.tech");
+    expect(g.allowed).toBe(true);
+    expect(new Date(g.sessionsValidAfter!).getTime()).toBeLessThanOrEqual(before);
+    expect(new Date(g.sessionsValidAfter!).getTime()).toBeGreaterThan(before - 60_000);
+
     await shopQuery("own1", async (s) => {
       const [u] = await s`select password_hash from users where role = 'owner'`;
       expect(verifyPassword(r.tempPassword, u.password_hash)).toBe(true);

@@ -14,7 +14,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { SESSION_COOKIE, verifySessionToken } from "@/lib/auth";
-import { SINGLE_TENANT_ID, TENANT_HEADER, tenancyMode } from "@/lib/tenancy/config";
+import { SINGLE_TENANT_ID, TENANT_HEADER, VALID_AFTER_HEADER, tenancyMode } from "@/lib/tenancy/config";
 import { GateUnavailableError, gateClient } from "@/lib/tenancy/gate-client";
 import { featureForPath, fromShop, planAllows } from "@/lib/tenancy/entitlements";
 
@@ -40,7 +40,9 @@ const needsSession = (path: string) =>
 export default async function proxy(request: NextRequest) {
   const fwd = new Headers(request.headers);
   fwd.delete(TENANT_HEADER);
+  fwd.delete(VALID_AFTER_HEADER);
   let tenantId = SINGLE_TENANT_ID;
+  let validAfter = 0;
 
   if (tenancyMode() === "multi") {
     const host = request.headers.get("host");
@@ -52,6 +54,7 @@ export default async function proxy(request: NextRequest) {
         return blockedResponse(request, 402, shop.reason, REASONS[shop.reason] ?? "This shop is not available right now.");
       }
       tenantId = shop.tenantId;
+      validAfter = shop.sessionsValidAfter;
       const feature = featureForPath(request.nextUrl.pathname);
       if (feature && !planAllows(fromShop(shop), feature)) {
         if (request.nextUrl.pathname.startsWith("/api/")) {
@@ -69,11 +72,12 @@ export default async function proxy(request: NextRequest) {
       throw e;
     }
     fwd.set(TENANT_HEADER, tenantId);
+    fwd.set(VALID_AFTER_HEADER, String(validAfter));
   }
 
   if (needsSession(request.nextUrl.pathname)) {
     const token = request.headers.get("x-session-token") || request.cookies.get(SESSION_COOKIE)?.value;
-    if (verifySessionToken(token, tenantId) === null) {
+    if (verifySessionToken(token, tenantId, validAfter) === null) {
       if (request.nextUrl.pathname.startsWith("/api/")) {
         return NextResponse.json({ error: "Authentication required" }, { status: 401 });
       }

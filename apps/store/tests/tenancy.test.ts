@@ -49,6 +49,15 @@ describe("gate client", () => {
     expect(calls.length).toBe(2);
   });
 
+  test("revocation cut-off from the platform is parsed to epoch seconds", async () => {
+    const at = new Date("2026-10-13T06:00:00Z");
+    const { c } = client(() => json({ ...okBody(), sessionsValidAfter: at.toISOString() }));
+    const r = await c.resolve("a.x.y");
+    expect(r.kind === "ok" && r.sessionsValidAfter).toBe(Math.floor(at.getTime() / 1000));
+    const none = await client(() => json({ ...okBody(), sessionsValidAfter: null })).c.resolve("a.x.y");
+    expect(none.kind === "ok" && none.sessionsValidAfter).toBe(0);
+  });
+
   test("concurrent lookups share one request", async () => {
     const { c, calls } = client(async () => { await new Promise((r) => setTimeout(r, 20)); return json(okBody()); });
     await Promise.all(Array.from({ length: 10 }, () => c.resolve("a.x.y")));
@@ -100,6 +109,13 @@ describe("per-shop sessions", () => {
     expect(verifySessionToken(tok, "shop-a")).toBe("user-1");
     expect(verifySessionToken(tok, "shop-b")).toBeNull();
     expect(verifySessionToken(tok, null)).toBeNull();
+  });
+  test("sessions issued before the revocation cut-off are rejected", () => {
+    const tok = createSessionToken("user-1", "shop-a");
+    const now = Math.floor(Date.now() / 1000);
+    expect(verifySessionToken(tok, "shop-a", 0)).toBe("user-1");
+    expect(verifySessionToken(tok, "shop-a", now - 60)).toBe("user-1");
+    expect(verifySessionToken(tok, "shop-a", now + 60)).toBeNull();
   });
   test("tampering and expiry are rejected", () => {
     const tok = createSessionToken("user-1", "shop-a");

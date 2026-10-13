@@ -13,3 +13,5 @@ export function tenancyMode(): TenancyMode {
 export const SINGLE_TENANT_ID = "single";
 /** Request header set ONLY by proxy.ts after the gate passed. Any client-supplied value is overwritten/removed. */
 export const TENANT_HEADER = "x-axiom-tenant";
+/** Seconds (epoch). Sessions issued before this are revoked. Set by proxy.ts alongside TENANT_HEADER. */
+export const VALID_AFTER_HEADER = "x-axiom-valid-after";

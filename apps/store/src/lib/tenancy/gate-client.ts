@@ -8,6 +8,8 @@ export interface ShopAccess {
   features: string[];
   maxStaff: number | null;
   maxWarehouses: number | null;
+  /** Epoch seconds; sessions issued earlier are revoked. 0 = none. */
+  sessionsValidAfter: number;
   /** Decrypted pooled connection string. Never log or send to clients. */
   dbUrl: string;
 }
@@ -153,6 +155,7 @@ function parseGate(b: Record<string, unknown>): ShopResolution {
     features: Array.isArray(b.features) ? (b.features as string[]) : [],
     maxStaff: typeof b.maxStaff === "number" ? b.maxStaff : null,
     maxWarehouses: typeof b.maxWarehouses === "number" ? b.maxWarehouses : null,
+    sessionsValidAfter: typeof b.sessionsValidAfter === "string" ? Math.floor(new Date(b.sessionsValidAfter).getTime() / 1000) || 0 : 0,
     dbUrl,
   };
 }

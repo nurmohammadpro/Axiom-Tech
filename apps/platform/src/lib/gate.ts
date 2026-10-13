@@ -20,6 +20,8 @@ export interface GateResult {
   currentPeriodEnd?: string | null;
   /** AES-GCM encrypted pooled DB URL. Only present when allowed (never for blocked shops). */
   dbUrlEncrypted?: string;
+  /** ISO time; shop sessions issued earlier are invalid. Only present when allowed. */
+  sessionsValidAfter?: string | null;
 }
 
 /**
@@ -57,8 +59,8 @@ export async function getGate(host: string, now = new Date()): Promise<GateResul
   }
   if (t.provisionStatus !== "ready") return { ...base, reason: "not_ready" };
   if (t.status === "trial") {
-    return t.trialEndsAt > now ? { ...base, allowed: true, dbUrlEncrypted: t.dbUrlEncrypted ?? undefined } : { ...base, reason: "trial_expired" };
+    return t.trialEndsAt > now ? { ...base, allowed: true, dbUrlEncrypted: t.dbUrlEncrypted ?? undefined, sessionsValidAfter: t.sessionsValidAfter?.toISOString() ?? null } : { ...base, reason: "trial_expired" };
   }
   const end = t.currentPeriodEnd ? addDays(t.currentPeriodEnd, GRACE_DAYS) : null;
-  return end && end > now ? { ...base, allowed: true, dbUrlEncrypted: t.dbUrlEncrypted ?? undefined } : { ...base, reason: "payment_overdue" };
+  return end && end > now ? { ...base, allowed: true, dbUrlEncrypted: t.dbUrlEncrypted ?? undefined, sessionsValidAfter: t.sessionsValidAfter?.toISOString() ?? null } : { ...base, reason: "payment_overdue" };
 }

@@ -63,6 +63,8 @@ export const tenants = pgTable(
     activatedAt: timestamp("activated_at", { withTimezone: true }),
     currentPeriodEnd: timestamp("current_period_end", { withTimezone: true }),
     suspendedReason: text("suspended_reason"),
+    /** Shop sessions issued before this instant are rejected (set by owner password reset). */
+    sessionsValidAfter: timestamp("sessions_valid_after", { withTimezone: true }),
     provisionStatus: provisionStatus("provision_status").notNull().default("pending"),
     provisionError: text("provision_error"),
     neonProjectId: text("neon_project_id"),
