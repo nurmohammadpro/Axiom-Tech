@@ -12,7 +12,7 @@ export interface PlanOption {
 
 const initial: SignupState = { ok: false };
 
-export function SignupForm({ plans, rootDomain }: { plans: PlanOption[]; rootDomain: string }) {
+export function SignupForm({ plans, rootDomain, defaultPlan }: { plans: PlanOption[]; rootDomain: string; defaultPlan?: string }) {
   const [state, action, pending] = useActionState(signupAction, initial);
   const v = state.values ?? {};
 
@@ -23,7 +23,7 @@ export function SignupForm({ plans, rootDomain }: { plans: PlanOption[]; rootDom
         {state.provisioned ? (
           <>
             <p className="text-sm">Sign in at <a className="font-mono underline" href={state.shopUrl}>{state.shopUrl}</a> with the email and password you just chose.</p>
-            <p className="text-sm" style={{ color: "var(--muted)" }}>Your 7-day free trial has started.</p>
+            <p className="text-sm" style={{ color: "var(--muted-foreground)" }}>Your 7-day free trial has started.</p>
           </>
         ) : (
           <p className="text-sm">Your shop is registered, but setup did not finish. Please contact us with your shop address and we will finish it for you.</p>
@@ -42,7 +42,7 @@ export function SignupForm({ plans, rootDomain }: { plans: PlanOption[]; rootDom
         <label className="label" htmlFor="slug">Shop address</label>
         <div className="flex items-center gap-1">
           <input id="slug" name="slug" required minLength={3} maxLength={30} pattern="[a-z0-9][a-z0-9\-]{1,28}[a-z0-9]" defaultValue={v.slug} className="input" autoCapitalize="none" />
-          <span className="text-sm" style={{ color: "var(--muted)" }}>.{rootDomain}</span>
+          <span className="text-sm" style={{ color: "var(--muted-foreground)" }}>.{rootDomain}</span>
         </div>
       </div>
       <div>
@@ -65,12 +65,12 @@ export function SignupForm({ plans, rootDomain }: { plans: PlanOption[]; rootDom
       </div>
       <div>
         <label className="label" htmlFor="planId">Plan</label>
-        <select id="planId" name="planId" required defaultValue={v.planId || plans[0]?.id} className="input">
+        <select id="planId" name="planId" required defaultValue={v.planId || defaultPlan || plans[0]?.id} className="input">
           {plans.map((p) => (
             <option key={p.id} value={p.id}>{p.name} - ৳{p.monthlyPrice.toLocaleString("en-US")}/month (+ ৳{p.signupFee.toLocaleString("en-US")} one-time sign-up fee)</option>
           ))}
         </select>
-        <p className="mt-1 text-xs" style={{ color: "var(--muted)" }}>Free for 7 days. Nothing is charged now; you pay only to continue after the trial.</p>
+        <p className="mt-1 text-xs" style={{ color: "var(--muted-foreground)" }}>Free for 7 days. Nothing is charged now; you pay only to continue after the trial.</p>
       </div>
       {/* Honeypot */}
       <div aria-hidden="true" style={{ position: "absolute", left: "-9999px" }}>

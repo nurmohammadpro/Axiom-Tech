@@ -37,12 +37,12 @@ async function getPlan(tx: Tx | typeof db, id: string) {
   return p;
 }
 
-function checkAmount(amount: number, required: number) {
+export function checkAmount(amount: number, required: number) {
   if (!Number.isInteger(amount) || amount <= 0) throw new DomainError("Amount must be a positive whole number of taka");
   if (amount < required) throw new DomainError(`Amount ৳${amount} is less than the required ৳${required}`);
 }
 
-async function insertPayment(tx: Tx, tenantId: string, kind: "activation" | "monthly", months: number, p: PaymentInput, actorId: string | null) {
+export async function insertPayment(tx: Tx, tenantId: string, kind: "activation" | "monthly", months: number, p: PaymentInput, actorId: string | null) {
   const reference = p.reference?.trim() || null;
   try {
     const [row] = await tx

@@ -29,7 +29,6 @@ export default async function TenantsPage({ searchParams }: { searchParams: Prom
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-xl font-bold">Shops</h1>
         {can(user.role, "tenant:create") && <Link href="/tenants/new" className="btn btn-primary">New shop</Link>}
       </div>
       <form className="flex flex-wrap gap-2">
@@ -43,17 +42,17 @@ export default async function TenantsPage({ searchParams }: { searchParams: Prom
       <div className="card overflow-x-auto">
         <table className="w-full">
           <thead>
-            <tr style={{ color: "var(--muted)" }}>
+            <tr style={{ color: "var(--muted-foreground)" }}>
               <th className={th}>Shop</th><th className={th}>Plan</th><th className={th}>Status</th><th className={th}>Setup</th><th className={th}>Trial ends</th><th className={th}>Paid until</th>
             </tr>
           </thead>
           <tbody>
-            {rows.length === 0 && <tr><td colSpan={6} className={td} style={{ color: "var(--muted)" }}>No shops found</td></tr>}
+            {rows.length === 0 && <tr><td colSpan={6} className={td} style={{ color: "var(--muted-foreground)" }}>No shops found</td></tr>}
             {rows.map(({ t, plan }) => (
               <tr key={t.id} className="border-t" style={{ borderColor: "var(--line)" }}>
                 <td className={td}>
                   <Link href={`/tenants/${t.id}`} className="font-semibold underline">{t.name}</Link>
-                  <div className="text-xs" style={{ color: "var(--muted)" }}>{t.slug} · {t.ownerEmail}</div>
+                  <div className="text-xs" style={{ color: "var(--muted-foreground)" }}>{t.slug} · {t.ownerEmail}</div>
                 </td>
                 <td className={td}>{plan}</td>
                 <td className={td}><Badge value={t.status} /></td>

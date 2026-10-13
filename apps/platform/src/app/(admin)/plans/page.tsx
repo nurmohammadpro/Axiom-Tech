@@ -13,8 +13,7 @@ export default async function PlansPage({ searchParams }: { searchParams: Promis
   const editable = can(user.role, "plans:edit");
   return (
     <div className="space-y-4">
-      <h1 className="text-xl font-bold">Plans</h1>
-      <p className="text-sm" style={{ color: "var(--muted)" }}>Prices in BDT. Leave a limit empty for unlimited. Feature lists come from the plan catalog and apply to the store app through the gate.</p>
+      <p className="text-sm" style={{ color: "var(--muted-foreground)" }}>Prices in BDT. Leave a limit empty for unlimited. Feature lists come from the plan catalog and apply to the store app through the gate.</p>
       <Notice ok={ok} error={error} />
       <div className="grid gap-4 lg:grid-cols-3">
         {list.map((p) => (
@@ -27,7 +26,7 @@ export default async function PlansPage({ searchParams }: { searchParams: Promis
               <Field label="Warehouses"><input name="maxWarehouses" defaultValue={p.maxWarehouses ?? ""} placeholder="Unlimited" disabled={!editable} className="input" /></Field>
             </div>
             <label className="flex items-center gap-2 text-sm"><input type="checkbox" name="isActive" defaultChecked={p.isActive} disabled={!editable} /> Available for new shops</label>
-            <details className="text-xs" style={{ color: "var(--muted)" }}>
+            <details className="text-xs" style={{ color: "var(--muted-foreground)" }}>
               <summary className="cursor-pointer font-semibold">{p.features.length} features</summary>
               <p className="mt-1 leading-relaxed">{p.features.join(", ")}</p>
             </details>

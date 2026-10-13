@@ -14,8 +14,7 @@ export default async function NewTenantPage({ searchParams }: { searchParams: Pr
   if (!can(user.role, "tenant:create")) return <p className="text-sm">You do not have permission to create shops.</p>;
   return (
     <div className="max-w-xl space-y-4">
-      <h1 className="text-xl font-bold">New shop</h1>
-      <p className="text-sm" style={{ color: "var(--muted)" }}>Starts a 7-day trial. Activate it once the sign-up fee and first month are paid.</p>
+      <p className="text-sm" style={{ color: "var(--muted-foreground)" }}>Starts a 7-day trial. Activate it once the sign-up fee and first month are paid.</p>
       <Notice error={error} />
       <form action={createTenantAction} className="card space-y-4 p-5">
         <Field label="Shop name"><input name="name" required className="input" /></Field>

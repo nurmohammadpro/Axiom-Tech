@@ -18,9 +18,9 @@ export function ProvisionPanel({ tenantId, status }: { tenantId: string; status:
       <section className="card space-y-3 p-5" role="status">
         <h2 className="text-sm font-bold">Shop is ready</h2>
         <dl className="grid gap-2 text-sm sm:grid-cols-[8rem_1fr]">
-          <dt style={{ color: "var(--muted)" }}>Address</dt><dd className="font-mono">{state.shopUrl}</dd>
-          <dt style={{ color: "var(--muted)" }}>Owner email</dt><dd className="font-mono">{state.ownerEmail}</dd>
-          <dt style={{ color: "var(--muted)" }}>Temporary password</dt>
+          <dt style={{ color: "var(--muted-foreground)" }}>Address</dt><dd className="font-mono">{state.shopUrl}</dd>
+          <dt style={{ color: "var(--muted-foreground)" }}>Owner email</dt><dd className="font-mono">{state.ownerEmail}</dd>
+          <dt style={{ color: "var(--muted-foreground)" }}>Temporary password</dt>
           <dd className="font-mono">{state.tempPassword ?? "Owner account already existed; password unchanged"}</dd>
         </dl>
         {state.tempPassword && (
@@ -35,7 +35,7 @@ export function ProvisionPanel({ tenantId, status }: { tenantId: string; status:
   return (
     <form action={action} className="card space-y-3 p-5">
       <h2 className="text-sm font-bold">{retry ? "Retry shop setup" : "Set up shop"}</h2>
-      <p className="text-xs" style={{ color: "var(--muted)" }}>
+      <p className="text-xs" style={{ color: "var(--muted-foreground)" }}>
         Creates the shop&apos;s own database, installs the store system and creates the owner account. Takes up to a minute.
       </p>
       {state.error && <p role="alert" className="text-sm" style={{ color: "var(--bad)" }}>{state.error}</p>}

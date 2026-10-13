@@ -13,8 +13,8 @@ async function login(formData: FormData) {
   "use server";
   const email = String(formData.get("email") ?? "").trim().toLowerCase();
   const password = String(formData.get("password") ?? "");
-  const nextRaw = String(formData.get("next") ?? "/");
-  const next = nextRaw.startsWith("/") && !nextRaw.startsWith("//") ? nextRaw : "/";
+  const nextRaw = String(formData.get("next") ?? "/admin");
+  const next = nextRaw.startsWith("/") && !nextRaw.startsWith("//") ? nextRaw : "/admin";
   const ip = (await headers()).get("x-forwarded-for")?.split(",")[0].trim() ?? "local";
   const key = `${ip}:${email}`;
   if (!allow(key)) redirect("/login?error=Too+many+attempts.+Try+again+in+15+minutes");
@@ -39,9 +39,9 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
   return (
     <main className="mx-auto flex min-h-screen max-w-sm flex-col justify-center px-4">
       <h1 className="mb-1 text-xl font-bold">Axiom Tech</h1>
-      <p className="mb-6 text-sm" style={{ color: "var(--muted)" }}>Platform admin sign-in</p>
+      <p className="mb-6 text-sm" style={{ color: "var(--muted-foreground)" }}>Platform admin sign-in</p>
       <form action={login} className="card space-y-4 p-5">
-        <input type="hidden" name="next" value={next ?? "/"} />
+        <input type="hidden" name="next" value={next ?? "/admin"} />
         <div>
           <label className="label" htmlFor="email">Email</label>
           <input id="email" name="email" type="email" required autoComplete="username" className="input" />

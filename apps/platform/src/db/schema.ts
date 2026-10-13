@@ -1,3 +1,4 @@
+import { sql } from "drizzle-orm";
 import {
   boolean,
   index,
@@ -122,7 +123,14 @@ export const invoices = pgTable(
     paymentId: uuid("payment_id").references(() => payments.id),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
-  (t) => [index("invoices_tenant_idx").on(t.tenantId), uniqueIndex("invoices_seq_uq").on(t.seq)],
+  (t) => [
+    index("invoices_tenant_idx").on(t.tenantId),
+    uniqueIndex("invoices_seq_uq").on(t.seq),
+    // One open monthly invoice per shop: generation is idempotent even if two cron runs overlap.
+    uniqueIndex("invoices_open_monthly_uq")
+      .on(t.tenantId)
+      .where(sql`kind = 'monthly' and status = 'due'`),
+  ],
 );
 
 export const tenantEvents = pgTable(

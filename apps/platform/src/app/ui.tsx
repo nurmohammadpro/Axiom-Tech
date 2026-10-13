@@ -1,26 +1,24 @@
 import type { ReactNode } from "react";
 
-const TONE: Record<string, { bg: string; fg: string }> = {
-  trial: { bg: "#e8eefc", fg: "#1f4fff" },
-  active: { bg: "#e3f4ec", fg: "#0f7b4b" },
-  suspended: { bg: "#fdf0dc", fg: "#a15c00" },
-  cancelled: { bg: "#f1f3f6", fg: "#5b6573" },
-  ready: { bg: "#e3f4ec", fg: "#0f7b4b" },
-  pending: { bg: "#f1f3f6", fg: "#5b6573" },
-  provisioning: { bg: "#e8eefc", fg: "#1f4fff" },
-  failed: { bg: "#fde8e6", fg: "#b42318" },
-  paid: { bg: "#e3f4ec", fg: "#0f7b4b" },
-  due: { bg: "#fdf0dc", fg: "#a15c00" },
-  void: { bg: "#f1f3f6", fg: "#5b6573" },
+/** Status → token classes; same palette roles the store dashboard uses for alerts. */
+const TONE: Record<string, string> = {
+  trial: "bg-primary/10 text-primary",
+  provisioning: "bg-primary/10 text-primary",
+  active: "bg-emerald-50 text-emerald-700",
+  ready: "bg-emerald-50 text-emerald-700",
+  paid: "bg-emerald-50 text-emerald-700",
+  suspended: "bg-amber-50 text-amber-700",
+  due: "bg-amber-50 text-amber-700",
+  cancelled: "bg-surface text-muted-foreground",
+  pending: "bg-surface text-muted-foreground",
+  void: "bg-surface text-muted-foreground",
+  failed: "bg-red-50 text-red-700",
+  overdue: "bg-red-50 text-red-700",
 };
 
 export function Badge({ value }: { value: string }) {
-  const t = TONE[value] ?? TONE.pending;
-  return (
-    <span className="rounded-full px-2 py-0.5 text-xs font-semibold capitalize" style={{ background: t.bg, color: t.fg }}>
-      {value}
-    </span>
-  );
+  const tone = TONE[value] ?? TONE.pending;
+  return <span className={`rounded-sm px-2 py-0.5 text-xs font-medium capitalize ${tone}`}>{value}</span>;
 }
 
 export function Notice({ ok, error }: { ok?: string; error?: string }) {
@@ -28,8 +26,10 @@ export function Notice({ ok, error }: { ok?: string; error?: string }) {
   return (
     <p
       role={error ? "alert" : "status"}
-      className="mb-4 rounded-lg px-3 py-2 text-sm font-medium"
-      style={error ? { background: "#fde8e6", color: "var(--bad)" } : { background: "#e3f4ec", color: "var(--ok)" }}
+      className={
+        "mb-4 rounded-sm border px-3 py-2 text-sm font-medium " +
+        (error ? "border-red-200 bg-red-50 text-red-700" : "border-emerald-200 bg-emerald-50 text-emerald-700")
+      }
     >
       {error ?? ok}
     </p>
@@ -48,9 +48,9 @@ export function Field({ label, children }: { label: string; children: ReactNode 
 export function Stat({ label, value, hint }: { label: string; value: ReactNode; hint?: string }) {
   return (
     <div className="card p-4">
-      <div className="text-xs font-semibold" style={{ color: "var(--muted)" }}>{label}</div>
+      <div className="text-xs font-semibold text-muted-foreground">{label}</div>
       <div className="mt-1 text-2xl font-bold">{value}</div>
-      {hint && <div className="mt-1 text-xs" style={{ color: "var(--muted)" }}>{hint}</div>}
+      {hint && <div className="mt-1 text-xs text-muted-foreground">{hint}</div>}
     </div>
   );
 }

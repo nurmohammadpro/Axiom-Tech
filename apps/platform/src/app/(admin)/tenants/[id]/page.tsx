@@ -72,12 +72,12 @@ export default async function TenantDetail({ params, searchParams }: { params: P
   return (
     <div className="space-y-5">
       <div>
-        <Link href="/tenants" className="text-sm underline" style={{ color: "var(--muted)" }}>All shops</Link>
+        <Link href="/tenants" className="text-sm underline" style={{ color: "var(--muted-foreground)" }}>All shops</Link>
         <div className="mt-1 flex flex-wrap items-center gap-3">
-          <h1 className="text-xl font-bold">{t.name}</h1>
+          <h1 className="text-lg font-semibold">{t.name}</h1>
           <Badge value={t.status} />
         </div>
-        <p className="text-sm" style={{ color: "var(--muted)" }}>{t.slug}.{rootDomain()}</p>
+        <p className="text-sm" style={{ color: "var(--muted-foreground)" }}>{t.slug}.{rootDomain()}</p>
       </div>
       <Notice ok={ok} error={error} />
 
@@ -105,7 +105,7 @@ export default async function TenantDetail({ params, searchParams }: { params: P
       {canPay && live && !t.activatedAt && t.status !== "active" && (
         <form action={activate} className="card space-y-4 p-5">
           <h2 className="text-sm font-bold">Activate to production</h2>
-          <p className="text-xs" style={{ color: "var(--muted)" }}>Records the sign-up fee + first month and removes the trial. Minimum amount is the selected plan&apos;s fee plus one month.</p>
+          <p className="text-xs" style={{ color: "var(--muted-foreground)" }}>Records the sign-up fee + first month and removes the trial. Minimum amount is the selected plan&apos;s fee plus one month.</p>
           <Field label="Plan">
             <select name="planId" defaultValue={t.planId} className="input">
               {allPlans.filter((p) => p.isActive).map((p) => <option key={p.id} value={p.id}>{p.name}: {taka(p.signupFee + p.monthlyPrice)} due</option>)}
@@ -161,7 +161,7 @@ export default async function TenantDetail({ params, searchParams }: { params: P
       <section className="card overflow-x-auto">
         <h2 className="px-4 pt-4 text-sm font-bold">Invoices</h2>
         <table className="mt-2 w-full">
-          <thead><tr style={{ color: "var(--muted)" }}><th className={th}>No.</th><th className={th}>Description</th><th className={th}>Amount</th><th className={th}>Status</th><th className={th}>Paid</th></tr></thead>
+          <thead><tr style={{ color: "var(--muted-foreground)" }}><th className={th}>No.</th><th className={th}>Description</th><th className={th}>Amount</th><th className={th}>Status</th><th className={th}>Paid</th></tr></thead>
           <tbody>
             {invs.map((i) => (
               <tr key={i.id} className="border-t" style={{ borderColor: "var(--line)" }}>
@@ -175,9 +175,9 @@ export default async function TenantDetail({ params, searchParams }: { params: P
       <section className="card overflow-x-auto">
         <h2 className="px-4 pt-4 text-sm font-bold">Payments</h2>
         <table className="mt-2 w-full">
-          <thead><tr style={{ color: "var(--muted)" }}><th className={th}>Date</th><th className={th}>Kind</th><th className={th}>Amount</th><th className={th}>Method</th><th className={th}>Reference</th><th className={th}>Months</th></tr></thead>
+          <thead><tr style={{ color: "var(--muted-foreground)" }}><th className={th}>Date</th><th className={th}>Kind</th><th className={th}>Amount</th><th className={th}>Method</th><th className={th}>Reference</th><th className={th}>Months</th></tr></thead>
           <tbody>
-            {pays.length === 0 && <tr><td colSpan={6} className={td} style={{ color: "var(--muted)" }}>No payments yet</td></tr>}
+            {pays.length === 0 && <tr><td colSpan={6} className={td} style={{ color: "var(--muted-foreground)" }}>No payments yet</td></tr>}
             {pays.map((p) => (
               <tr key={p.id} className="border-t" style={{ borderColor: "var(--line)" }}>
                 <td className={td}>{fmtDate(p.receivedAt)}</td><td className={`${td} capitalize`}>{p.kind}</td><td className={td}>{taka(p.amount)}</td><td className={td}>{methodLabel(p.method)}</td><td className={td}>{p.reference ?? "-"}</td><td className={td}>{p.months || "-"}</td>
@@ -191,7 +191,7 @@ export default async function TenantDetail({ params, searchParams }: { params: P
         <h2 className="mb-2 text-sm font-bold">History</h2>
         <ul className="space-y-1 text-sm">
           {events.map((e) => (
-            <li key={e.id}><span style={{ color: "var(--muted)" }}>{fmtDateTime(e.createdAt)}</span> · <span className="font-medium">{e.type.replace(/_/g, " ")}</span></li>
+            <li key={e.id}><span style={{ color: "var(--muted-foreground)" }}>{fmtDateTime(e.createdAt)}</span> · <span className="font-medium">{e.type.replace(/_/g, " ")}</span></li>
           ))}
         </ul>
       </section>

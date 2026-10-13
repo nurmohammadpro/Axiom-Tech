@@ -1,7 +1,8 @@
 /**
  * Edge gate for the admin console: every page needs a valid signed session cookie.
- * Roles are enforced in server actions (src/lib/session.ts). Public: /login, /signup,
- * /api/health, and the secret-protected server-to-server routes /api/gate and /api/cron/*.
+ * Roles are enforced in server actions (src/lib/session.ts). Public: / (marketing),
+ * /login, /signup, /api/health, and the secret-protected server-to-server routes
+ * /api/gate and /api/cron/*.
  */
 import { NextRequest, NextResponse } from "next/server";
 
@@ -39,5 +40,7 @@ export default async function proxy(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!login|signup|api/health|api/gate|api/cron|_next/static|_next/image|favicon.ico).*)"],
+  // `.+` (not `.*`) keeps the bare marketing page at / public while every admin
+  // subpath still requires a session.
+  matcher: ["/((?!login|signup|api/health|api/gate|api/cron|_next/static|_next/image|favicon.ico).+)"],
 };

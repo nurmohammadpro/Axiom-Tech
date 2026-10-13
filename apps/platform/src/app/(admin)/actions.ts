@@ -8,6 +8,7 @@ import { db } from "@/db";
 import { plans, type PlatformUser } from "@/db/schema";
 import { SESSION_COOKIE } from "@/lib/auth";
 import { DomainError } from "@/lib/domain";
+import { generateMonthlyInvoices, payInvoice } from "@/lib/invoices";
 import { resetOwnerPassword } from "@/lib/owner";
 import { provisionTenant } from "@/lib/provision";
 import type { Permission } from "@/lib/rbac";
@@ -82,6 +83,20 @@ export async function monthlyPaymentAction(tenantId: string, fd: FormData) {
   return run("tenant:payment", `/tenants/${tenantId}`, async (u) => {
     await recordMonthlyPayment(tenantId, int(fd, "months"), paymentFrom(fd), u.id);
     return "Payment recorded";
+  });
+}
+
+export async function payInvoiceAction(invoiceId: string, fd: FormData) {
+  return run("tenant:payment", `/invoices/${invoiceId}`, async (u) => {
+    await payInvoice(invoiceId, int(fd, "months") || 1, paymentFrom(fd), u.id);
+    return "Payment recorded";
+  });
+}
+
+export async function generateInvoicesAction(fd: FormData) {
+  return run("tenant:payment", "/invoices", async () => {
+    const r = await generateMonthlyInvoices(int(fd, "cutoffDays") || 7);
+    return `Generated ${r.created} invoice${r.created === 1 ? "" : "s"} (${r.skipped} already open, skipped)`;
   });
 }
 
