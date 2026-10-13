@@ -69,7 +69,7 @@ export class GateClient {
       staleMs: 15 * 60_000,
       timeoutMs: 4_000,
       maxEntries: 500,
-      fetchImpl: opts.fetchImpl ?? fetch,
+      fetchImpl: opts.fetchImpl ?? ((i, init) => fetch(i, init)),
       now: opts.now ?? Date.now,
       ...stripUndefined({ ttlMs: opts.ttlMs, negativeTtlMs: opts.negativeTtlMs, staleMs: opts.staleMs, timeoutMs: opts.timeoutMs, maxEntries: opts.maxEntries }),
     };

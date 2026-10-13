@@ -29,7 +29,7 @@ The store app code in `apps/store` was copied once from playstore-storefront (no
 - DONE: fallback secret removed (AUTH_SECRET required in production), AUTH_ALLOW_LEGACY and plaintext-password acceptance removed, debug / migrate-fix-prices / seed-supplier-types routes deleted, db:push/db:seed/db:cleanup scripts removed, Lovable deps and TanStack Start leftovers removed, bun.lock regenerated from the public registry.
 - DONE: fresh migrations `apps/store/src/db/migrations` (0000_baseline from schema.ts, 0001_perf_indexes); applied cleanly to an empty Postgres 16 (68 tables, 125 indexes). Old files archived in `src/db/legacy-migrations` (reference only, never run).
 - DONE: `tsc --noEmit` clean, `bun run build` green.
-- TODO: white-label (~40 "PlayStore" literals), plan entitlement enforcement in store (features/staff/warehouse limits from gate), self-signup, Dockerfiles + Dokploy deploy.
+- TODO: white-label (~40 "PlayStore" literals, e.g. default location "Play Store Downtown"), self-signup, Dockerfiles + Dokploy deploy, owner session revocation.
 
 ## Phase 1 status: platform app (done 2026-10-10)
 - DONE: schema + migration (plans, tenants, payments, invoices, tenant_events, platform_users); lifecycle in `src/lib/tenants.ts` (create=7-day trial, activate needs fee+first month, monthly renewal, suspend/resume/extend/cancel/change plan, expiry job with 3-day grace); duplicate transaction IDs rejected; gate `getGate(host)` checks time itself so a missed cron never leaves an expired shop open; roles super_admin/billing/support.
@@ -55,6 +55,13 @@ The store app code in `apps/store` was copied once from playstore-storefront (no
 - Env for store: TENANCY_MODE, PLATFORM_URL, GATE_SECRET, SECRETS_KEY, AUTH_SECRET, optional GATE_CACHE_TTL_MS, DB_POOL_MAX (docs/DEPLOY.md 2b).
 - VERIFIED: 13 store tests + 41 platform tests; tsc/build green; e2e (platform + store + mock Neon on local Postgres): provision 2 shops, owner reset in browser, signin per shop, cross-shop token/credential rejected, spoofed header rejected, suspend -> 402 within TTL while other shop unaffected, resume, platform down -> cached shop keeps working, unseen host 503.
 - NOT VERIFIED: live Neon pooled URL with `pg`; live Traefik Host passthrough.
+
+## Plan entitlements in store (done 2026-10-13)
+- Gate features/limits drive enforcement (`src/lib/tenancy/entitlements.ts`). `proxy.ts` blocks plan-excluded areas centrally: API 403 `{code:"plan_feature"}`, pages redirect to `/dashboard?upgrade=<feature>`. Only higher-plan areas are mapped (audit, campaigns, cash, exchanges, expenses, hr, purchases/procurement, returns, suppliers, analytics, transfers); core flows (POS, inventory, products, customers, barcodes, orders, settings, stock receiving, locations, staff) are never gated by path.
+- `getFeatureVisibility`/`canAccessFeature`/`requireFeature`: plan is a ceiling over role toggles, owners included (customer-portal features exempt).
+- Limits (`src/lib/plan-limits.ts`): active staff seats (owner row not counted) and active warehouses; checked on create and on reactivation; 403 `{code:"plan_limit"}`. Single mode = unlimited.
+- Trial uses the chosen plan's features (no all-Pro trial yet). OPEN: confirm feature split, owner counts as seat?, trial level; UI should show an upgrade prompt for `?upgrade=` and `plan_*` errors.
+- VERIFIED: 17 store tests (path map, limits against a real shop DB), tsc, build.
 
 ## Stack
 Next.js + TypeScript + Tailwind + shadcn/ui, Drizzle + Postgres, bun. Prefer production-ready, opinionated output.

@@ -2,6 +2,7 @@ import { db } from "@/db";
 import { staff, users } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { requestTenantId, sessionTokenFromHeaders, verifySessionToken } from "./auth";
+import { currentEntitlements, planAllows } from "./tenancy/entitlements";
 import { canAccessFeature, type FeatureKey, type Role } from "./feature-permissions";
 
 export type ScopeRole = "owner" | "manager" | "salesman" | "customer" | string | null;
@@ -125,6 +126,9 @@ export async function requireFeature(
 ): Promise<NextResponseError | null> {
   if (!scope.userId) {
     return { status: 401, error: "Authentication required" };
+  }
+  if (!planAllows(await currentEntitlements(), featureKey)) {
+    return { status: 403, error: "Your plan does not include this feature" };
   }
   if (scope.isOwner) {
     return null;

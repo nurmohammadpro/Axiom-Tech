@@ -1,3 +1,4 @@
+import { checkStaffSeat } from "@/lib/plan-limits";
 export const dynamic = "force-dynamic";
 
 import { db } from "@/db";
@@ -24,6 +25,14 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   const { id } = await params;
   const body = await request.json();
   const profile = profileColumns(body);
+
+  if (body.isActive === true) {
+    const [current] = await db.select({ isActive: staff.isActive }).from(staff).where(eq(staff.id, id)).limit(1);
+    if (current && !current.isActive) {
+      const seatDenied = await checkStaffSeat();
+      if (seatDenied) return seatDenied;
+    }
+  }
 
   const [record] = await db
     .update(staff)

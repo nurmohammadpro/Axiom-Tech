@@ -16,6 +16,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { SESSION_COOKIE, verifySessionToken } from "@/lib/auth";
 import { SINGLE_TENANT_ID, TENANT_HEADER, tenancyMode } from "@/lib/tenancy/config";
 import { GateUnavailableError, gateClient } from "@/lib/tenancy/gate-client";
+import { featureForPath, fromShop, planAllows } from "@/lib/tenancy/entitlements";
 
 const REASONS: Record<string, string> = {
   trial_expired: "This shop's free trial has ended.",
@@ -51,6 +52,16 @@ export default async function proxy(request: NextRequest) {
         return blockedResponse(request, 402, shop.reason, REASONS[shop.reason] ?? "This shop is not available right now.");
       }
       tenantId = shop.tenantId;
+      const feature = featureForPath(request.nextUrl.pathname);
+      if (feature && !planAllows(fromShop(shop), feature)) {
+        if (request.nextUrl.pathname.startsWith("/api/")) {
+          return NextResponse.json({ error: "Your plan does not include this feature", code: "plan_feature", feature }, { status: 403 });
+        }
+        const url = request.nextUrl.clone();
+        url.pathname = "/dashboard";
+        url.search = `?upgrade=${encodeURIComponent(feature)}`;
+        return NextResponse.redirect(url);
+      }
     } catch (e) {
       if (e instanceof GateUnavailableError) {
         return blockedResponse(request, 503, "gate_unavailable", "Please try again in a moment.");

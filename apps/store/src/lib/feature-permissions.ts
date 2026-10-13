@@ -1,6 +1,7 @@
 import { db } from "@/db";
 import { featureSettings, users } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
+import { currentEntitlements, planAllows } from "@/lib/tenancy/entitlements";
 
 export type FeatureKey =
   | "pos"
@@ -226,10 +227,19 @@ export async function getFeatureVisibility(role: Role): Promise<Record<FeatureKe
     visibility[setting.featureKey as FeatureKey] = setting.isVisible;
   });
 
+  // The shop's plan is a ceiling over role toggles (customer-portal features are not plan-gated).
+  if (role !== "customer") {
+    const plan = await currentEntitlements();
+    FEATURE_DEFINITIONS.forEach((f) => {
+      if (!planAllows(plan, f.key)) visibility[f.key] = false;
+    });
+  }
+
   return visibility;
 }
 
 export async function canAccessFeature(role: Role, featureKey: FeatureKey): Promise<boolean> {
+  if (role !== "customer" && !planAllows(await currentEntitlements(), featureKey)) return false;
   const [setting] = await db
     .select()
     .from(featureSettings)

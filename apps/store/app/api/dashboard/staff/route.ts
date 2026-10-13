@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { count, eq } from "drizzle-orm";
 import { getScope, requireStaff, requireOwner } from "@/lib/authz";
 import { hashPassword } from "@/lib/auth";
+import { checkStaffSeat } from "@/lib/plan-limits";
 import { str, profileColumns } from "@/lib/staff";
 
 export const dynamic = "force-dynamic";
@@ -84,6 +85,9 @@ export async function POST(request: NextRequest) {
   if (denied) {
     return NextResponse.json({ error: denied.error }, { status: denied.status });
   }
+
+  const seatDenied = await checkStaffSeat();
+  if (seatDenied) return seatDenied;
 
   const body = await request.json();
   const firstName = str(body.firstName);

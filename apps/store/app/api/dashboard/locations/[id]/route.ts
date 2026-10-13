@@ -1,3 +1,4 @@
+import { checkWarehouseSlot } from "@/lib/plan-limits";
 import { NextRequest, NextResponse } from "next/server";
 import { and, eq, ne, sql } from "drizzle-orm";
 import { db, txDb } from "@/db";
@@ -35,6 +36,10 @@ export async function PUT(request: NextRequest, ctx: { params: Promise<{ id: str
   }
 
   const body = await request.json().catch(() => ({}));
+  if (body.isActive === true && !existing.isActive) {
+    const slotDenied = await checkWarehouseSlot();
+    if (slotDenied) return slotDenied;
+  }
   const name = body.name !== undefined ? String(body.name).trim() : existing.name;
   if (!name) {
     return NextResponse.json({ error: "Location name cannot be empty" }, { status: 400 });

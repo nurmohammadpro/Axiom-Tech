@@ -1,3 +1,4 @@
+import { checkWarehouseSlot } from "@/lib/plan-limits";
 import { NextRequest, NextResponse } from "next/server";
 import { asc, eq, sql } from "drizzle-orm";
 import { db } from "@/db";
@@ -67,6 +68,9 @@ export async function POST(request: NextRequest) {
       { status: 403 },
     );
   }
+
+  const slotDenied = await checkWarehouseSlot();
+  if (slotDenied) return slotDenied;
 
   const body = await request.json().catch(() => ({}));
   const name = String(body.name ?? "").trim();
