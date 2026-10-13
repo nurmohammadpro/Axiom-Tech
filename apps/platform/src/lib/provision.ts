@@ -14,6 +14,8 @@ export interface ProvisionDeps {
   provider?: ShopDbProvider;
   migrationsDir?: string;
   now?: Date;
+  /** Owner-chosen password (self-signup); then no temporary password is returned. */
+  ownerPassword?: string;
 }
 
 export interface ProvisionResult {
@@ -91,6 +93,7 @@ export async function provisionTenant(id: string, actorId: string | null, deps: 
       ownerName: claimed.ownerName,
       ownerEmail: claimed.ownerEmail,
       ownerPhone: claimed.ownerPhone,
+      ownerPassword: deps.ownerPassword,
     });
 
     await db

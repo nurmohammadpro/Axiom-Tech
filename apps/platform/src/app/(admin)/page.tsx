@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import Link from "next/link";
 import { and, desc, eq, gte, lte, sql } from "drizzle-orm";
 import { addDays } from "date-fns";

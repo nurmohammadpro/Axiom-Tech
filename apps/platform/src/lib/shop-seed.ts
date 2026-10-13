@@ -45,6 +45,8 @@ export interface ShopSeedInput {
   ownerName: string;
   ownerEmail: string;
   ownerPhone: string | null;
+  /** Owner-chosen password (self-signup). When omitted a temporary one is generated and returned. */
+  ownerPassword?: string;
 }
 
 /**
@@ -56,7 +58,7 @@ export async function seedShopDatabase(url: string, input: ShopSeedInput): Promi
   try {
     return await client.begin(async (tx) => {
       const [first, ...rest] = input.ownerName.trim().split(/\s+/);
-      const tempPassword = generateTempPassword();
+      const tempPassword = input.ownerPassword ?? generateTempPassword();
       const inserted = await tx`
         insert into users (email, password_hash, first_name, last_name, phone, role)
         values (${input.ownerEmail}, ${hashPassword(tempPassword)}, ${first || input.ownerName}, ${rest.join(" ") || "Owner"}, ${input.ownerPhone}, 'owner')
@@ -98,7 +100,7 @@ export async function seedShopDatabase(url: string, input: ShopSeedInput): Promi
           on conflict (code) do nothing`;
       }
 
-      return { tempPassword: inserted.length ? tempPassword : null };
+      return { tempPassword: inserted.length && !input.ownerPassword ? tempPassword : null };
     });
   } finally {
     await client.end({ timeout: 5 });

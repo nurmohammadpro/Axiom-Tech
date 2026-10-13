@@ -16,6 +16,7 @@ DATABASE_URL='...' ADMIN_EMAIL='you@appbrainer.tech' ADMIN_PASSWORD='long-unique
 - Source: this repo, build path `.` (repo root), Dockerfile `apps/platform/Dockerfile`, port 3100, domain `admin.axiom.appbrainer.tech`. The image already contains the store migrations (`STORE_MIGRATIONS_DIR` is preset).
 - Environment (never commit): `DATABASE_URL` (pooled URL is fine at runtime), `PLATFORM_AUTH_SECRET` (long random), `ROOT_DOMAIN=axiom.appbrainer.tech`, `GATE_SECRET`, `CRON_SECRET`, `SECRETS_KEY` (`openssl rand -base64 32`; losing it makes stored shop DB URLs unreadable, so back it up), `NEON_API_KEY`, `NEON_PROJECT_ID` (from the Neon console: account API keys; the project that will hold shop databases).
 - Run migrations/seed from the container once: `docker exec <container> bun run db:migrate` (and `db:seed` with ADMIN_EMAIL/ADMIN_PASSWORD).
+- Public self-signup lives at `/signup` on the platform; point the root domain (`axiom.appbrainer.tech`) or your marketing site's button at `https://admin.axiom.appbrainer.tech/signup`. Optional env `SIGNUP_DAILY_CAP` (default 20 sign-ups per 24 h). Behind Cloudflare the client IP comes from `cf-connecting-ip`.
 - Scheduled job (daily, e.g. 02:00 Asia/Dhaka): `curl -fsS -X POST -H "Authorization: Bearer $CRON_SECRET" https://admin.axiom.appbrainer.tech/api/cron/expire`
 
 ## 2b. Dokploy application (store, one app serving every shop)
