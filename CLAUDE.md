@@ -30,7 +30,8 @@ The store app code in `apps/store` was copied once from playstore-storefront (no
 - DONE: fresh migrations `apps/store/src/db/migrations` (0000_baseline from schema.ts, 0001_perf_indexes); applied cleanly to an empty Postgres 16 (68 tables, 125 indexes). Old files archived in `src/db/legacy-migrations` (reference only, never run).
 - DONE: `tsc --noEmit` clean, `bun run build` green.
 - DONE (2026-10-13) white-label: all PlayStore names, phone/bKash/Nagad numbers, address, emails, logo and watermark removed from store code and public/; receipts use only the shop's own store_info (logo watermark = shop logo); fallback name "Your Shop"; brand "Axiom Tech" with PLACEHOLDER mark `public/axiom-mark.svg` (replace with real logo); migration 0002 (staff.store_location default "Main Store"); dashboard upgrade banner for `?upgrade=`.
-- TODO: self-signup, Dockerfiles + Dokploy deploy, owner session revocation.
+- DONE: Dockerfiles `apps/platform/Dockerfile` and `apps/store/Dockerfile` (context = repo root, root `.dockerignore`); docs/DEPLOY.md updated. Images NOT built here (no docker daemon); `bun run build` and production `server.ts` start verified (health 200, protected 401).
+- TODO: self-signup, owner session revocation.
 
 ## Phase 1 status: platform app (done 2026-10-10)
 - DONE: schema + migration (plans, tenants, payments, invoices, tenant_events, platform_users); lifecycle in `src/lib/tenants.ts` (create=7-day trial, activate needs fee+first month, monthly renewal, suspend/resume/extend/cancel/change plan, expiry job with 3-day grace); duplicate transaction IDs rejected; gate `getGate(host)` checks time itself so a missed cron never leaves an expired shop open; roles super_admin/billing/support.
