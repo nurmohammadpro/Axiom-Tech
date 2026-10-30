@@ -65,3 +65,13 @@ export function effectiveFeatures(planFeatures: string[], overrides: Record<stri
     return ALL_FEATURES.indexOf(a) - ALL_FEATURES.indexOf(b);
   });
 }
+
+
+/**
+ * Validate/dedupe a set of feature keys (e.g. from the plan editor form) and
+ * return them in catalog order. Unknown keys are dropped.
+ */
+export function sanitizeFeatures(keys: Iterable<string>): string[] {
+  const wanted = new Set(keys);
+  return ALL_FEATURES.filter((k) => wanted.has(k));
+}

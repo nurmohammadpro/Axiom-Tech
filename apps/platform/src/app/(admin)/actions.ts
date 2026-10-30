@@ -13,6 +13,7 @@ import { resetOwnerPassword } from "@/lib/owner";
 import { provisionTenant } from "@/lib/provision";
 import type { Permission } from "@/lib/rbac";
 import { requirePermission } from "@/lib/session";
+import { sanitizeFeatures } from "@/lib/features";
 import {
   activateTenant,
   cancelTenant,
@@ -161,9 +162,16 @@ export async function updatePlanAction(planId: string, fd: FormData) {
     for (const n of [monthlyPrice, signupFee, maxStaff ?? 0, maxWarehouses ?? 0]) {
       if (n < 0) throw new DomainError("Values cannot be negative");
     }
+    // Feature checkboxes: f_<key> present = in plan; absent = out. Shops on
+    // this plan (without per-shop overrides) pick changes up within the gate TTL.
+    const features = sanitizeFeatures(
+      [...fd.entries()].filter(([k, v]) => k.startsWith("f_") && v === "on").map(([k]) => k.slice(2)),
+    );
+    if (features.length === 0) throw new DomainError("A plan needs at least one feature");
+
     const res = await db
       .update(plans)
-      .set({ monthlyPrice, signupFee, maxStaff, maxWarehouses, isActive: fd.get("isActive") === "on" })
+      .set({ monthlyPrice, signupFee, maxStaff, maxWarehouses, isActive: fd.get("isActive") === "on", features })
       .where(eq(plans.id, planId))
       .returning({ id: plans.id });
     if (!res.length) throw new DomainError("Plan not found");
