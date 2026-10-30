@@ -1,7 +1,12 @@
 # Axiom Tech SaaS — UX/UI Differentiation Plan
 
-Status: proposal, 2026-10-31. Nur supplies final visual designs later; nothing here is
-implemented without approval. This document answers: "the store app is a clone of our
+Status: phases 1–7 implemented 2026-10-31 (commits 72fc19b, 7996106, 37f801a). Deferred
+by design: offline sale write-queue (needs explicit UI + idempotent replay), catalog +
+inventory merged landing page, deeper per-page reskins pending Nur's design language,
+and the client-portal decision. POS v2 runs behind the "POS v2 (beta)" nav entry until
+Nur signs off; the classic POS remains the default.
+
+Original proposal, 2026-10-31. This document answers: "the store app is a clone of our
 single-tenant product — how do we turn it into a distinctly different SaaS product in
 every way?"
 
