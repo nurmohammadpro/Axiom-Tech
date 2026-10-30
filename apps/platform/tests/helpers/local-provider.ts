@@ -10,6 +10,7 @@ const ROLE_PASSWORD = "Ax8m-Qv4Tn2-Kw9Rp6Jz5-Lb3Fd7Hs-Yc1";
 
 export class LocalPgProvider implements ShopDbProvider {
   createCalls = 0;
+  dropCalls = 0;
   created: { databaseName: string; roleName: string }[] = [];
 
   constructor(private readonly adminUrl: string) {}
@@ -43,6 +44,7 @@ export class LocalPgProvider implements ShopDbProvider {
   }
 
   async dropShopDatabase(databaseName: string, roleName: string): Promise<void> {
+    this.dropCalls++;
     const admin = postgres(this.adminUrl, { max: 1 });
     try {
       await admin.unsafe(`drop database if exists "${databaseName}" with (force)`);

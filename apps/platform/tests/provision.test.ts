@@ -163,6 +163,26 @@ describe("provisioning pipeline (real Postgres, local stand-in for Neon)", () =>
     expect(provider.createCalls).toBe(0);
   }, T);
 
+  test("cancelling a provisioned shop drops its database and scrubs credentials", async () => {
+    const t = await mk("prov9");
+    await provisionTenant(t.id, null, { provider });
+    provider.dropCalls = 0;
+
+    await cancelTenant(t.id, "left", null, { provider });
+
+    expect(provider.dropCalls).toBe(1);
+    const row = (await db.select().from(tenants).where(eq(tenants.id, t.id)))[0];
+    expect(row.dbUrlEncrypted).toBeNull();
+    expect(row.neonDatabase).toBeNull();
+    expect(row.neonRole).toBeNull();
+    const evs = await db.select().from(tenantEvents).where(eq(tenantEvents.tenantId, t.id));
+    expect(evs.some((e) => e.type === "deprovisioned")).toBe(true);
+    // the gate still reports the shop as cancelled
+    const gate = await getGate(`${"prov9"}.axiom.appbrainer.tech`);
+    expect(gate.allowed).toBe(false);
+    expect(gate.reason).toBe("cancelled");
+  }, T);
+
   test("seeding is idempotent and never overwrites the existing owner", async () => {
     const t = await mk("prov8");
     await provisionTenant(t.id, null, { provider });

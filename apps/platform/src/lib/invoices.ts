@@ -184,3 +184,28 @@ export async function billingTotals(now = new Date()) {
     .where(and(eq(invoices.status, "due"), lt(invoices.dueDate, now)));
   return { collectedThisMonth: collected?.v ?? 0, outstanding: outstanding?.v ?? 0, overdue: overdue?.v ?? 0 };
 }
+
+/**
+ * Voids a due invoice: it will never be paid (e.g. issued in error) and stops
+ * counting as outstanding/overdue. Paid invoices can only be refunded by
+ * recording a negative payment — deliberately out of scope for now.
+ */
+export async function voidInvoice(invoiceId: string, actorId: string | null, now = new Date()): Promise<Invoice> {
+  return db.transaction(async (tx) => {
+    const [inv] = await tx.select().from(invoices).where(eq(invoices.id, invoiceId)).for("update");
+    if (!inv) throw new DomainError("Invoice not found");
+    if (inv.status !== "due") throw new DomainError("Only due invoices can be voided");
+    const [updated] = await tx
+      .update(invoices)
+      .set({ status: "void" })
+      .where(eq(invoices.id, inv.id))
+      .returning();
+    await tx.insert(tenantEvents).values({
+      tenantId: inv.tenantId,
+      type: "invoice_voided",
+      actorId,
+      data: { invoiceId: inv.id },
+    });
+    return updated;
+  });
+}

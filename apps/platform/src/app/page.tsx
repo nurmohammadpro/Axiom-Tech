@@ -5,6 +5,7 @@ import { db } from "@/db";
 import { plans } from "@/db/schema";
 import { PLAN_CATALOG } from "@/lib/plan-catalog";
 import { taka } from "@/lib/domain";
+import { supportContact } from "@/lib/support";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
@@ -31,6 +32,7 @@ const FAQ = [
 ];
 
 export default async function MarketingPage() {
+  const contact = supportContact();
   const rows = await db
     .select()
     .from(plans)

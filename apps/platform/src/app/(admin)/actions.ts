@@ -8,7 +8,7 @@ import { db } from "@/db";
 import { plans, type PlatformUser } from "@/db/schema";
 import { SESSION_COOKIE } from "@/lib/auth";
 import { DomainError } from "@/lib/domain";
-import { generateMonthlyInvoices, payInvoice } from "@/lib/invoices";
+import { generateMonthlyInvoices, payInvoice, voidInvoice } from "@/lib/invoices";
 import { resetOwnerPassword } from "@/lib/owner";
 import { provisionTenant } from "@/lib/provision";
 import type { Permission } from "@/lib/rbac";
@@ -176,6 +176,13 @@ export async function updatePlanAction(planId: string, fd: FormData) {
       .returning({ id: plans.id });
     if (!res.length) throw new DomainError("Plan not found");
     return "Plan updated";
+  });
+}
+
+export async function voidInvoiceAction(invoiceId: string) {
+  return run("tenant:payment", `/invoices/${invoiceId}`, async (u) => {
+    await voidInvoice(invoiceId, u.id);
+    return "Invoice voided";
   });
 }
 

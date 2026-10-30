@@ -8,10 +8,25 @@ import { fmtDate, fmtDateTime, methodLabel } from "@/lib/format";
 import { getInvoice } from "@/lib/invoices";
 import { can } from "@/lib/rbac";
 import { getCurrentUser } from "@/lib/session";
-import { payInvoiceAction } from "../../actions";
+import { payInvoiceAction, voidInvoiceAction } from "../../actions";
 import { Badge, Field, Notice, td, th } from "../../../ui";
 import { SubmitButton } from "../../submit-button";
+import { OwnerLinkButtons } from "./owner-link-buttons";
+import { ownerInvoiceToken, ownerReminderMessage } from "@/lib/invoice-link";
+import { headers } from "next/headers";
 import { PrintButton } from "./print-button";
+
+function VoidButton({ action }: { action: () => void }) {
+  return (
+    <SubmitButton
+      className="btn btn-danger"
+      confirm="Void this invoice? It stops counting as outstanding and can never be paid."
+      pendingLabel="Voiding…"
+    >
+      Void
+    </SubmitButton>
+  );
+}
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const METHODS = ["banglaqr", "cash", "bkash", "nagad", "bank", "other"] as const;
@@ -34,6 +49,21 @@ export default async function InvoicePage({
   const payable = inv.status === "due" && inv.kind === "monthly";
   const now = new Date();
   const overdue = inv.status === "due" && inv.dueDate && inv.dueDate < now;
+  const voidAction = voidInvoiceAction.bind(null, inv.id);
+
+  // Owner-facing link: survives without a login so the admin can send it over
+  // WhatsApp. The HMAC secret stays server-side; only the final URL is copied.
+  const host = (await headers()).get("host") ?? process.env.ROOT_DOMAIN ?? "localhost:3100";
+  const proto = host.startsWith("localhost") || host.startsWith("127.") ? "http" : "https";
+  const ownerUrl = `${proto}://${host}/i/${inv.id}?t=${ownerInvoiceToken(inv.id)}`;
+  const reminder = ownerReminderMessage({
+    ownerUrl,
+    shopName: tenant.name,
+    invoiceNumber: number,
+    amount: inv.amount,
+    dueDate: inv.dueDate ?? now,
+    taka,
+  });
 
   return (
     <div className="space-y-4">
@@ -42,9 +72,13 @@ export default async function InvoicePage({
           <h1 className="font-mono text-lg font-semibold">{number}</h1>
           <Badge value={overdue ? "overdue" : inv.status} />
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <Link className="btn" href="/invoices">All invoices</Link>
+          {inv.status === "due" && <OwnerLinkButtons link={ownerUrl} reminder={reminder} />}
           {inv.status === "paid" && <PrintButton />}
+          {inv.status === "due" && user && can(user.role, "tenant:payment") && (
+            <VoidButton action={voidAction} />
+          )}
         </div>
       </div>
       <Notice ok={ok} error={error} />

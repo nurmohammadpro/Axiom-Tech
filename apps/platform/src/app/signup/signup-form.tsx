@@ -12,7 +12,7 @@ export interface PlanOption {
 
 const initial: SignupState = { ok: false };
 
-export function SignupForm({ plans, rootDomain, defaultPlan }: { plans: PlanOption[]; rootDomain: string; defaultPlan?: string }) {
+export function SignupForm({ plans, rootDomain, defaultPlan, support }: { plans: PlanOption[]; rootDomain: string; defaultPlan?: string; support?: string | null }) {
   const [state, action, pending] = useActionState(signupAction, initial);
   const v = state.values ?? {};
 
@@ -26,7 +26,10 @@ export function SignupForm({ plans, rootDomain, defaultPlan }: { plans: PlanOpti
             <p className="text-sm" style={{ color: "var(--muted-foreground)" }}>Your 7-day free trial has started.</p>
           </>
         ) : (
-          <p className="text-sm">Your shop is registered, but setup did not finish. Please contact us with your shop address and we will finish it for you.</p>
+          <p className="text-sm">
+            Your shop is registered, but setup did not finish. Contact us with your shop address and we will finish it for you.
+            {support ? <> Reach us at <strong>{support}</strong>.</> : null}
+          </p>
         )}
       </section>
     );

@@ -11,6 +11,7 @@ import {
 } from "@/db/schema";
 import { DomainError, GRACE_DAYS, TRIAL_DAYS, validateSlug } from "./domain";
 import { ALL_FEATURES } from "./features";
+import { getShopDbProvider, type ShopDbProvider } from "./neon";
 import { normalizePhone } from "./signup";
 
 type PayMethod = "banglaqr" | "cash" | "bkash" | "nagad" | "bank" | "other";
@@ -321,8 +322,13 @@ export async function extendTrial(id: string, days: number, actorId: string | nu
   });
 }
 
-export async function cancelTenant(id: string, reason: string, actorId: string | null) {
-  return db.transaction(async (tx) => {
+export async function cancelTenant(
+  id: string,
+  reason: string,
+  actorId: string | null,
+  deps: { provider?: ShopDbProvider } = {},
+) {
+  const cancelled = await db.transaction(async (tx) => {
     const t = await lockTenant(tx, id);
     if (t.status === "cancelled") throw new DomainError("Shop is already cancelled");
     const [updated] = await tx
@@ -333,6 +339,36 @@ export async function cancelTenant(id: string, reason: string, actorId: string |
     await event(tx, id, "cancelled", actorId, { reason });
     return updated;
   });
+
+  // A cancelled shop's database must not linger on Neon (still counts against
+  // storage) or keep valid credentials around. Best-effort after the cancel
+  // commits: a failed drop is recorded, never blocks the cancellation.
+  if (cancelled.dbUrlEncrypted && cancelled.neonDatabase && cancelled.neonRole) {
+    try {
+      const provider = deps.provider ?? getShopDbProvider();
+      await provider.dropShopDatabase(cancelled.neonDatabase, cancelled.neonRole);
+      await db
+        .update(tenants)
+        .set({
+          dbUrlEncrypted: null,
+          neonProjectId: null,
+          neonDatabase: null,
+          neonRole: null,
+          provisionStatus: "pending",
+          updatedAt: new Date(),
+        })
+        .where(eq(tenants.id, id));
+      await db.insert(tenantEvents).values({ tenantId: id, type: "deprovisioned", actorId, data: {} });
+    } catch (e) {
+      await db.insert(tenantEvents).values({
+        tenantId: id,
+        type: "deprovision_failed",
+        actorId,
+        data: { error: e instanceof Error ? e.message : "drop failed" },
+      });
+    }
+  }
+  return cancelled;
 }
 
 /** Blocks shops whose trial or paid period (plus grace) has ended. Safe to run repeatedly. */
