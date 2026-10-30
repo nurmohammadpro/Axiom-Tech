@@ -4,19 +4,16 @@ import { useState, useMemo, useRef, useEffect, type ReactNode } from "react";
 import { Sparkline } from "./sparkline";
 import {
   LayoutDashboard,
-  BarChart3,
   Package,
+  PackagePlus,
   Boxes,
   Barcode,
   ScanLine,
   ShoppingBag,
-  Megaphone,
   Banknote,
+  Receipt,
   Users,
   Truck,
-  RefreshCw,
-  Undo2,
-  Printer,
   FileText,
   Shield,
   UserCog,
@@ -48,58 +45,44 @@ type Group = { title: string; items: Item[] };
 
 const groups: Group[] = [
   {
-    title: "Workspace",
+    title: "Sell",
     items: [
       { to: "/dashboard", label: "Overview", icon: LayoutDashboard },
-      { to: "/dashboard/analytics", label: "Analytics", icon: BarChart3, featureKey: "analytics" },
+      { to: "/dashboard/pos", label: "POS", icon: ScanLine, featureKey: "pos" },
+      { to: "/dashboard/pos-v2", label: "POS v2 (beta)", icon: ScanLine, featureKey: "pos" },
+      { to: "/dashboard/orders", label: "Orders", icon: ShoppingBag, featureKey: "orders" },
+      { to: "/dashboard/customers", label: "Customers", icon: Users, featureKey: "customers" },
     ],
   },
   {
-    title: "Catalog",
+    title: "Stock",
     items: [
-      { to: "/dashboard/catalog", label: "Catalog", icon: Package, featureKey: "products" },
+      { to: "/dashboard/catalog", label: "Products", icon: Package, featureKey: "products" },
       { to: "/dashboard/inventory", label: "Inventory", icon: Boxes, featureKey: "inventory" },
+      { to: "/dashboard/stock", label: "Stock in", icon: PackagePlus, featureKey: "inventory" },
       { to: "/dashboard/barcodes", label: "Barcodes", icon: Barcode, featureKey: "barcodes" },
     ],
   },
   {
-    title: "Sales",
+    title: "Money",
     items: [
-      { to: "/dashboard/pos", label: "Billing / POS", icon: ScanLine, featureKey: "pos" },
-      { to: "/dashboard/orders", label: "Orders", icon: ShoppingBag, featureKey: "orders" },
-      { to: "/dashboard/campaigns", label: "Campaigns", icon: Megaphone, featureKey: "campaigns" },
-      { to: "/dashboard/cash", label: "Cash Management", icon: Banknote, featureKey: "cash" },
+      { to: "/dashboard/cash", label: "Cash drawer", icon: Banknote, featureKey: "cash" },
+      { to: "/dashboard/expenses", label: "Expenses", icon: Receipt, featureKey: "expenses" },
+      { to: "/dashboard/reports", label: "Reports", icon: FileText, featureKey: "reports" },
     ],
   },
   {
-    title: "Expenses",
+    title: "People",
     items: [
-      { to: "/dashboard/expenses", label: "Expenses", icon: Banknote, featureKey: "expenses" },
-    ],
-  },
-  {
-    title: "Operations",
-    items: [
-      { to: "/dashboard/customers", label: "Customers", icon: Users, featureKey: "customers" },
-      { to: "/dashboard/purchases", label: "Purchases", icon: Truck, featureKey: "purchases" },
-      { to: "/dashboard/exchanges", label: "Exchanges", icon: RefreshCw, featureKey: "exchanges" },
-      { to: "/dashboard/warranties", label: "Warranties", icon: Shield, featureKey: "warranty" },
-      { to: "/dashboard/returns", label: "Returns", icon: Undo2, featureKey: "returns" },
-      {
-        to: "/dashboard/hardware",
-        label: "Hardware & Media",
-        icon: Printer,
-        featureKey: "hardware",
-      },
+      { to: "/dashboard/staff", label: "Staff & HR", icon: UserCog, featureKey: "staff" },
+      { to: "/dashboard/purchases", label: "Suppliers & Purchases", icon: Truck, featureKey: "purchases" },
     ],
   },
   {
     title: "System",
     items: [
-      { to: "/dashboard/reports", label: "Reports", icon: FileText, featureKey: "reports" },
-      { to: "/dashboard/audit", label: "Audit Log", icon: Shield, featureKey: "audit" },
-      { to: "/dashboard/staff", label: "Staff & HR", icon: UserCog, featureKey: "staff" },
       { to: "/dashboard/settings", label: "Settings", icon: Settings, featureKey: "settings" },
+      { to: "/dashboard/audit", label: "Audit Log", icon: Shield, featureKey: "audit" },
       { to: "/dashboard/guide", label: "Guide", icon: FileText, featureKey: "guide" },
     ],
   },

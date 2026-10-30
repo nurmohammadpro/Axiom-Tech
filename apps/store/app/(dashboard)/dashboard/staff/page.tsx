@@ -27,6 +27,7 @@ import { Plus, X, Pencil, Shield, ShieldOff, Trash2 } from "lucide-react";
 import { LeavesView } from "../hr/leaves/page";
 import { PayrollView } from "../hr/payroll/page";
 import { HrSetupView } from "../hr/setup/page";
+import { confirmDialog } from "@/components/confirm-host";
 
 const inputCls =
   "w-full border border-border bg-background px-2 py-1.5 text-sm outline-none focus:border-foreground";
@@ -706,7 +707,7 @@ export default function Staff() {
                     {isOwner && (
                       <button
                         onClick={async () => {
-                          if (!confirm(`Remove ${s.firstName} ${s.lastName}?`)) return;
+                          if (!(await confirmDialog({ title: "Remove staff", description: `Remove ${s.firstName} ${s.lastName}? This cannot be undone.` }))) return;
                           try {
                             const res = await fetch(`/api/dashboard/staff/${s.id}`, { method: "DELETE" });
                             if (!res.ok) {

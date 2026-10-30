@@ -7,6 +7,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, Pencil, Trash2, TrendingUp, Calculator } from "lucide-react";
 import { toast } from "sonner";
 import { bdt } from "@/lib/utils";
+import { confirmDialog } from "@/components/confirm-host";
 
 async function getExchangePolicies() {
   const res = await fetch("/api/dashboard/exchange-policies");
@@ -231,8 +232,8 @@ export default function ExchangePolicies() {
                   <Button
                     variant="surface"
                     size="sm"
-                    onClick={() => {
-                      if (confirm("Delete this exchange policy?")) {
+                    onClick={async () => {
+                      if (await confirmDialog({ title: "Delete exchange policy", description: "Delete this exchange policy? Trades already made are unaffected." })) {
                         deleteMutation.mutate(policy.id);
                       }
                     }}

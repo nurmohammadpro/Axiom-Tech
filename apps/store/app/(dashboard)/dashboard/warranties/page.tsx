@@ -27,6 +27,7 @@ import {
 import { Card as UICard } from "@/components/ui/card";
 import { SearchInput } from "@/components/ui/search-input";
 import Link from "next/link";
+import { confirmDialog } from "@/components/confirm-host";
 
 // ---------------------------------------------------------------------------
 // Tabs
@@ -694,7 +695,7 @@ function PoliciesTab() {
                     variant="ghost"
                     size="sm"
                     onClick={async () => {
-                      if (confirm("Delete this policy?")) {
+                      if (await confirmDialog({ title: "Delete policy", description: "Delete this warranty policy? Products using it keep their snapshots." })) {
                         await fetch(`/api/warranties/policies/${policy.id}`, {
                           method: "DELETE",
                         });

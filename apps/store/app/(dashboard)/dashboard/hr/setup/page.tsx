@@ -9,6 +9,7 @@ import { createLeaveType, deleteLeaveType, updateStaff } from "@/lib/api";
 import { bdt } from "@/lib/utils";
 import { toast } from "sonner";
 import { Plus, Trash2 } from "lucide-react";
+import { confirmDialog } from "@/components/confirm-host";
 
 const inputCls =
   "w-full border border-border bg-background px-2 py-1.5 text-sm outline-none focus:border-foreground";
@@ -46,7 +47,7 @@ export function HrSetupView() {
   }
 
   async function removeType(id: number) {
-    if (!confirm("Delete this leave type?")) return;
+    if (!(await confirmDialog({ title: "Delete leave type", description: "Delete this leave type? Existing requests keep their records." }))) return;
     try {
       await deleteLeaveType(id);
       toast.success("Deleted");
