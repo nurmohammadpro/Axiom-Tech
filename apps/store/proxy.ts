@@ -61,8 +61,8 @@ export default async function proxy(request: NextRequest) {
           return NextResponse.json({ error: "Your plan does not include this feature", code: "plan_feature", feature }, { status: 403 });
         }
         const url = request.nextUrl.clone();
-        url.pathname = "/dashboard";
-        url.search = `?upgrade=${encodeURIComponent(feature)}`;
+        url.pathname = "/dashboard/upgrade";
+        url.search = `?feature=${encodeURIComponent(feature)}`;
         return NextResponse.redirect(url);
       }
     } catch (e) {

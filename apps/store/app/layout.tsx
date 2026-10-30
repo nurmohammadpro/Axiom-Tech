@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
-import Script from "next/script";
 import type { ReactNode } from "react";
 import { Providers } from "@/lib/providers";
+import { SwRegister } from "@/components/sw-register";
 import { Toaster } from "@/components/ui/sonner";
 import "@/styles.css";
 
@@ -10,7 +10,7 @@ const DESCRIPTION = "Inventory, POS and sales management for tech shops.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.APP_URL || `https://${process.env.ROOT_DOMAIN || "axiom.appbrainer.tech"}`),
-  title: APP_NAME,
+  title: { default: APP_NAME, template: "%s · Axiom Tech" },
   description: DESCRIPTION,
   manifest: "/manifest.webmanifest",
   applicationName: APP_NAME,
@@ -36,27 +36,16 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link
-          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Hind+Siliguri:wght@400;500;600;700&display=swap"
           rel="stylesheet"
         />
-        {/*
-          This app ships NO service worker. A previous app on this port registered one,
-          and it can serve stale cached bundles that break hydration and API calls.
-          Run this purge as early as possible (before hydration): unregister every
-          service worker, wipe all caches, and reload once to escape its control.
-        */}
-        <Script
-          id="sw-cleanup"
-          strategy="beforeInteractive"
-          dangerouslySetInnerHTML={{
-            __html: `(function(){if(!('serviceWorker' in navigator)){return}if(window.__swCleanupDone){return}window.__swCleanupDone=true;var hadController=!!navigator.serviceWorker.controller;if('caches' in window){caches.keys().then(function(keys){keys.forEach(function(k){caches.delete(k).catch(function(){})})}).catch(function(){})}navigator.serviceWorker.getRegistrations().then(function(rs){rs.forEach(function(r){r.unregister()});if(hadController&&!sessionStorage.getItem('sw-cleaned')){sessionStorage.setItem('sw-cleaned','1');window.location.reload()}}).catch(function(){})})();`,
-          }}
-        />
+
       </head>
       <body>
         <Providers>
           {children}
           <Toaster />
+          <SwRegister />
         </Providers>
       </body>
     </html>

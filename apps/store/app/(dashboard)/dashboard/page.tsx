@@ -6,6 +6,7 @@ import { Card, Stat, Pill } from "@/components/dashboard/dashboard-shell";
 import { useDashboardStats, useReports, useAuditLog, useMyPermissions } from "@/lib/hooks";
 import { bdt } from "@/lib/utils";
 import { UpgradeBanner } from "@/components/dashboard/upgrade-banner";
+import { OnboardingChecklist } from "@/components/dashboard/onboarding-checklist";
 import type { DashboardRange } from "@/lib/api";
 import {
   AlertTriangle,
@@ -113,6 +114,7 @@ export default function Overview() {
 
   return (
     <>
+      <OnboardingChecklist />
       <UpgradeBanner />
       {/* Alerts */}
       {(outOfStockSample.length > 0 || lowStockSample.length > 0) && (
