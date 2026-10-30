@@ -73,6 +73,10 @@ Next.js + TypeScript + Tailwind + shadcn/ui, Drizzle + Postgres, bun. Prefer pro
 ## Working style (Nur)
 No chit-chat. Flag issues concisely, execute after confirmation, never re-ask settled context.
 
+## Per-shop feature toggles (2026-10-31)
+- `tenants.feature_overrides` jsonb (migration 0004): `true` grants, `false` revokes, absent = inherit from plan. The gate merges them (`effectiveFeatures`), so the store needs no changes and picks up toggles within the gate TTL (~30 s).
+- Admin UI: "Feature access" panel on the tenant page (Inherit/On/Off per catalog feature), permission `tenant:features` (super_admin, billing), `setFeatureOverrides` writes a `features_changed` event, refuses cancelled shops, drops unknown keys.
+
 ## Direction change (2026-10-31, Nur)
 - Store app has NO public storefront. Only the sign-in page remains; root `/` renders it; PWA manifest added. Storefront pages, site-header/footer, product-card/image, `/api/auth/signup` and the orders POST are deleted; `/signin` redirects to `/`. Client portal (`/clientportal`) fate undecided (fake settings/wishlist) — do not extend it.
 - Full UX/UI differentiation from the single-tenant clone is the goal (layouts, colors, typography, page UX — none should match). POS is to be simplified "like a regular POS". Plan + suggestions in `docs/SAAS-UX-REDESIGN.md`; Nur supplies final designs — do not redesign beyond it unprompted.
