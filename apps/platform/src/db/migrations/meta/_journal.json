@@ -29,6 +29,13 @@
       "when": 1791916737875,
       "tag": "0003_open_monthly_invoice_uq",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1793387871593,
+      "tag": "0004_tenant_feature_overrides",
+      "breakpoints": true
     }
   ]
 }

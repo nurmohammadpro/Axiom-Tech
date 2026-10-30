@@ -3,6 +3,7 @@ import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import { plans, tenants } from "@/db/schema";
 import { GRACE_DAYS, slugFromHost } from "./domain";
+import { effectiveFeatures } from "./features";
 
 export interface GateResult {
   found: boolean;
@@ -46,7 +47,7 @@ export async function getGate(host: string, now = new Date()): Promise<GateResul
     name: t.name,
     status: t.status,
     planId: p.id,
-    features: p.features,
+    features: effectiveFeatures(p.features, t.featureOverrides),
     maxStaff: p.maxStaff,
     maxWarehouses: p.maxWarehouses,
     trialEndsAt: t.trialEndsAt.toISOString(),

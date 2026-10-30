@@ -14,6 +14,7 @@ import {
   extendTrial,
   recordMonthlyPayment,
   resumeTenant,
+  setFeatureOverrides,
   suspendTenant,
 } from "@/lib/tenants";
 import { createSessionToken, hashPassword, verifyPassword, verifySessionToken } from "@/lib/auth";
@@ -216,6 +217,56 @@ describe("gate", () => {
     expect(g.maxStaff).toBe(1);
     if (prev === undefined) delete process.env.ROOT_DOMAIN;
     else process.env.ROOT_DOMAIN = prev;
+  });
+});
+
+describe("per-shop feature overrides", () => {
+  test("gate merges overrides over the plan and toggles reach the shop", async () => {
+    const t = await createTenant(input("feat1", "starter"), null, T0);
+    await ready(t.id);
+    const host = "feat1.axiom.appbrainer.tech";
+
+    // Baseline: starter plan features, no expenses/audit.
+    const base = await getGate(host, T0);
+    expect(base.allowed).toBe(true);
+    expect(base.features).toContain("pos");
+    expect(base.features).not.toContain("expenses");
+    expect(base.features).not.toContain("audit");
+
+    // Grant expenses, revoke barcodes.
+    await setFeatureOverrides(t.id, { expenses: true, barcodes: false }, null);
+    const after = await getGate(host, T0);
+    expect(after.features).toContain("expenses");
+    expect(after.features).not.toContain("barcodes");
+    expect(after.features).toContain("pos"); // untouched plan features stay
+
+    // Back to inherit-all clears the overrides.
+    await setFeatureOverrides(t.id, {}, null);
+    const reset = await getGate(host, T0);
+    expect(reset.features).not.toContain("expenses");
+    expect(reset.features).toContain("barcodes");
+
+    // Event log records the change.
+    const [ev] = await db
+      .select()
+      .from(tenantEvents)
+      .where(eq(tenantEvents.tenantId, t.id))
+      .orderBy(sql`created_at desc`);
+    expect(ev.type).toBe("features_changed");
+  });
+
+  test("cancelled shops cannot change features; unknown keys are dropped", async () => {
+    const t = await createTenant(input("feat2", "starter"), null, T0);
+    await cancelTenant(t.id, "test", null);
+    await expect(setFeatureOverrides(t.id, { pos: false }, null)).rejects.toThrow("Cancelled");
+
+    const live = await createTenant(input("feat3", "starter"), null, T0);
+    const updated = await setFeatureOverrides(
+      live.id,
+      { expenses: true, bogus_feature: true, also_bogus: false } as Record<string, boolean>,
+      null,
+    );
+    expect(Object.keys(updated.featureOverrides as Record<string, boolean>).sort()).toEqual(["expenses"]);
   });
 });
 

@@ -23,6 +23,7 @@ import {
   resumeTenant,
   suspendTenant,
   type PaymentInput,
+  setFeatureOverrides,
 } from "@/lib/tenants";
 
 const METHODS = ["banglaqr", "cash", "bkash", "nagad", "bank", "other"] as const;
@@ -125,6 +126,21 @@ export async function changePlanAction(tenantId: string, fd: FormData) {
   return run("tenant:change_plan", `/tenants/${tenantId}`, async (u) => {
     await changePlan(tenantId, str(fd, "planId"), u.id);
     return "Plan changed";
+  });
+}
+
+export async function setFeatureOverridesAction(tenantId: string, fd: FormData) {
+  return run("tenant:features", `/tenants/${tenantId}`, async (u) => {
+    // Inputs: f_<key> = "on" | "off"; absent = inherit.
+    const overrides: Record<string, boolean> = {};
+    for (const [key, value] of fd.entries()) {
+      if (!key.startsWith("f_")) continue;
+      const feature = key.slice(2);
+      if (value === "on") overrides[feature] = true;
+      else if (value === "off") overrides[feature] = false;
+    }
+    await setFeatureOverrides(tenantId, overrides, u.id);
+    return "Feature access updated";
   });
 }
 

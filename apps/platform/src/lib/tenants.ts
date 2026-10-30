@@ -10,6 +10,7 @@ import {
   type Tenant,
 } from "@/db/schema";
 import { DomainError, GRACE_DAYS, TRIAL_DAYS, validateSlug } from "./domain";
+import { ALL_FEATURES } from "./features";
 import { normalizePhone } from "./signup";
 
 type PayMethod = "banglaqr" | "cash" | "bkash" | "nagad" | "bank" | "other";
@@ -226,6 +227,39 @@ export async function changePlan(id: string, planId: string, actorId: string | n
     const plan = await getPlan(tx, planId);
     const [updated] = await tx.update(tenants).set({ planId: plan.id, updatedAt: new Date() }).where(eq(tenants.id, id)).returning();
     await event(tx, id, "plan_changed", actorId, { from: t.planId, to: plan.id });
+    return updated;
+  });
+}
+
+/**
+ * Per-shop feature overrides over the plan: `true` grants, `false` revokes,
+ * an absent key inherits. The gate merges these into the shop's feature list,
+ * so the store's proxy and feature checks pick changes up within the gate TTL.
+ */
+export async function setFeatureOverrides(
+  id: string,
+  overrides: Record<string, boolean>,
+  actorId: string | null,
+) {
+  // Only known feature keys, only boolean values.
+  const known = new Set(ALL_FEATURES);
+  const clean: Record<string, boolean> = {};
+  for (const [k, v] of Object.entries(overrides)) {
+    if (known.has(k) && typeof v === "boolean") clean[k] = v;
+  }
+  return db.transaction(async (tx) => {
+    const t = await lockTenant(tx, id);
+    if (t.status === "cancelled") throw new DomainError("Cancelled shops cannot change features");
+    const [updated] = await tx
+      .update(tenants)
+      .set({ featureOverrides: clean, updatedAt: new Date() })
+      .where(eq(tenants.id, id))
+      .returning();
+    await event(tx, id, "features_changed", actorId, {
+      overrides: clean,
+      granted: Object.keys(clean).filter((k) => clean[k]),
+      revoked: Object.keys(clean).filter((k) => !clean[k]),
+    });
     return updated;
   });
 }

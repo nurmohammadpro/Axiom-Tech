@@ -18,6 +18,9 @@ import {
 } from "../../actions";
 import { Badge, Field, Notice, td, th } from "../../../ui";
 import { SubmitButton } from "../../submit-button";
+import { ALL_FEATURES, FEATURE_LABELS } from "@/lib/features";
+import { FeaturesPanel, type FeatureRow } from "./features-panel";
+import { setFeatureOverridesAction } from "../../actions";
 import { OwnerResetPanel } from "./owner-reset-panel";
 import { ProvisionPanel } from "./provision-panel";
 
@@ -69,6 +72,7 @@ export default async function TenantDetail({ params, searchParams }: { params: P
   const resume = resumeAction.bind(null, id);
   const change = changePlanAction.bind(null, id);
   const cancel = cancelAction.bind(null, id);
+  const setFeatures = setFeatureOverridesAction.bind(null, id);
 
   return (
     <div className="space-y-5">
@@ -158,6 +162,21 @@ export default async function TenantDetail({ params, searchParams }: { params: P
           </form>
         )}
       </section>
+
+      {can(user.role, "tenant:features") && live && (
+        <FeaturesPanel
+          action={setFeatures}
+          planName={plan.name}
+          initial={(t.featureOverrides ?? {}) as Record<string, boolean>}
+          rows={ALL_FEATURES.map(
+            (key): FeatureRow => ({
+              key,
+              label: FEATURE_LABELS[key] ?? key,
+              inPlan: plan.features.includes(key),
+            }),
+          )}
+        />
+      )}
 
       <section className="card overflow-x-auto">
         <h2 className="px-4 pt-4 text-sm font-bold">Invoices</h2>

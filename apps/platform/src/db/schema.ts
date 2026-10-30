@@ -73,6 +73,8 @@ export const tenants = pgTable(
     neonRole: text("neon_role"),
     /** AES-GCM encrypted pooled connection URL of the shop database. */
     dbUrlEncrypted: text("db_url_encrypted"),
+    /** Per-shop feature overrides over the plan: true = grant, false = revoke, absent = inherit. */
+    featureOverrides: jsonb("feature_overrides").$type<Record<string, boolean>>().notNull().default({}),
     provisionedAt: timestamp("provisioned_at", { withTimezone: true }),
     createdBy: uuid("created_by").references(() => platformUsers.id),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
