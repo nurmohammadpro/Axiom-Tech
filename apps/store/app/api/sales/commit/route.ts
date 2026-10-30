@@ -95,6 +95,10 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: staffDenied.error }, { status: staffDenied.status });
   }
   const cashierId = scope.userId ?? body.cashierId;
+  // Negotiated prices are a manager/owner decision: salesmen always sell at
+  // the catalog price regardless of what the client sends. Discounts stay
+  // available to everyone (separate, size-limited field).
+  const mayOverridePrice = scope.isOwner || scope.role === "owner" || scope.role === "manager";
 
   if (!Array.isArray(body.lines) || body.lines.length === 0) {
     return NextResponse.json({ error: "Sale must have at least one line" }, { status: 400 });
@@ -226,7 +230,8 @@ export async function POST(request: NextRequest) {
             );
           }
 
-          const unitPrice = line.unitPrice ?? unit.currentPrice ?? variant.sellingPrice;
+          const catalogPrice = unit.currentPrice ?? variant.sellingPrice;
+          const unitPrice = mayOverridePrice ? (line.unitPrice ?? catalogPrice) : catalogPrice;
           if (!unitPrice || unitPrice <= 0) {
             throw new Error(`Cannot sell ${variant.sku}: sell price is not set (purchase intake missing sell price)`);
           }
@@ -269,7 +274,7 @@ export async function POST(request: NextRequest) {
             .where(eq(products.id, variant.productId))
             .limit(1);
 
-          const unitPrice = line.unitPrice ?? variant.sellingPrice;
+          const unitPrice = mayOverridePrice ? (line.unitPrice ?? variant.sellingPrice) : variant.sellingPrice;
           if (!unitPrice || unitPrice <= 0) {
             throw new Error(`Cannot sell ${variant.sku}: sell price is not set (purchase intake missing sell price)`);
           }

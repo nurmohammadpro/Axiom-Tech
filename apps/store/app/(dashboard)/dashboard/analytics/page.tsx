@@ -49,18 +49,16 @@ export default function Analytics() {
       )
     : 0;
 
-  // Calculate conversion rate (customers who made purchase / total customers)
-  const conversionRate =
-    stats && stats.totalCustomers > 0
-      ? ((stats.totalOrders / stats.totalCustomers) * 100).toFixed(1)
-      : "0.0";
+  // Orders per customer: how many orders the average customer places.
+  const ordersPerCustomer =
+    stats && stats.totalCustomers > 0 ? (stats.totalOrders / stats.totalCustomers).toFixed(1) : "0.0";
 
-  // Calculate repeat rate (customers with >1 order / total customers)
+  // Repeat rate: share of customers with more than one order, clamped 0..100.
   const repeatRate =
     stats && stats.totalCustomers > 0
-      ? (
-          ((stats.totalOrders - stats.totalCustomers) / Math.max(1, stats.totalCustomers)) *
-          100
+      ? Math.min(
+          100,
+          Math.max(0, ((stats.totalOrders - stats.totalCustomers) / stats.totalCustomers) * 100),
         ).toFixed(1)
       : "0.0";
 
@@ -75,9 +73,17 @@ export default function Analytics() {
   // Revenue by brand from reports
   const revenueByBrand =
     reports?.posSales?.reduce((acc: Record<string, number>, sale) => {
-      sale.items?.forEach((item: { name: string }) => {
+      const items: { name: string; price?: number; qty?: number }[] = sale.items ?? [];
+      if (items.length === 0) {
+        // No line detail: attribute the whole sale once, not per item.
+        const brand = sale.customerPhone ? "POS" : "Other";
+        acc[brand] = (acc[brand] || 0) + (sale.total || 0);
+        return acc;
+      }
+      const share = (sale.total || 0) / items.reduce((t, i) => t + (i.qty || 1), 0);
+      items.forEach((item) => {
         const brand = item.name.split(" ")[0] || "Other";
-        acc[brand] = (acc[brand] || 0) + sale.total;
+        acc[brand] = (acc[brand] || 0) + share * (item.qty || 1);
       });
       return acc;
     }, {}) ?? {};
@@ -120,9 +126,9 @@ export default function Analytics() {
           hint="Selling price - Cost price"
         />
         <Stat
-          label="Conversion"
-          value={`${conversionRate}%`}
-          hint={`${stats?.totalOrders || 0} of ${stats?.totalCustomers || 0} customers`}
+          label="Orders / customer"
+          value={ordersPerCustomer}
+          hint={`${stats?.totalOrders || 0} orders, ${stats?.totalCustomers || 0} customers`}
         />
         <Stat label="Repeat rate" value={`${repeatRate}%`} hint="Returning customers" />
       </div>
@@ -138,7 +144,7 @@ export default function Analytics() {
                   kpis: [
                     { label: "Gross Sales", value: bdtPDF(stats.totalRevenue) },
                     { label: "Net Profit", value: bdtPDF(netProfit) },
-                    { label: "Conversion", value: `${conversionRate}%` },
+                    { label: "Orders / Customer", value: ordersPerCustomer },
                     { label: "Repeat Rate", value: `${repeatRate}%` },
                     { label: "Total Orders", value: String(stats.totalOrders) },
                     { label: "Total Customers", value: String(stats.totalCustomers) },
@@ -154,7 +160,7 @@ export default function Analytics() {
                     { metric: "Online Revenue", value: bdtPDF(stats.onlineRevenue) },
                     { metric: "POS Orders", value: String(stats.posOrders) },
                     { metric: "Online Orders", value: String(stats.onlineOrders) },
-                    { metric: "Conversion Rate", value: `${conversionRate}%` },
+                    { metric: "Orders / Customer", value: ordersPerCustomer },
                     { metric: "Repeat Rate", value: `${repeatRate}%` },
                     ...Object.entries(revenueByBrand).slice(0, 5).map(([brand, revenue]) => ({
                       metric: `Brand: ${brand}`,
@@ -179,7 +185,7 @@ export default function Analytics() {
                     ["Online Revenue", stats.onlineRevenue],
                     ["POS Orders", stats.posOrders],
                     ["Online Orders", stats.onlineOrders],
-                    ["Conversion Rate", conversionRate],
+                    ["Orders / Customer", ordersPerCustomer],
                     ["Repeat Rate", repeatRate],
                     ...Object.entries(revenueByBrand).slice(0, 5).map(([brand, revenue]) => [
                       `Brand: ${brand}`, revenue,
