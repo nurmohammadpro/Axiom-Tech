@@ -10,6 +10,7 @@ import {
   type Tenant,
 } from "@/db/schema";
 import { DomainError, GRACE_DAYS, TRIAL_DAYS, validateSlug } from "./domain";
+import { normalizePhone } from "./signup";
 
 type PayMethod = "banglaqr" | "cash" | "bkash" | "nagad" | "bank" | "other";
 
@@ -105,7 +106,7 @@ export async function createTenant(input: NewTenantInput, actorId: string | null
           name,
           ownerName,
           ownerEmail,
-          ownerPhone: input.ownerPhone?.trim() || null,
+          ownerPhone: input.ownerPhone?.trim() ? normalizePhone(input.ownerPhone.trim()) : null,
           planId: plan.id,
           status: "trial",
           source: input.source ?? "admin",
@@ -201,12 +202,19 @@ export async function recordMonthlyPayment(id: string, months: number, payment: 
       paidAt: now,
       paymentId: pay.id,
     });
+    // Lift only a payment_overdue suspension; a manual suspension (abuse,
+    // investigation) must be lifted explicitly via Resume.
+    const resume = t.status === "suspended" && t.suspendedReason === "payment_overdue";
     const [updated] = await tx
       .update(tenants)
-      .set({ status: "active", currentPeriodEnd: periodEnd, suspendedReason: null, updatedAt: now })
+      .set(
+        resume
+          ? { status: "active", currentPeriodEnd: periodEnd, suspendedReason: null, updatedAt: now }
+          : { currentPeriodEnd: periodEnd, updatedAt: now },
+      )
       .where(eq(tenants.id, id))
       .returning();
-    await event(tx, id, "payment_recorded", actorId, { months, amount: payment.amount, periodEnd: periodEnd.toISOString() });
+    await event(tx, id, "payment_recorded", actorId, { months, amount: payment.amount, periodEnd: periodEnd.toISOString(), resumed: resume });
     return updated;
   });
 }

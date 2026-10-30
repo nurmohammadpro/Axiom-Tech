@@ -17,6 +17,7 @@ import {
   suspendAction,
 } from "../../actions";
 import { Badge, Field, Notice, td, th } from "../../../ui";
+import { SubmitButton } from "../../submit-button";
 import { OwnerResetPanel } from "./owner-reset-panel";
 import { ProvisionPanel } from "./provision-panel";
 
@@ -27,7 +28,7 @@ function MethodFields({ amount }: { amount: number }) {
   return (
     <>
       <div className="grid gap-3 sm:grid-cols-3">
-        <Field label="Amount (BDT)"><input name="amount" defaultValue={amount} inputMode="numeric" required className="input" /></Field>
+        <Field label="Amount (BDT)"><input name="amount" defaultValue={amount} type="number" min={1} step={1} required className="input" /></Field>
         <Field label="Method">
           <select name="method" defaultValue="banglaqr" className="input">
             {METHODS.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
@@ -86,11 +87,11 @@ export default async function TenantDetail({ params, searchParams }: { params: P
         <div><div className="label">Owner</div><div className="text-sm">{t.ownerName}<br />{t.ownerEmail}{t.ownerPhone ? <><br />{t.ownerPhone}</> : null}</div></div>
         <div><div className="label">Setup</div><div className="text-sm"><Badge value={t.provisionStatus} />{t.provisionError ? <p className="mt-1 text-xs" style={{ color: "var(--bad)" }}>{t.provisionError}</p> : null}</div></div>
         {!t.activatedAt ? (
-          <div><div className="label">Trial ends</div><div className="text-sm">{fmtDate(t.trialEndsAt)} ({daysUntil(t.trialEndsAt)} days)</div></div>
+          <div><div className="label">Trial ends</div><div className="text-sm">{fmtDate(t.trialEndsAt)} ({daysUntil(t.trialEndsAt) ?? "—"} days)</div></div>
         ) : (
           <>
             <div><div className="label">Activated</div><div className="text-sm">{fmtDate(t.activatedAt)}</div></div>
-            <div><div className="label">Paid until</div><div className="text-sm">{fmtDate(t.currentPeriodEnd)} ({daysUntil(t.currentPeriodEnd)} days)</div></div>
+            <div><div className="label">Paid until</div><div className="text-sm">{fmtDate(t.currentPeriodEnd)} ({daysUntil(t.currentPeriodEnd) ?? "—"} days)</div></div>
           </>
         )}
         {t.suspendedReason && t.status !== "active" && t.status !== "trial" ? <div><div className="label">Reason</div><div className="text-sm">{t.suspendedReason.replace("_", " ")}</div></div> : null}
@@ -112,16 +113,16 @@ export default async function TenantDetail({ params, searchParams }: { params: P
             </select>
           </Field>
           <MethodFields amount={plan.signupFee + plan.monthlyPrice} />
-          <button className="btn btn-primary">Record payment and activate</button>
+          <SubmitButton pendingLabel="Activating…">Record payment and activate</SubmitButton>
         </form>
       )}
 
       {canPay && live && t.activatedAt && (
         <form action={monthly} className="card space-y-4 p-5">
           <h2 className="text-sm font-bold">Record subscription payment</h2>
-          <Field label="Months"><input name="months" defaultValue={1} inputMode="numeric" required className="input max-w-[8rem]" /></Field>
+          <Field label="Months (1-12)"><input name="months" defaultValue={1} type="number" min={1} max={12} step={1} required className="input max-w-[8rem]" /></Field>
           <MethodFields amount={plan.monthlyPrice} />
-          <button className="btn btn-primary">Record payment</button>
+          <SubmitButton pendingLabel="Recording…">Record payment</SubmitButton>
         </form>
       )}
 
@@ -129,16 +130,16 @@ export default async function TenantDetail({ params, searchParams }: { params: P
         {can(user.role, "tenant:extend_trial") && live && !t.activatedAt && (
           <form action={extend} className="space-y-2">
             <h2 className="text-sm font-bold">Extend trial</h2>
-            <div className="flex gap-2"><input name="days" defaultValue={3} inputMode="numeric" className="input max-w-[6rem]" /><button className="btn">Extend days</button></div>
+            <div className="flex gap-2"><input name="days" defaultValue={3} inputMode="numeric" className="input max-w-[6rem]" /><SubmitButton className="btn" pendingLabel="Extending…">Extend days</SubmitButton></div>
           </form>
         )}
         {can(user.role, "tenant:suspend") && t.status === "suspended" && (
-          <form action={resume} className="space-y-2"><h2 className="text-sm font-bold">Resume access</h2><button className="btn">Resume shop</button></form>
+          <form action={resume} className="space-y-2"><h2 className="text-sm font-bold">Resume access</h2><SubmitButton className="btn" pendingLabel="Resuming…">Resume shop</SubmitButton></form>
         )}
         {can(user.role, "tenant:suspend") && (t.status === "active" || t.status === "trial") && (
           <form action={suspend} className="space-y-2">
             <h2 className="text-sm font-bold">Suspend</h2>
-            <div className="flex gap-2"><input name="reason" placeholder="Reason" className="input" /><button className="btn">Suspend</button></div>
+            <div className="flex gap-2"><input name="reason" placeholder="Reason" className="input" /><SubmitButton className="btn" confirm="Suspend this shop? All users lose access until you resume it." pendingLabel="Suspending…">Suspend</SubmitButton></div>
           </form>
         )}
         {can(user.role, "tenant:change_plan") && live && (
@@ -146,14 +147,14 @@ export default async function TenantDetail({ params, searchParams }: { params: P
             <h2 className="text-sm font-bold">Change plan</h2>
             <div className="flex gap-2">
               <select name="planId" defaultValue={t.planId} className="input">{allPlans.filter((p) => p.isActive).map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}</select>
-              <button className="btn">Save</button>
+              <SubmitButton className="btn" pendingLabel="Saving…">Save</SubmitButton>
             </div>
           </form>
         )}
         {can(user.role, "tenant:cancel") && live && (
           <form action={cancel} className="space-y-2">
             <h2 className="text-sm font-bold">Cancel shop</h2>
-            <div className="flex gap-2"><input name="reason" placeholder="Reason" className="input" /><button className="btn btn-danger">Cancel shop</button></div>
+            <div className="flex gap-2"><input name="reason" placeholder="Reason" className="input" /><SubmitButton className="btn btn-danger" confirm="Cancel this shop permanently? This cannot be undone — the shop loses access and the subscription ends." pendingLabel="Cancelling…">Cancel shop</SubmitButton></div>
           </form>
         )}
       </section>

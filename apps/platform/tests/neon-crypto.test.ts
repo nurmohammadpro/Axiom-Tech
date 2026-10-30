@@ -70,7 +70,7 @@ describe("helpers", () => {
 
 interface Call { method: string; path: string; body?: any; auth?: string }
 
-function makeFetch(opts: { uriPassword?: boolean; rolePassword?: string; roleOpStatus?: string; roleStatus?: number; stuck?: boolean } = {}) {
+function makeFetch(opts: { uriPassword?: boolean; rolePassword?: string; roleOpStatus?: string; roleStatus?: number; stuck?: boolean; resetPassword?: string } = {}) {
   const calls: Call[] = [];
   let polls = 0;
   const json = (o: unknown, status = 200) => new Response(JSON.stringify(o), { status });
@@ -82,6 +82,9 @@ function makeFetch(opts: { uriPassword?: boolean; rolePassword?: string; roleOpS
     if (init.method === "POST" && p.endsWith("/roles")) {
       if (opts.roleStatus) return json({ message: "role already exists" }, opts.roleStatus);
       return json({ role: { name: "x", password: opts.rolePassword }, operations: [{ id: "op-role", status: opts.roleOpStatus ?? "running" }] });
+    }
+    if (init.method === "POST" && p.endsWith("/reset_password")) {
+      return json({ role: { name: "x", password: opts.resetPassword }, operations: [{ id: "op-role", status: "finished" }] });
     }
     if (init.method === "GET" && p.endsWith("/operations/op-role")) {
       polls++;
@@ -131,12 +134,20 @@ describe("Neon API provider (mocked HTTP)", () => {
     await expect(new NeonApiProvider(cfg(none.fetchImpl)).createShopDatabase("nur-mobile")).rejects.toThrow("without a password");
   });
 
+  test("an existing role from a crashed run is adopted via password reset", async () => {
+    const conflict = makeFetch({ roleStatus: 409 as never, resetPassword: "resetpw", uriPassword: false });
+    const r = await new NeonApiProvider(cfg(conflict.fetchImpl)).createShopDatabase("x-shop");
+    expect(r.pooledUrl).toContain("resetpw");
+    const order = conflict.calls.map((c) => `${c.method} ${c.path.split("?")[0]}`);
+    expect(order.some((o) => o.endsWith("/reset_password"))).toBe(true);
+    expect(order.findIndex((o) => o.endsWith("/roles"))).toBeLessThan(order.findIndex((o) => o.endsWith("/reset_password")));
+  });
+
   test("API errors, failed operations and timeouts surface as NeonError", async () => {
-    const conflict = makeFetch({ roleStatus: 409 as never });
-    const err = await new NeonApiProvider(cfg(conflict.fetchImpl)).createShopDatabase("x-shop").catch((e) => e);
+    const boom = makeFetch({ roleStatus: 500 as never });
+    const err = await new NeonApiProvider(cfg(boom.fetchImpl)).createShopDatabase("x-shop").catch((e) => e);
     expect(err).toBeInstanceOf(NeonError);
-    expect(err.status).toBe(409);
-    expect(err.message).toContain("role already exists");
+    expect(err.status).toBe(500);
 
     const failed = makeFetch({ roleOpStatus: "failed" });
     await expect(new NeonApiProvider(cfg(failed.fetchImpl)).createShopDatabase("x-shop")).rejects.toThrow("failed");

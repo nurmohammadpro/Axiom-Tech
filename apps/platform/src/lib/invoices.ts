@@ -56,7 +56,16 @@ export async function getInvoice(
     .where(eq(payments.tenantId, row.tenant.id))
     .orderBy(desc(payments.receivedAt))
     .limit(20);
-  const payment = row.inv.paymentId ? history.find((p) => p.id === row.inv.paymentId) ?? null : null;
+  // Fetch the invoice's own payment directly — it may be older than the
+  // recent-payments window above.
+  let payment: Payment | null = null;
+  if (row.inv.paymentId) {
+    payment = history.find((p) => p.id === row.inv.paymentId) ?? null;
+    if (!payment) {
+      const [direct] = await db.select().from(payments).where(eq(payments.id, row.inv.paymentId)).limit(1);
+      payment = direct ?? null;
+    }
+  }
   return { ...row, payment, history };
 }
 
@@ -134,7 +143,9 @@ export async function payInvoice(
     const [t] = await tx.select().from(tenants).where(eq(tenants.id, inv.tenantId)).for("update");
     if (!t) throw new DomainError("Shop not found");
     if (t.status === "cancelled") throw new DomainError("Cancelled shops cannot be paid");
-    checkAmount(payment.amount, inv.amount);
+    // The invoice amount covers ONE month; paying N months requires N times that
+    // amount (same rule as the shop page's monthly payment path).
+    checkAmount(payment.amount, inv.amount * months);
 
     const pay = await insertPayment(tx, t.id, "monthly", months, payment, actorId);
     await tx.update(invoices).set({ status: "paid", paidAt: now, paymentId: pay.id }).where(eq(invoices.id, inv.id));

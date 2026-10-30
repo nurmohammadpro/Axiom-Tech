@@ -10,6 +10,7 @@ import { can } from "@/lib/rbac";
 import { getCurrentUser } from "@/lib/session";
 import { payInvoiceAction } from "../../actions";
 import { Badge, Field, Notice, td, th } from "../../../ui";
+import { SubmitButton } from "../../submit-button";
 import { PrintButton } from "./print-button";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -115,7 +116,7 @@ export default async function InvoicePage({
               <input name="amount" type="number" min={1} required defaultValue={inv.amount} className="input" />
             </Field>
             <Field label="Months paid">
-              <input name="months" type="number" min={1} max={12} defaultValue={1} className="input" />
+              <input name="months" type="number" min={1} max={12} step={1} defaultValue={1} className="input" />
             </Field>
             <Field label="Proof URL">
               <input name="proofUrl" type="url" className="input" placeholder="https:// (screenshot link)" />
@@ -123,8 +124,11 @@ export default async function InvoicePage({
             <Field label="Note">
               <input name="note" className="input" placeholder="Optional" />
             </Field>
+            <p className="text-xs md:col-span-3" style={{ color: "var(--muted-foreground)" }}>
+              The amount must cover the selected months: months × {taka(inv.amount)} (one month).
+            </p>
             <div className="md:col-span-3">
-              <button className="btn btn-primary" type="submit">Record payment</button>
+              <SubmitButton pendingLabel="Recording…">Record payment</SubmitButton>
             </div>
           </form>
         </section>

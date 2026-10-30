@@ -121,19 +121,50 @@ export class NeonApiProvider implements ShopDbProvider {
     return u.toString();
   }
 
+  /**
+   * True when the API rejected the call because the resource already exists
+   * (a previous attempt died after Neon accepted the create). Neon reports
+   * duplicates as 409, but match the message too in case that changes.
+   */
+  private static isAlreadyExists(e: unknown): boolean {
+    if (!(e instanceof NeonError)) return false;
+    if (e.status === 409) return true;
+    return e.status === 400 && /exist/i.test(e.message);
+  }
+
   async createShopDatabase(slug: string): Promise<ShopDatabase> {
     const { databaseName, roleName } = shopDbNames(slug);
     const p = this.cfg.projectId;
     const b = await this.branch();
 
-    const role = await this.call<{ role?: { password?: string }; operations?: Ops }>("POST", `/projects/${p}/branches/${b}/roles`, { role: { name: roleName } });
-    await this.waitOperations(role.operations);
-    const db = await this.call<{ operations?: Ops }>("POST", `/projects/${p}/branches/${b}/databases`, {
-      database: { name: databaseName, owner_name: roleName },
-    });
-    await this.waitOperations(db.operations);
+    // Create the role. If a previous run died after Neon accepted the role
+    // (but before the URL was stored), adopt the existing role: reset its
+    // password so we again hold working credentials.
+    let pw: string | undefined;
+    try {
+      const role = await this.call<{ role?: { password?: string }; operations?: Ops }>("POST", `/projects/${p}/branches/${b}/roles`, { role: { name: roleName } });
+      await this.waitOperations(role.operations);
+      pw = role.role?.password;
+    } catch (e) {
+      if (!NeonApiProvider.isAlreadyExists(e)) throw e;
+      const reset = await this.call<{ role?: { password?: string }; operations?: Ops }>(
+        "POST",
+        `/projects/${p}/branches/${b}/roles/${encodeURIComponent(roleName)}/reset_password`,
+      );
+      await this.waitOperations(reset.operations);
+      pw = reset.role?.password;
+    }
 
-    const pw = role.role?.password;
+    // Create the database; an existing one (crashed prior run) is adopted as-is.
+    try {
+      const db = await this.call<{ operations?: Ops }>("POST", `/projects/${p}/branches/${b}/databases`, {
+        database: { name: databaseName, owner_name: roleName },
+      });
+      await this.waitOperations(db.operations);
+    } catch (e) {
+      if (!NeonApiProvider.isAlreadyExists(e)) throw e;
+    }
+
     const [pooledUrl, directUrl] = await Promise.all([
       this.uri(b, databaseName, roleName, true, pw),
       this.uri(b, databaseName, roleName, false, pw),

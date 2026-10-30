@@ -11,6 +11,7 @@ import { can } from "@/lib/rbac";
 import { getCurrentUser } from "@/lib/session";
 import { generateInvoicesAction } from "../actions";
 import { Badge, Notice, td, th } from "../../ui";
+import { SubmitButton } from "../submit-button";
 
 const FILTERS: { key: string; label: string }[] = [
   { key: "", label: "All" },
@@ -42,7 +43,7 @@ export default async function InvoicesPage({ searchParams }: { searchParams: Pro
               <label className="label" htmlFor="cutoffDays">Generate for period ending within (days)</label>
               <input id="cutoffDays" name="cutoffDays" type="number" min={1} max={60} defaultValue={7} className="input w-28" />
             </div>
-            <button className="btn btn-primary" type="submit">Generate monthly invoices</button>
+            <SubmitButton pendingLabel="Generating…">Generate monthly invoices</SubmitButton>
           </form>
         )}
       </div>

@@ -1,9 +1,9 @@
 "use server";
 
-import { headers } from "next/headers";
 import { DomainError } from "@/lib/domain";
 import { allow } from "@/lib/rate-limit";
 import { selfSignup } from "@/lib/signup";
+import { clientIp } from "@/lib/client-ip";
 
 export interface SignupState {
   ok: boolean;
@@ -13,21 +13,14 @@ export interface SignupState {
   values?: Record<string, string>;
 }
 
-async function clientIp(): Promise<string> {
-  const h = await headers();
-  const cf = h.get("cf-connecting-ip");
-  if (cf) return cf;
-  // Behind Traefik the LAST entry is the address the proxy saw; earlier ones are client-supplied.
-  const parts = (h.get("x-forwarded-for") ?? "").split(",").map((s) => s.trim()).filter(Boolean);
-  return parts[parts.length - 1] ?? "local";
-}
-
 export async function signupAction(_prev: SignupState, fd: FormData): Promise<SignupState> {
   const get = (k: string) => String(fd.get(k) ?? "");
   const values = { shopName: get("shopName"), slug: get("slug"), ownerName: get("ownerName"), email: get("email"), phone: get("phone"), planId: get("planId") };
 
-  // Honeypot: real people never fill this hidden field.
-  if (get("website")) return { ok: true, shopUrl: "", provisioned: true };
+  // Honeypot: real people never fill this hidden field. Pretend success (bots
+  // cannot tell) but with provisioned=false so a human caught by browser
+  // autofill sees the "contact us" message instead of a link to nowhere.
+  if (get("website")) return { ok: true, shopUrl: "", provisioned: false };
 
   if (!allow(`signup:${await clientIp()}`, 10, 60 * 60 * 1000)) {
     return { ok: false, error: "Too many attempts. Please try again in an hour.", values };

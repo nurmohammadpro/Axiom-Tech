@@ -81,6 +81,8 @@ describe("payInvoice", () => {
 
     await expect(payInvoice(inv.id, 1, pay(999, "M-2"), null, T0)).rejects.toThrow("less than the required ৳1000");
     await expect(payInvoice(inv.id, 13, pay(1000, "M-2"), null, T0)).rejects.toThrow("Months must be between 1 and 12");
+    // Regression: one month's amount must not buy 12 months (revenue leak).
+    await expect(payInvoice(inv.id, 12, pay(1000, "M-2b"), null, T0)).rejects.toThrow("less than the required ৳12000");
     await payInvoice(inv.id, 1, pay(1000, "M-2"), null, T0);
     await expect(payInvoice(inv.id, 1, pay(1000, "M-3"), null, T0)).rejects.toThrow("already paid");
   });
