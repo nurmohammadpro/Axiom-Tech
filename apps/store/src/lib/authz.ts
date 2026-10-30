@@ -140,4 +140,12 @@ export async function requireFeature(
   return null;
 }
 
+/**
+ * Convenience guard for API routes: resolves the caller's scope and rejects
+ * anonymous callers and portal customers in one step.
+ */
+export async function denyNonStaff(headers: Headers): Promise<NextResponseError | null> {
+  return requireStaff(await getScope(headers));
+}
+
 export type NextResponseError = { status: number; error: string };

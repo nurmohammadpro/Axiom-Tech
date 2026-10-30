@@ -2,13 +2,20 @@ import { db } from "@/db";
 import { returns, orders, users, orderItems } from "@/db/schema";
 import { NextRequest, NextResponse } from "next/server";
 import { eq, desc, and } from "drizzle-orm";
+import { getScope } from "@/lib/authz";
 
 export const dynamic = "force-dynamic";
 
-// GET returns for a specific customer
+// GET returns for a specific customer. Portal customers are pinned to their
+// own session; staff may query any userId.
 export async function GET(request: NextRequest) {
+  const scope = await getScope(request.headers);
+  if (!scope.userId) {
+    return NextResponse.json({ error: "Authentication required" }, { status: 401 });
+  }
   const { searchParams } = new URL(request.url);
-  const userId = searchParams.get("userId");
+  const userId =
+    scope.role === "customer" ? scope.userId : searchParams.get("userId") ?? scope.userId;
 
   if (!userId) {
     return NextResponse.json({ error: "Missing userId" }, { status: 400 });
@@ -39,12 +46,17 @@ export async function GET(request: NextRequest) {
   return NextResponse.json(rows);
 }
 
-// POST create a new return request
+// POST create a new return request. Portal customers file as themselves
+// (body userId is never trusted for attribution); staff may file on behalf.
 export async function POST(request: NextRequest) {
   try {
+    const scope = await getScope(request.headers);
+    if (!scope.userId) {
+      return NextResponse.json({ error: "Authentication required" }, { status: 401 });
+    }
     const body = await request.json();
-    const { id, orderId, productId, productName, qty, reason, condition, resolutionType, userId } =
-      body;
+    const { id, orderId, productId, productName, qty, reason, condition, resolutionType } = body;
+    const userId = scope.role === "customer" ? scope.userId : (body.userId ?? scope.userId);
 
     // Get order details for customer info
     const order = await db

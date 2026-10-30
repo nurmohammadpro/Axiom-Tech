@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import * as api from "./api";
+import { sessionToken } from "./api";
 import type { Category, Product as MockProduct } from "@/data/products";
 
 /** Convert API product fields to mock-data format pages expect */
@@ -127,10 +128,25 @@ export function useStaff() {
   });
 }
 
-export function useAuditLog(params?: Record<string, string>) {
+/** Role-feature visibility from the server (feature toggles x plan ceiling). */
+export function useMyPermissions() {
+  return useQuery({
+    queryKey: ["dashboard", "permissions"],
+    queryFn: async () => {
+      const res = await fetch("/api/auth/permissions", { headers: { "x-session-token": sessionToken() } });
+      if (!res.ok) throw new Error("Failed to load permissions");
+      const data = await res.json();
+      return (data.permissions ?? {}) as Record<string, boolean>;
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+export function useAuditLog(params?: Record<string, string>, enabled = true) {
   return useQuery({
     queryKey: ["dashboard", "audit-log", params],
     queryFn: () => api.getAuditLog(params),
+    enabled,
   });
 }
 

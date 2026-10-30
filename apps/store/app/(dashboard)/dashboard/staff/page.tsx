@@ -708,7 +708,12 @@ export default function Staff() {
                         onClick={async () => {
                           if (!confirm(`Remove ${s.firstName} ${s.lastName}?`)) return;
                           try {
-                            await fetch(`/api/dashboard/staff/${s.id}`, { method: "DELETE" });
+                            const res = await fetch(`/api/dashboard/staff/${s.id}`, { method: "DELETE" });
+                            if (!res.ok) {
+                              const body = await res.json().catch(() => ({}));
+                              toast.error(body.error || "Failed to remove staff");
+                              return;
+                            }
                             toast.success("Staff removed");
                             void qc.invalidateQueries({ queryKey: ["dashboard", "staff"] });
                           } catch {

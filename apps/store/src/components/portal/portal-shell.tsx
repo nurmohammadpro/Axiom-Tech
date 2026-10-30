@@ -61,9 +61,15 @@ export function PortalShell({
   const initials = profile ? (profile.firstName?.[0] ?? "") + (profile.lastName?.[0] ?? "") : "??";
   const displayName = profile ? `${profile.firstName} ${profile.lastName}` : "User";
 
-  const signOut = () => {
+  const signOut = async () => {
+    try {
+      await fetch("/api/auth/signout", { method: "POST" });
+    } catch {
+      // Still clear local state below even if the call fails.
+    }
     localStorage.removeItem("userId");
-    router.push("/signin");
+    localStorage.removeItem("sessionToken");
+    router.push("/");
   };
 
   return (

@@ -3,10 +3,14 @@ import { eq, or } from "drizzle-orm";
 import { db } from "@/db";
 import { inventoryUnits } from "@/db/schema";
 import { luhnValid, normalizeImei } from "@/lib/imei";
+import { denyNonStaff } from "@/lib/authz";
 
 export const dynamic = "force-dynamic";
 
 export async function POST(request: NextRequest) {
+  const denied = await denyNonStaff(request.headers);
+  if (denied) return NextResponse.json({ error: denied.error }, { status: denied.status });
+
   const body = await request.json().catch(() => ({}));
   const imei = normalizeImei(typeof body.imei === "string" ? body.imei : "");
 

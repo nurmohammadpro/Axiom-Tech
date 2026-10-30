@@ -105,19 +105,38 @@ const groups: Group[] = [
   },
 ];
 
+/** Derive the page title from the current path via the nav map. */
+function titleForPath(pathname: string, nav: Group[]): string {
+  let best = "";
+  let bestLen = -1;
+  for (const g of nav) {
+    for (const item of g.items) {
+      if ((pathname === item.to || pathname.startsWith(item.to + "/")) && item.to.length > bestLen) {
+        best = item.label;
+        bestLen = item.to.length;
+      }
+    }
+  }
+  return best || "Dashboard";
+}
+
 export function DashboardShell({
-  title,
   subtitle,
   actions,
   children,
 }: {
-  title: string;
+  /** Unused placeholder kept for call-site compatibility. */
+  title?: string;
   subtitle?: string;
   actions?: ReactNode;
   children: ReactNode;
 }) {
   const pathname = usePathname();
   const router = useRouter();
+  const title = titleForPath(pathname, groups);
+  useEffect(() => {
+    document.title = `${title} · Axiom Tech`;
+  }, [title]);
   const { data: session } = useSessionScope();
   const { open: paletteOpen, setOpen: setPaletteOpen } = useCommandPalette();
   const [user, setUser] = useState<{
@@ -213,10 +232,15 @@ export function DashboardShell({
   const displayName = user ? `${user.firstName} ${user.lastName}` : "Dashboard";
   const rail = collapsed && !mobileNavOpen;
 
-  const signOut = () => {
+  const signOut = async () => {
+    try {
+      await fetch("/api/auth/signout", { method: "POST" });
+    } catch {
+      // Still clear local state below even if the call fails.
+    }
     localStorage.removeItem("userId");
     localStorage.removeItem("sessionToken");
-    router.push("/signin");
+    router.push("/");
   };
 
   return (

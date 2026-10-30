@@ -268,7 +268,10 @@ export default function POS() {
   }, [sorted]);
 
   const subtotal = cart.reduce((s, l) => s + l.unitPrice * l.qty, 0);
-  const discountPoisha = Math.round(parseFloat(discountInput || "0"));
+  // Guard against non-numeric/negative input: "abc" -> NaN, "-5" would inflate
+  // the total. Treat both as no discount instead of charging ৳NaN.
+  const parsedDiscount = parseFloat(discountInput || "0");
+  const discountPoisha = Number.isFinite(parsedDiscount) && parsedDiscount > 0 ? Math.round(parsedDiscount) : 0;
   const total = Math.max(0, subtotal - discountPoisha);
   const paidPoisha = paymentLines.reduce(
     (s, l) => s + (Math.round(parseFloat(l.amount || "0")) || 0),
@@ -1224,7 +1227,7 @@ export default function POS() {
           </div>
         </div>
 
-        <aside className="flex h-[calc(100dvh-145px)] flex-col overflow-hidden border border-border bg-background">
+        <aside className="flex max-h-[80dvh] min-h-[380px] flex-col overflow-hidden border border-border bg-background lg:h-[calc(100dvh-145px)] lg:max-h-none lg:min-h-0">
           <div className="flex shrink-0 flex-col gap-1.5 border-b border-border px-3 py-2 text-sm">
             <div className="flex items-center gap-2">
               <User size={14} /> Customer

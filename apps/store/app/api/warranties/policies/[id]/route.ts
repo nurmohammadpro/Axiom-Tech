@@ -2,8 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
 import { warrantyPolicies } from "@/db/schema";
 import { eq } from "drizzle-orm";
+import { denyNonStaff } from "@/lib/authz";
 
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const denied = await denyNonStaff(req.headers);
+  if (denied) return NextResponse.json({ error: denied.error }, { status: denied.status });
+
   try {
     const { id } = await params;
     const body = await req.json();
@@ -35,6 +39,9 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 }
 
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const denied = await denyNonStaff(req.headers);
+  if (denied) return NextResponse.json({ error: denied.error }, { status: denied.status });
+
   try {
     const { id } = await params;
     const [deletedPolicy] = await db

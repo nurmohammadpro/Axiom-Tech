@@ -28,15 +28,17 @@ const SearchInput = forwardRef<HTMLInputElement, SearchInputProps>(
 
     if (label) {
       return (
-        <div className="mb-4 p-4 border border-border rounded-lg">
-          <div className="flex items-center gap-2 mb-2">
+        <div className="mb-4 border border-border rounded-lg p-4">
+          <div className="mb-2 flex flex-wrap items-center gap-x-2 gap-y-1">
             <Search size={14} className="text-muted-foreground" />
             <span className="text-sm font-medium">{label}</span>
             {description && (
               <span className="text-xs text-muted-foreground">— {description}</span>
             )}
           </div>
-          <div className="flex gap-2">
+          {/* Wrap on narrow screens so fixed-width actions (scan box, location
+              select) never force the whole POS column wider than the viewport. */}
+          <div className="flex flex-wrap gap-2">
             {input}
             {actions}
           </div>

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { v2 as cloudinary } from "cloudinary";
-import { getScope } from "@/lib/authz";
+import { getScope, requireStaff } from "@/lib/authz";
 
 export const dynamic = "force-dynamic";
 
@@ -15,8 +15,11 @@ cloudinary.config({
 
 export async function POST(request: NextRequest) {
   const scope = await getScope(request.headers);
-  if (scope.isScoped) {
-    return NextResponse.json({ error: "Only the store owner can upload files" }, { status: 403 });
+  // Any signed-in staff member (owner/manager/salesman) may upload; portal
+  // customers and anonymous callers may not touch the shop's Cloudinary account.
+  const staffDenied = requireStaff(scope);
+  if (staffDenied) {
+    return NextResponse.json({ error: staffDenied.error }, { status: staffDenied.status });
   }
 
   const cloudName = process.env.CLOUDINARY_CLOUD_NAME;

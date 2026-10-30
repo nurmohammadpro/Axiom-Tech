@@ -4,8 +4,12 @@ import { db } from "@/db";
 import { specTemplates } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
+import { denyNonStaff } from "@/lib/authz";
 
 export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const denied = await denyNonStaff(req.headers);
+  if (denied) return NextResponse.json({ error: denied.error }, { status: denied.status });
+
   const { id } = await params;
   const body = await req.json();
   const label = String(body.label ?? "").trim();
@@ -20,7 +24,10 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
   return NextResponse.json(row);
 }
 
-export async function DELETE(_req: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const denied = await denyNonStaff(req.headers);
+  if (denied) return NextResponse.json({ error: denied.error }, { status: denied.status });
+
   const { id } = await params;
   const [row] = await db
     .delete(specTemplates)

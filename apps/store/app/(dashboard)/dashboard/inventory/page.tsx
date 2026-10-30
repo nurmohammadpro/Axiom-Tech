@@ -408,7 +408,7 @@ export default function Inventory() {
                 </span>
               )}
               {isExpanded && hasUnits && (
-                <div className="mt-2 min-w-[480px] max-w-[640px]">
+                <div className="mt-2 w-full max-w-[640px] min-w-0 overflow-x-auto">
                   <ImeiUnitsTable units={units} highlight={q} />
                 </div>
               )}

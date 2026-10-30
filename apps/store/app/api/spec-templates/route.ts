@@ -4,6 +4,7 @@ import { db } from "@/db";
 import { specTemplates } from "@/db/schema";
 import { asc, sql } from "drizzle-orm";
 import { NextResponse } from "next/server";
+import { denyNonStaff } from "@/lib/authz";
 
 export async function GET() {
   const rows = await db
@@ -14,6 +15,9 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
+  const denied = await denyNonStaff(req.headers);
+  if (denied) return NextResponse.json({ error: denied.error }, { status: denied.status });
+
   const body = await req.json();
   const label = String(body.label ?? "").trim();
   if (!label) return NextResponse.json({ error: "Label is required" }, { status: 400 });

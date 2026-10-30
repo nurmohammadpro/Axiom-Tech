@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { and, eq } from "drizzle-orm";
-import { getScope } from "@/lib/authz";
+import { getScope, requireStaff } from "@/lib/authz";
 import { locations } from "@/db/schema";
 import { db, txDb } from "@/db";
 import {
@@ -88,6 +88,12 @@ type CommitResult =
 export async function POST(request: NextRequest) {
   const body = (await request.json()) as CommitBody;
   const scope = await getScope(request.headers);
+  // Committing a sale moves real inventory — anonymous callers and portal
+  // customers must never reach this endpoint (the proxy only guards /dashboard).
+  const staffDenied = requireStaff(scope);
+  if (staffDenied) {
+    return NextResponse.json({ error: staffDenied.error }, { status: staffDenied.status });
+  }
   const cashierId = scope.userId ?? body.cashierId;
 
   if (!Array.isArray(body.lines) || body.lines.length === 0) {
@@ -166,15 +172,27 @@ export async function POST(request: NextRequest) {
         const quantity = line.quantity ?? 1;
         const discountAmount = line.discountAmount ?? 0;
 
+        // Quantity lines are whole units; fractional amounts corrupt stock math.
+        if (!Number.isInteger(quantity)) {
+          throw new Error("Quantity must be a whole number");
+        }
+        // A discount can never be negative or exceed the line's own value.
+        if (discountAmount < 0 || (line.unitPrice ?? 0) * quantity < discountAmount) {
+          throw new Error("Invalid line discount");
+        }
+
         if (line.unitId) {
           // Serialized unit (phone, laptop, ...). One physical item per line.
           if (quantity !== 1) {
             throw new Error(`Serialized unit ${line.unitId} must be sold with quantity 1`);
           }
+          // FOR UPDATE: two tills committing the same serialized unit at the
+          // same time must not both pass the availability check (double-sell).
           const [unit] = await tx
             .select()
             .from(inventoryUnits)
             .where(eq(inventoryUnits.id, line.unitId))
+            .for("update")
             .limit(1);
           if (!unit) throw new Error(`Unit ${line.unitId} not found`);
           if (unit.status !== "available") {
@@ -346,6 +364,7 @@ export async function POST(request: NextRequest) {
       // When selling from a specific location, check that warehouse's balance.
       for (const [variantId, adj] of qtyAdj) {
         if (saleLocation) {
+          // FOR UPDATE serializes concurrent tills on the same balance row.
           const [bal] = await tx
             .select()
             .from(inventoryBalances)
@@ -355,6 +374,7 @@ export async function POST(request: NextRequest) {
                 eq(inventoryBalances.locationId, saleLocation),
               ),
             )
+            .for("update")
             .limit(1);
           const availableQty = bal?.availableQty ?? 0;
           if (availableQty < adj.qty) {
@@ -365,6 +385,7 @@ export async function POST(request: NextRequest) {
             .select({ quantity: productVariants.quantity })
             .from(productVariants)
             .where(eq(productVariants.id, variantId))
+            .for("update")
             .limit(1);
           if ((variant?.quantity ?? 0) < adj.qty) {
             throw new Error(`Insufficient stock for ${adj.name} (${adj.sku})`);
@@ -543,10 +564,13 @@ export async function POST(request: NextRequest) {
 
       // Deduct quantities (dual-write legacy counters + balances + movement log).
       for (const [variantId, adj] of qtyAdj) {
+        // FOR UPDATE: concurrent tills selling the same accessory must not
+        // read the same counter and lose an update (negative stock).
         const [variant] = await tx
           .select({ quantity: productVariants.quantity })
           .from(productVariants)
           .where(eq(productVariants.id, variantId))
+          .for("update")
           .limit(1);
         await tx
           .update(productVariants)

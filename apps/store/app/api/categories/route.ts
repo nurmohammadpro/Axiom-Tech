@@ -6,6 +6,7 @@ import { pgErrorCode } from "@/lib/pg-errors";
 import { normalizeName } from "@/lib/identifiers";
 import { eq, sql } from "drizzle-orm";
 import { NextResponse } from "next/server";
+import { denyNonStaff } from "@/lib/authz";
 
 export async function GET() {
   const rows = await db.select().from(categories).orderBy(categories.name);
@@ -13,6 +14,9 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
+  const denied = await denyNonStaff(req.headers);
+  if (denied) return NextResponse.json({ error: denied.error }, { status: denied.status });
+
   const body = await req.json();
   const name = String(body.name ?? "").trim();
   const parentId = body.parentId == null || body.parentId === "" ? null : Number(body.parentId);

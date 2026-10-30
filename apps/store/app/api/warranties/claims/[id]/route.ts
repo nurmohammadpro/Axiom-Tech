@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
 import { warrantyClaims, warrantyEvents } from "@/db/schema";
 import { eq } from "drizzle-orm";
+import { denyNonStaff } from "@/lib/authz";
 
 export const dynamic = "force-dynamic";
 
@@ -9,6 +10,9 @@ export async function PUT(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  const denied = await denyNonStaff(req.headers);
+  if (denied) return NextResponse.json({ error: denied.error }, { status: denied.status });
+
   try {
     const { id } = await params;
     const body = await req.json();

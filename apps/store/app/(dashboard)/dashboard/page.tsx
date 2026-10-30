@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState, type ReactNode } from "react";
 import { Card, Stat, Pill } from "@/components/dashboard/dashboard-shell";
-import { useDashboardStats, useReports, useAuditLog } from "@/lib/hooks";
+import { useDashboardStats, useReports, useAuditLog, useMyPermissions } from "@/lib/hooks";
 import { bdt } from "@/lib/utils";
 import { UpgradeBanner } from "@/components/dashboard/upgrade-banner";
 import type { DashboardRange } from "@/lib/api";
@@ -74,7 +74,9 @@ export default function Overview() {
   const [range, setRange] = useState<DashboardRange>("30d");
   const { data: stats } = useDashboardStats(range);
   const { data: reports } = useReports();
-  const { data: auditData } = useAuditLog({ limit: "6" });
+  const { data: permissions } = useMyPermissions();
+  // Audit is plan-gated; querying it on lower plans just produces 403 noise.
+  const { data: auditData } = useAuditLog({ limit: "6" }, permissions?.["audit"] !== false);
   const auditEntries = auditData?.rows ?? [];
 
   const posSales = reports?.posSales ?? [];
@@ -182,7 +184,7 @@ export default function Overview() {
       </div>
 
       {/* Today */}
-      <Section title="Today" caption="server date">
+      <Section title="Today" caption={new Date().toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short", year: "numeric" })}>
         <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
           <Stat
             label="Daily sales"

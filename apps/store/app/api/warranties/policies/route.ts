@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
 import { warrantyPolicies } from "@/db/schema";
+import { denyNonStaff } from "@/lib/authz";
 
 export async function GET(req: NextRequest) {
   try {
@@ -14,6 +15,9 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  const denied = await denyNonStaff(req.headers);
+  if (denied) return NextResponse.json({ error: denied.error }, { status: denied.status });
+
   try {
     const body = await req.json();
     const { name, durationValue, durationUnit, coverageType, terms, exclusions, active } = body;
