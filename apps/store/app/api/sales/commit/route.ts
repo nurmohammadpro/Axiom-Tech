@@ -360,9 +360,12 @@ export async function POST(request: NextRequest) {
         }
       }
 
-      // Validate stock for quantity lines (serialized units already checked above).
-      // When selling from a specific location, check that warehouse's balance.
+      // Validate stock for quantity lines (serialized units already checked
+      // above via their inventory_units row — a variant sold by unit never has
+      // a quantity balance, so it must not enter the balance check).
+      const serializedVariantIds = new Set(unitsToSell.map(({ unit }) => unit.variantId));
       for (const [variantId, adj] of qtyAdj) {
+        if (serializedVariantIds.has(variantId)) continue;
         if (saleLocation) {
           // FOR UPDATE serializes concurrent tills on the same balance row.
           const [bal] = await tx
@@ -605,7 +608,9 @@ export async function POST(request: NextRequest) {
               .from(inventoryBalances)
               .where(eq(inventoryBalances.variantId, variantId))
               .limit(1);
-        if (bal) {
+        // Serialized variants never carry a quantity balance; a legacy row for
+        // one must stay untouched (the unit row itself is already "sold").
+        if (bal && !serializedVariantIds.has(variantId)) {
           await tx
             .update(inventoryBalances)
             .set({ availableQty: bal.availableQty - adj.qty, updatedAt: now })
