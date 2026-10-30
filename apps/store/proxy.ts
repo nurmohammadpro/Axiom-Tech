@@ -82,7 +82,7 @@ export default async function proxy(request: NextRequest) {
         return NextResponse.json({ error: "Authentication required" }, { status: 401 });
       }
       const url = request.nextUrl.clone();
-      url.pathname = "/signin";
+      url.pathname = "/";
       url.search = `?next=${encodeURIComponent(request.nextUrl.pathname)}`;
       return NextResponse.redirect(url);
     }

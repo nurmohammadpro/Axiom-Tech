@@ -551,12 +551,6 @@ export const getOrder = (id: string) => api<Order>(`/api/orders/${encodeURICompo
 export const sessionToken = () => localStorage.getItem("sessionToken") || "";
 const authHeaders = () => ({ "x-session-token": sessionToken() });
 
-export const signUp = (data: {
-  email: string;
-  password: string;
-  firstName: string;
-  lastName: string;
-}) => api<UserProfile>("/api/auth/signup", { method: "POST", body: JSON.stringify(data) });
 export const signIn = (data: { email: string; password: string }) =>
   api<UserProfile>("/api/auth/signin", { method: "POST", body: JSON.stringify(data) });
 export const getMe = (_userId?: string) =>

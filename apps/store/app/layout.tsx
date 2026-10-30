@@ -12,8 +12,18 @@ export const metadata: Metadata = {
   metadataBase: new URL(process.env.APP_URL || `https://${process.env.ROOT_DOMAIN || "axiom.appbrainer.tech"}`),
   title: APP_NAME,
   description: DESCRIPTION,
+  manifest: "/manifest.webmanifest",
+  applicationName: APP_NAME,
+  appleWebApp: { capable: true, statusBarStyle: "default", title: APP_NAME },
   openGraph: { title: APP_NAME, description: DESCRIPTION, type: "website", images: ["/axiom-mark.svg"] },
   twitter: { card: "summary", title: APP_NAME, description: DESCRIPTION, images: ["/axiom-mark.svg"] },
+};
+
+export const viewport = {
+  themeColor: "#0f172a",
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover" as const,
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
