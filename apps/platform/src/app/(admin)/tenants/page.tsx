@@ -6,6 +6,7 @@ import { can } from "@/lib/rbac";
 import { requireUser } from "@/lib/session";
 import { fmtDate } from "@/lib/format";
 import { Badge, td, th } from "../../ui";
+import { RowActions } from "./row-actions";
 
 const STATUSES = ["trial", "active", "suspended", "cancelled"] as const;
 
@@ -43,11 +44,11 @@ export default async function TenantsPage({ searchParams }: { searchParams: Prom
         <table className="w-full">
           <thead>
             <tr style={{ color: "var(--muted-foreground)" }}>
-              <th className={th}>Shop</th><th className={th}>Plan</th><th className={th}>Status</th><th className={th}>Setup</th><th className={th}>Trial ends</th><th className={th}>Paid until</th>
+              <th className={th}>Shop</th><th className={th}>Plan</th><th className={th}>Status</th><th className={th}>Setup</th><th className={th}>Trial ends</th><th className={th}>Paid until</th><th className={th}><span className="sr-only">Actions</span></th>
             </tr>
           </thead>
           <tbody>
-            {rows.length === 0 && <tr><td colSpan={6} className={td} style={{ color: "var(--muted-foreground)" }}>No shops found</td></tr>}
+            {rows.length === 0 && <tr><td colSpan={7} className={td} style={{ color: "var(--muted-foreground)" }}>No shops found</td></tr>}
             {rows.map(({ t, plan }) => (
               <tr key={t.id} className="border-t" style={{ borderColor: "var(--line)" }}>
                 <td className={td}>
@@ -59,6 +60,17 @@ export default async function TenantsPage({ searchParams }: { searchParams: Prom
                 <td className={td}><Badge value={t.provisionStatus} /></td>
                 <td className={td}>{t.activatedAt ? "-" : fmtDate(t.trialEndsAt)}</td>
                 <td className={td}>{fmtDate(t.currentPeriodEnd)}</td>
+                <td className={`${td} text-right`}>
+                  <RowActions
+                    t={{ id: t.id, slug: t.slug, status: t.status, activatedAt: Boolean(t.activatedAt), provisioned: Boolean(t.dbUrlEncrypted) }}
+                    perms={{
+                      pay: can(user.role, "tenant:payment"),
+                      suspend: can(user.role, "tenant:suspend"),
+                      cancel: can(user.role, "tenant:cancel"),
+                      reset: can(user.role, "tenant:reset_owner"),
+                    }}
+                  />
+                </td>
               </tr>
             ))}
           </tbody>

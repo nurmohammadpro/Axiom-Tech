@@ -180,6 +180,46 @@ export async function updatePlanAction(planId: string, fd: FormData) {
   });
 }
 
+/** Quick actions from the shops list: these return to the list, not the shop page. */
+export async function listSuspendAction(tenantId: string) {
+  return run("tenant:suspend", "/tenants", async (u) => {
+    await suspendTenant(tenantId, "manual", u.id);
+    return "Shop suspended";
+  });
+}
+
+export async function listResumeAction(tenantId: string) {
+  return run("tenant:suspend", "/tenants", async (u) => {
+    await resumeTenant(tenantId, u.id);
+    return "Shop resumed";
+  });
+}
+
+export async function listCancelAction(tenantId: string) {
+  return run("tenant:cancel", "/tenants", async (u) => {
+    await cancelTenant(tenantId, "deleted from shops list", u.id);
+    return "Shop cancelled — its database has been dropped";
+  });
+}
+
+export async function listRestoreAction(tenantId: string) {
+  return run("tenant:cancel", "/tenants", async (u) => {
+    await restoreTenant(tenantId, u.id);
+    return "Shop restored to trial — run provisioning to recreate its database";
+  });
+}
+
+/** Data-returning reset for the list dropdown: the one-time password shows in a dialog. */
+export async function listResetOwnerPassword(tenantId: string): Promise<{ ok: true; password: string } | { ok: false; error: string }> {
+  try {
+    const user = await requirePermission("tenant:reset_owner");
+    const r = await resetOwnerPassword(tenantId, user.id);
+    return { ok: true, password: r.tempPassword };
+  } catch (e) {
+    return { ok: false, error: e instanceof DomainError ? e.message : "Reset failed" };
+  }
+}
+
 export async function restoreTenantAction(tenantId: string) {
   return run("tenant:cancel", `/tenants/${tenantId}`, async (u) => {
     await restoreTenant(tenantId, u.id);

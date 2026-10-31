@@ -9,6 +9,7 @@ import { getGate } from "@/lib/gate";
 import { resetOwnerPassword } from "@/lib/owner";
 import { provisionTenant } from "@/lib/provision";
 import { seedShopDatabase } from "@/lib/shop-seed";
+import { backupShopDatabase } from "@/lib/shop-backup";
 import { seedPlans } from "@/db/seed-data";
 import { cancelTenant, createTenant } from "@/lib/tenants";
 import { LocalPgProvider, adminUrlFromEnv } from "./helpers/local-provider";
@@ -181,6 +182,23 @@ describe("provisioning pipeline (real Postgres, local stand-in for Neon)", () =>
     const gate = await getGate(`${"prov9"}.axiom.appbrainer.tech`);
     expect(gate.allowed).toBe(false);
     expect(gate.reason).toBe("cancelled");
+  }, T);
+
+  test("backup exports every public table as JSON", async () => {
+    const t = await mk("prov10");
+    await provisionTenant(t.id, null, { provider });
+    const [row] = await db.select().from(tenants).where(eq(tenants.id, t.id));
+    const backup = await backupShopDatabase(row);
+    expect(backup.meta.slug).toBe("prov10");
+    expect(backup.meta.format).toBe("axiom-json-backup-v1");
+    expect(Object.keys(backup.tables)).toContain("users");
+    expect(Object.keys(backup.tables)).toContain("store_settings");
+    const users = backup.tables["users"] as { email: string }[];
+    expect(users.length).toBe(1);
+    expect(users[0].email).toBe("owner@prov10.com");
+    // cancelled rows lose their URL, so backup refuses cleanly
+    await cancelTenant(t.id, "done", null, { provider });
+    await expect(backupShopDatabase((await db.select().from(tenants).where(eq(tenants.id, t.id)))[0])).rejects.toThrow("no database");
   }, T);
 
   test("seeding is idempotent and never overwrites the existing owner", async () => {
