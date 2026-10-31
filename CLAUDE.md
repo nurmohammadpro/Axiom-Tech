@@ -10,7 +10,7 @@ The store app code in `apps/store` was copied once from playstore-storefront (no
 - UI is to be updated and some UX changed; Nur supplies the designs later. Do not redesign unprompted.
 
 ## Layout
-- `apps/store`    - store-level app (Next.js 16, Drizzle on `pg`). Tenant-aware: db + access resolved per request host (see Tenancy runtime). `bun test` (set TEST_PG_ADMIN_URL for the routing tests).
+- `apps/store`    - store-level app (Next.js 16, Drizzle on `pg`). QA runs on port 3001 (`bun run dev -- -p 3001`) when the old playstore-storefront dev server occupies 3000 — never kill that app, just move ports. Tenant-aware: db + access resolved per request host (see Tenancy runtime). `bun test` (set TEST_PG_ADMIN_URL for the routing tests).
 - `apps/platform` - Platform Admin (Next.js 16, Drizzle + postgres-js, own Postgres). Built: tenant registry, plans, 7-day trial lifecycle, BanglaQR payment records, Activate to Production, expiry cron, gate API, roles. Run: `bun run dev` (port 3100), `bun run db:migrate && bun run db:seed`, `bun test` (needs DATABASE_URL to a throwaway Postgres).
 - `docs/`         - PLAN.md, store-design-spec.md
 
