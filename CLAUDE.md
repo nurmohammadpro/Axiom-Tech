@@ -75,6 +75,7 @@ No chit-chat. Flag issues concisely, execute after confirmation, never re-ask se
 ## Per-shop feature toggles (2026-10-31)
 - `tenants.feature_overrides` jsonb (migration 0004): `true` grants, `false` revokes, absent = inherit from plan. The gate merges them (`effectiveFeatures`), so the store needs no changes and picks up toggles within the gate TTL (~30 s).
 - Admin UI: "Feature access" panel on the tenant page (Inherit/On/Off per catalog feature), permission `tenant:features` (super_admin, billing), `setFeatureOverrides` writes a `features_changed` event, refuses cancelled shops, drops unknown keys.
+- DYNAMIC TOGGLING SMOKE-VERIFIED end-to-end (2026-10-31): store in TENANCY_MODE=multi behind the real gate; owner of a Growth-plan shop requested /dashboard/expenses (blocked 307 to upgrade page) and /dashboard/cash (200). Granting expenses per-shop flipped the page to 200 within the ~30 s gate TTL; clearing the override re-blocked it; removing cash from the Growth plan re-blocked cash the same way, and re-adding restored it. No redeploy at any point.
 - Plan feature lists are editable too: the Plans page toggles any catalog feature per plan (`updatePlanAction`, sanitizeFeatures, non-empty required). Layering = plan features + per-shop overrides. The seed is insert-if-missing since 97f85a5: the Plans editor is the source of truth after first deploy; re-running db:seed never reverts admin edits.
 
 ## Direction change (2026-10-31, Nur)
