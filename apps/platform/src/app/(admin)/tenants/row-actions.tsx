@@ -28,16 +28,41 @@ export function RowActions({ t, perms }: { t: RowActionTenant; perms: { pay: boo
   const [open, setOpen] = useState(false);
   const [pending, startTransition] = useTransition();
   const [oneTime, setOneTime] = useState<string | null>(null);
+  const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
   const ref = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
+  const toggle = () => {
+    if (open) {
+      setOpen(false);
+      return;
+    }
+    // Fixed positioning escapes the table's overflow-x-auto clipping; anchor
+    // to the button and flip up when near the viewport bottom.
+    const rect = ref.current?.getBoundingClientRect();
+    if (rect) {
+      const menuH = 220;
+      const top = rect.bottom + menuH > window.innerHeight ? rect.top - menuH - 4 : rect.bottom + 4;
+      setPos({ top, left: Math.max(8, rect.right - 224) });
+    }
+    setOpen(true);
+  };
+
   useEffect(() => {
+    if (!open) return;
     const close = (e: MouseEvent) => {
       if (!ref.current?.contains(e.target as Node)) setOpen(false);
     };
+    const onScroll = () => setOpen(false);
     document.addEventListener("mousedown", close);
-    return () => document.removeEventListener("mousedown", close);
-  }, []);
+    window.addEventListener("scroll", onScroll, true);
+    window.addEventListener("resize", onScroll);
+    return () => {
+      document.removeEventListener("mousedown", close);
+      window.removeEventListener("scroll", onScroll, true);
+      window.removeEventListener("resize", onScroll);
+    };
+  }, [open]);
 
   const live = t.status !== "cancelled";
 
@@ -120,16 +145,16 @@ export function RowActions({ t, perms }: { t: RowActionTenant; perms: { pay: boo
       <button
         aria-label={`Actions for ${t.slug}`}
         disabled={pending}
-        onClick={() => setOpen((v) => !v)}
+        onClick={toggle}
         className="rounded p-1.5 hover:bg-surface"
       >
         <MoreHorizontal size={16} />
       </button>
-      {open && (
+      {open && pos && (
         <div
           role="menu"
-          className="absolute right-0 z-20 mt-1 w-56 border bg-background py-1 shadow-md"
-          style={{ borderColor: "var(--line)" }}
+          className="fixed z-50 w-56 border bg-background py-1 shadow-md"
+          style={{ borderColor: "var(--line)", top: pos.top, left: pos.left }}
         >
           {items.map((item) => (
             <button
