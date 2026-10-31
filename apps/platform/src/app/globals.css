@@ -142,7 +142,7 @@
 /* Admin utilities (pre-date the shadcn kit; kept thin and token-based) */
 .card { background: var(--card); border: 1px solid var(--color-border); border-radius: var(--radius-xl); }
 .input { width: 100%; border: 1px solid var(--color-border); border-radius: var(--radius); padding: 0.5rem 0.75rem; background: var(--card); font-size: 0.875rem; }
-.btn { display: inline-flex; align-items: center; justify-content: center; border-radius: var(--radius-md); padding: 0.5rem 0.9rem; font-size: 0.875rem; font-weight: 500; border: 1px solid var(--color-border); background: var(--card); cursor: pointer; transition: background 0.15s ease, border-color 0.15s ease; }
+.btn { display: inline-flex; align-items: center; justify-content: center; white-space: nowrap; border-radius: var(--radius-md); padding: 0.5rem 0.9rem; font-size: 0.875rem; font-weight: 500; border: 1px solid var(--color-border); background: var(--card); cursor: pointer; transition: background 0.15s ease, border-color 0.15s ease; }
 .btn:hover { background: var(--accent); }
 .btn-primary { background: var(--primary); border-color: var(--primary); color: var(--primary-foreground); }
 .btn-primary:hover { background: oklch(0.29 0.13 260); border-color: oklch(0.29 0.13 260); }

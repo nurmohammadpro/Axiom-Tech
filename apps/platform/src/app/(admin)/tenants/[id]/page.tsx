@@ -170,14 +170,14 @@ export default async function TenantDetail({ params, searchParams }: { params: P
         {can(user.role, "tenant:suspend") && (t.status === "active" || t.status === "trial") && (
           <form action={suspend} className="space-y-2">
             <h2 className="text-sm font-bold">Suspend</h2>
-            <div className="flex gap-2"><input name="reason" placeholder="Reason" className="input" /><SubmitButton className="btn" confirm="Suspend this shop? All users lose access until you resume it." pendingLabel="Suspending…">Suspend</SubmitButton></div>
+            <div className="flex gap-2"><input name="reason" placeholder="Reason" className="input min-w-0 flex-1" /><SubmitButton className="btn" confirm="Suspend this shop? All users lose access until you resume it." pendingLabel="Suspending…">Suspend</SubmitButton></div>
           </form>
         )}
         {can(user.role, "tenant:change_plan") && live && (
           <form action={change} className="space-y-2">
             <h2 className="text-sm font-bold">Change plan</h2>
             <div className="flex gap-2">
-              <select name="planId" defaultValue={t.planId} className="input">{allPlans.filter((p) => p.isActive).map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}</select>
+              <select name="planId" defaultValue={t.planId} className="input min-w-0 flex-1">{allPlans.filter((p) => p.isActive).map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}</select>
               <SubmitButton className="btn" pendingLabel="Saving…">Save</SubmitButton>
             </div>
           </form>
@@ -185,7 +185,7 @@ export default async function TenantDetail({ params, searchParams }: { params: P
         {can(user.role, "tenant:cancel") && live && (
           <form action={cancel} className="space-y-2">
             <h2 className="text-sm font-bold">Cancel shop</h2>
-            <div className="flex gap-2"><input name="reason" placeholder="Reason" className="input" /><SubmitButton className="btn btn-danger" confirm="Cancel this shop permanently? This cannot be undone — the shop loses access and the subscription ends." pendingLabel="Cancelling…">Cancel shop</SubmitButton></div>
+            <div className="flex gap-2"><input name="reason" placeholder="Reason" className="input min-w-0 flex-1" /><SubmitButton className="btn btn-danger" confirm="Cancel this shop permanently? This cannot be undone — the shop loses access and the subscription ends." pendingLabel="Cancelling…">Cancel shop</SubmitButton></div>
           </form>
         )}
       </section>
