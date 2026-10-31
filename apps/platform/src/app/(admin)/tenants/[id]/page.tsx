@@ -13,6 +13,7 @@ import {
   changePlanAction,
   extendTrialAction,
   monthlyPaymentAction,
+  restoreTenantAction,
   resumeAction,
   suspendAction,
 } from "../../actions";
@@ -72,6 +73,7 @@ export default async function TenantDetail({ params, searchParams }: { params: P
   const resume = resumeAction.bind(null, id);
   const change = changePlanAction.bind(null, id);
   const cancel = cancelAction.bind(null, id);
+  const restore = restoreTenantAction.bind(null, id);
   const setFeatures = setFeatureOverridesAction.bind(null, id);
 
   return (
@@ -85,6 +87,24 @@ export default async function TenantDetail({ params, searchParams }: { params: P
         <p className="text-sm" style={{ color: "var(--muted-foreground)" }}>{t.slug}.{rootDomain()}</p>
       </div>
       <Notice ok={ok} error={error} />
+      {t.status === "cancelled" && (
+        <form action={restore} className="card space-y-3 p-5">
+          <h2 className="text-sm font-bold">This shop is cancelled</h2>
+          <p className="text-xs" style={{ color: "var(--muted-foreground)" }}>
+            All management actions are hidden. Its database was removed when it was cancelled;
+            restoring puts it back on trial, and you then run provisioning to recreate the database.
+          </p>
+          {can(user.role, "tenant:cancel") && (
+            <SubmitButton
+              className="btn btn-primary"
+              confirm="Restore this shop to trial? You will need to run provisioning again to recreate its database."
+              pendingLabel="Restoring…"
+            >
+              Restore shop
+            </SubmitButton>
+          )}
+        </form>
+      )}
 
       <section className="card grid gap-4 p-5 sm:grid-cols-3">
         <div><div className="label">Plan</div><div className="text-sm font-semibold">{plan.name} · {taka(plan.monthlyPrice)}/mo</div></div>

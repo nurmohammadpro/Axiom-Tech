@@ -370,6 +370,25 @@ export async function cancelTenant(
   return cancelled;
 }
 
+/**
+ * Reverses a cancellation: the shop returns to trial with its existing trial
+ * end (extend from there). Its database was dropped at cancel time, so the
+ * admin must run provisioning again before anyone can sign in.
+ */
+export async function restoreTenant(id: string, actorId: string | null) {
+  return db.transaction(async (tx) => {
+    const t = await lockTenant(tx, id);
+    if (t.status !== "cancelled") throw new DomainError("Only cancelled shops can be restored");
+    const [updated] = await tx
+      .update(tenants)
+      .set({ status: "trial", suspendedReason: null, updatedAt: new Date() })
+      .where(eq(tenants.id, id))
+      .returning();
+    await event(tx, id, "restored", actorId, {});
+    return updated;
+  });
+}
+
 /** Blocks shops whose trial or paid period (plus grace) has ended. Safe to run repeatedly. */
 export async function expireTenants(now = new Date()) {
   const graceCutoff = addDays(now, -GRACE_DAYS);

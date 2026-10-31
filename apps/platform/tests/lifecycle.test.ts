@@ -13,6 +13,7 @@ import {
   expireTenants,
   extendTrial,
   recordMonthlyPayment,
+  restoreTenant,
   resumeTenant,
   setFeatureOverrides,
   suspendTenant,
@@ -217,6 +218,19 @@ describe("gate", () => {
     expect(g.maxStaff).toBe(1);
     if (prev === undefined) delete process.env.ROOT_DOMAIN;
     else process.env.ROOT_DOMAIN = prev;
+  });
+});
+
+describe("restore cancelled shop", () => {
+  test("only cancelled shops restore, back to trial with an event", async () => {
+    const t = await createTenant(input("restore1"), null, T0);
+    await expect(restoreTenant(t.id, null)).rejects.toThrow("Only cancelled shops");
+    await cancelTenant(t.id, "left", null);
+    const r = await restoreTenant(t.id, null);
+    expect(r.status).toBe("trial");
+    expect(r.suspendedReason).toBeNull();
+    const evs = await db.select().from(tenantEvents).where(eq(tenantEvents.tenantId, t.id));
+    expect(evs.some((e) => e.type === "restored")).toBe(true);
   });
 });
 

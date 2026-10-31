@@ -22,6 +22,7 @@ import {
   extendTrial,
   recordMonthlyPayment,
   resumeTenant,
+  restoreTenant,
   suspendTenant,
   type PaymentInput,
   setFeatureOverrides,
@@ -176,6 +177,13 @@ export async function updatePlanAction(planId: string, fd: FormData) {
       .returning({ id: plans.id });
     if (!res.length) throw new DomainError("Plan not found");
     return "Plan updated";
+  });
+}
+
+export async function restoreTenantAction(tenantId: string) {
+  return run("tenant:cancel", `/tenants/${tenantId}`, async (u) => {
+    await restoreTenant(tenantId, u.id);
+    return "Shop restored to trial — run provisioning to recreate its database";
   });
 }
 
