@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
 import { notFound } from "next/navigation";
 import { asc, desc, eq } from "drizzle-orm";
 import { db } from "@/db";
@@ -79,8 +80,14 @@ export default async function TenantDetail({ params, searchParams }: { params: P
   return (
     <div className="space-y-5">
       <div>
-        <Link href="/tenants" className="text-sm underline" style={{ color: "var(--muted-foreground)" }}>All shops</Link>
-        <div className="mt-1 flex flex-wrap items-center gap-3">
+        <Link
+          href="/tenants"
+          className="inline-flex items-center gap-1.5 border px-2.5 py-1.5 text-sm font-medium hover:bg-surface"
+          style={{ borderColor: "var(--line)" }}
+        >
+          <ArrowLeft size={14} /> Back to shops
+        </Link>
+        <div className="mt-2 flex flex-wrap items-center gap-3">
           <h1 className="text-lg font-semibold">{t.name}</h1>
           <Badge value={t.status} />
         </div>

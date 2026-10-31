@@ -2,6 +2,7 @@ export const dynamic = "force-dynamic";
 
 import Image from "next/image";
 import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
 import { notFound } from "next/navigation";
 import { formatInvoiceNumber, taka } from "@/lib/domain";
 import { fmtDate, fmtDateTime, methodLabel } from "@/lib/format";
@@ -73,7 +74,7 @@ export default async function InvoicePage({
           <Badge value={overdue ? "overdue" : inv.status} />
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <Link className="btn" href="/invoices">All invoices</Link>
+          <Link className="btn inline-flex items-center gap-1.5" href="/invoices"><ArrowLeft size={13} /> All invoices</Link>
           {inv.status === "due" && <OwnerLinkButtons link={ownerUrl} reminder={reminder} />}
           {inv.status === "paid" && <PrintButton />}
           {inv.status === "due" && user && can(user.role, "tenant:payment") && (
