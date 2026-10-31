@@ -35,7 +35,7 @@ async function lockTenant(tx: Tx, id: string): Promise<Tenant> {
 
 async function getPlan(tx: Tx | typeof db, id: string) {
   const [p] = await tx.select().from(plans).where(eq(plans.id, id));
-  if (!p || !p.isActive) throw new DomainError("Unknown or inactive plan");
+  if (!p || p.deletedAt || !p.isActive) throw new DomainError("Unknown or inactive plan");
   return p;
 }
 

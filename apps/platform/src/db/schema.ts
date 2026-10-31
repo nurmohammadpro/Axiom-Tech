@@ -33,6 +33,8 @@ export const platformUsers = pgTable("platform_users", {
 
 /** Amounts are whole BDT (taka). */
 export const plans = pgTable("plans", {
+    /** Soft delete: keeps tenants FK history and survives re-seeding. */
+    deletedAt: timestamp("deleted_at", { withTimezone: true }),
   id: text("id").primaryKey(), // starter | growth | pro
   name: text("name").notNull(),
   monthlyPrice: integer("monthly_price").notNull(),

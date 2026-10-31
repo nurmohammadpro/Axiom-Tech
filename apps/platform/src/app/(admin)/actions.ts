@@ -9,6 +9,7 @@ import { plans, type PlatformUser } from "@/db/schema";
 import { SESSION_COOKIE } from "@/lib/auth";
 import { DomainError } from "@/lib/domain";
 import { generateMonthlyInvoices, payInvoice, voidInvoice } from "@/lib/invoices";
+import { createPlan, deletePlan, updatePlan } from "@/lib/plans-admin";
 import { resetOwnerPassword } from "@/lib/owner";
 import { provisionTenant } from "@/lib/provision";
 import type { Permission } from "@/lib/rbac";
@@ -155,28 +156,39 @@ export async function cancelAction(tenantId: string, fd: FormData) {
 
 export async function updatePlanAction(planId: string, fd: FormData) {
   return run("plans:edit", "/plans", async () => {
-    const optional = (k: string) => (str(fd, k) === "" ? null : int(fd, k));
-    const monthlyPrice = int(fd, "monthlyPrice");
-    const signupFee = int(fd, "signupFee");
-    const maxStaff = optional("maxStaff");
-    const maxWarehouses = optional("maxWarehouses");
-    for (const n of [monthlyPrice, signupFee, maxStaff ?? 0, maxWarehouses ?? 0]) {
-      if (n < 0) throw new DomainError("Values cannot be negative");
-    }
-    // Feature checkboxes: f_<key> present = in plan; absent = out. Shops on
-    // this plan (without per-shop overrides) pick changes up within the gate TTL.
-    const features = sanitizeFeatures(
-      [...fd.entries()].filter(([k, v]) => k.startsWith("f_") && v === "on").map(([k]) => k.slice(2)),
-    );
-    if (features.length === 0) throw new DomainError("A plan needs at least one feature");
-
-    const res = await db
-      .update(plans)
-      .set({ monthlyPrice, signupFee, maxStaff, maxWarehouses, isActive: fd.get("isActive") === "on", features })
-      .where(eq(plans.id, planId))
-      .returning({ id: plans.id });
-    if (!res.length) throw new DomainError("Plan not found");
+    await updatePlan(planId, {
+      name: str(fd, "name"),
+      monthlyPrice: int(fd, "monthlyPrice"),
+      signupFee: int(fd, "signupFee"),
+      maxStaff: str(fd, "maxStaff") === "" ? null : int(fd, "maxStaff"),
+      maxWarehouses: str(fd, "maxWarehouses") === "" ? null : int(fd, "maxWarehouses"),
+      isActive: fd.get("isActive") === "on",
+      sortOrder: str(fd, "sortOrder") === "" ? null : int(fd, "sortOrder"),
+      features: [...fd.entries()].filter(([k, v]) => k.startsWith("f_") && v === "on").map(([k]) => k.slice(2)),
+    });
     return "Plan updated";
+  });
+}
+
+export async function createPlanAction(fd: FormData) {
+  return run("plans:edit", "/plans", async () => {
+    const id = await createPlan({
+      name: str(fd, "name"),
+      monthlyPrice: str(fd, "monthlyPrice"),
+      signupFee: str(fd, "signupFee"),
+      maxStaff: str(fd, "maxStaff"),
+      maxWarehouses: str(fd, "maxWarehouses"),
+      sortOrder: str(fd, "sortOrder"),
+      features: [...fd.entries()].filter(([k, v]) => k.startsWith("f_") && v === "on").map(([k]) => k.slice(2)),
+    });
+    return `Plan "${id}" created`;
+  });
+}
+
+export async function deletePlanAction(planId: string) {
+  return run("plans:edit", "/plans", async () => {
+    await deletePlan(planId);
+    return "Plan deleted";
   });
 }
 

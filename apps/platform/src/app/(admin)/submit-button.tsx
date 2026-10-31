@@ -14,6 +14,7 @@ export function SubmitButton({
   confirm,
   name,
   value,
+  formAction,
 }: {
   children: React.ReactNode;
   className?: string;
@@ -21,6 +22,8 @@ export function SubmitButton({
   confirm?: string;
   name?: string;
   value?: string;
+  /** Runs a different server action than the form's own (e.g. Delete inside an Update form). */
+  formAction?: (fd: FormData) => void;
 }) {
   const { pending } = useFormStatus();
   return (
@@ -28,6 +31,7 @@ export function SubmitButton({
       type="submit"
       name={name}
       value={value}
+      formAction={formAction}
       disabled={pending}
       onClick={(e) => {
         if (confirm && !window.confirm(confirm)) e.preventDefault();

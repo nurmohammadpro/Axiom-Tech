@@ -1,8 +1,10 @@
 import { beforeEach, describe, expect, test } from "bun:test";
-import { eq, sql } from "drizzle-orm";
+import { eq, isNull, sql } from "drizzle-orm";
 import { db } from "@/db";
-import { plans } from "@/db/schema";
+import { plans, tenants } from "@/db/schema";
 import { seedPlans } from "@/db/seed-data";
+import { createPlan, deletePlan } from "@/lib/plans-admin";
+import { createTenant } from "@/lib/tenants";
 import { ALL_FEATURES, FEATURE_LABELS, effectiveFeatures, sanitizeFeatures } from "@/lib/features";
 
 describe("feature catalog", () => {
@@ -57,5 +59,48 @@ describe("plan seeding", () => {
       expect(r.features.length).toBeGreaterThan(0);
       expect(r.features.every((f) => ALL_FEATURES.includes(f))).toBe(true);
     }
+  });
+});
+
+describe("plan management", () => {
+  test("create, block delete while in use, delete when free", async () => {
+    await createPlan({
+      name: "Enterprise", monthlyPrice: "5000", signupFee: "20000",
+      maxStaff: "", maxWarehouses: "", sortOrder: "9",
+      features: ["pos", "inventory", "payroll"],
+    });
+    const rows = await db.select().from(plans).where(eq(plans.id, "enterprise"));
+    expect(rows.length).toBe(1);
+    expect(rows[0].features.sort()).toEqual(["inventory", "payroll", "pos"]);
+    expect(rows[0].maxStaff).toBeNull();
+    expect(rows[0].sortOrder).toBe(9);
+
+    // duplicate name -> same id -> blocked
+    await expect(createPlan({ name: "enterprise", monthlyPrice: "1", signupFee: "1", maxStaff: "", maxWarehouses: "", sortOrder: "", features: ["pos"] }))
+      .rejects.toThrow("already exists");
+
+    // a shop on the plan blocks deletion
+    const t = await createTenant({ slug: "ent1", name: "Ent", ownerName: "O", ownerEmail: "o@ent.com", planId: "enterprise" }, null);
+    await expect(deletePlan("enterprise")).rejects.toThrow("1 shop is on this plan");
+
+    // move the shop off, then delete works and the plan disappears from lists
+    await db.update(tenants).set({ planId: "starter" }).where(eq(tenants.id, t.id));
+    await deletePlan("enterprise");
+    const visible = await db.select().from(plans).where(isNull(plans.deletedAt));
+    expect(visible.find((p) => p.id === "enterprise")).toBeUndefined();
+    // row survives (tenants history + seed guard)
+    expect((await db.select().from(plans).where(eq(plans.id, "enterprise"))).length).toBe(1);
+  });
+
+  test("creating a plan when one exists with the same id but deleted is still blocked (row kept)", async () => {
+    await expect(createPlan({ name: "Starter", monthlyPrice: "1", signupFee: "1", maxStaff: "", maxWarehouses: "", sortOrder: "", features: ["pos"] }))
+      .rejects.toThrow("already exists");
+  });
+
+  test("getPlan through tenants ignores deleted plans", async () => {
+    await createPlan({ name: "Temp Plan", monthlyPrice: "500", signupFee: "0", maxStaff: "", maxWarehouses: "", sortOrder: "", features: ["pos"] });
+    await db.update(plans).set({ deletedAt: new Date() }).where(eq(plans.id, "temp-plan"));
+    await expect(createTenant({ slug: "tempt", name: "T", ownerName: "O", ownerEmail: "o@tempt.com", planId: "temp-plan" }, null))
+      .rejects.toThrow("Unknown or inactive plan");
   });
 });
