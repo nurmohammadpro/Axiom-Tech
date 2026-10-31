@@ -1,11 +1,10 @@
 import { redirect } from "next/navigation";
 
 /**
- * The root domain IS the signup funnel: the signup page carries its own copy
- * (7-day trial, pricing on the plan selector, FAQ below the form). Anyone
- * landing on / goes straight to creating their shop.
+ * The platform console is admin-only: shops never sign in here (they sign in
+ * on their own subdomain). Shops are created by an admin under /tenants/new,
+ * which hands the owner a one-time password.
  */
-export default async function RootPage({ searchParams }: { searchParams: Promise<{ plan?: string }> }) {
-  const { plan } = await searchParams;
-  redirect(plan ? `/signup?plan=${encodeURIComponent(plan)}` : "/signup");
+export default function RootPage() {
+  redirect("/login");
 }

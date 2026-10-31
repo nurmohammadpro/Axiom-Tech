@@ -46,3 +46,11 @@ export function formatInvoiceNumber(seq: number, createdAt: Date): string {
 export function taka(n: number): string {
   return `৳${n.toLocaleString("en-US")}`;
 }
+
+/** Bangladesh mobile number: accepts +880/880/0 prefixes, stores 01XXXXXXXXX. */
+export function normalizePhone(raw: string): string {
+  const p = raw.replace(/[\s-]/g, "");
+  const m = /^(?:\+?880|0)?(1[3-9]\d{8})$/.exec(p);
+  if (!m) throw new DomainError("Enter a valid Bangladeshi mobile number, for example 01712345678");
+  return `0${m[1]}`;
+}

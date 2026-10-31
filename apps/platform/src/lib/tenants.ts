@@ -9,10 +9,9 @@ import {
   tenants,
   type Tenant,
 } from "@/db/schema";
-import { DomainError, GRACE_DAYS, TRIAL_DAYS, validateSlug } from "./domain";
+import { DomainError, GRACE_DAYS, normalizePhone, TRIAL_DAYS, validateSlug } from "./domain";
 import { ALL_FEATURES } from "./features";
 import { getShopDbProvider, type ShopDbProvider } from "./neon";
-import { normalizePhone } from "./signup";
 
 type PayMethod = "banglaqr" | "cash" | "bkash" | "nagad" | "bank" | "other";
 
