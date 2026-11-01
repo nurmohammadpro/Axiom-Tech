@@ -3,16 +3,16 @@
 /**
  * POS — the simplified "regular POS" (formerly POS v2, now the only till).
  *
- * One search/scan field, product tiles, guided IMEI step, ERP-style Enter
- * navigation, configurable payment methods (Settings → Payments) and
- * keyboard shortcuts (F1 for the cheat sheet). Shares the commit API and
- * receipt printer with the rest of the app.
+ * One borderless search/scan field, product tiles, guided IMEI step, ERP-style
+ * Enter navigation, cash-first payments with owner-configurable methods
+ * (Settings → Payments) and keyboard shortcuts (F1 cheat sheet). Shares the
+ * commit API and receipt printer with the rest of the app.
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { loadPosCatalog } from "@/lib/pos-catalog";
-import { barcodeLookup, commitSale, getLocations, getSettings, sessionToken } from "@/lib/api";
+import { barcodeLookup, commitSale, getLocations, getSettings } from "@/lib/api";
 import type { Location, PosCatalogItem, PosCatalogUnit } from "@/lib/api";
 import { posMethodsFromSettings, type PosMethod } from "@/lib/payment-methods";
 import { bdt } from "@/lib/utils";
@@ -37,45 +37,7 @@ import {
   X,
 } from "lucide-react";
 
-// ── Bengali labels (Settings-independent UI language toggle) ────────────────
-
-type Lang = "en" | "bn";
-const STRINGS = {
-  search: { en: "Search or scan name, SKU, barcode, IMEI…", bn: "নাম, SKU, বারকোড বা IMEI খুঁজুন…" },
-  scanHint: { en: "Scan goes straight to the cart · Enter adds", bn: "স্ক্যান সরাসরি কার্টে যাবে · Enter যোগ করবে" },
-  customer: { en: "Customer", bn: "ক্রেতা" },
-  walkIn: { en: "Walk-in", bn: "সাধারণ" },
-  mobile: { en: "Mobile", bn: "মোবাইল" },
-  address: { en: "Address", bn: "ঠিকানা" },
-  cart: { en: "Cart", bn: "কার্ট" },
-  emptyCart: { en: "Tap a product to add it", bn: "যোগ করতে পণ্যে ট্যাপ করুন" },
-  subtotal: { en: "Subtotal", bn: "সাবটোটাল" },
-  discount: { en: "Discount", bn: "ছাড়" },
-  total: { en: "Total", bn: "মোট" },
-  paid: { en: "Paid", bn: "প্রদান" },
-  change: { en: "Change", bn: "ফেরত" },
-  remaining: { en: "Remaining", bn: "বাকি" },
-  charge: { en: "Charge", bn: "নগদ গ্রহণ" },
-  chooseUnit: { en: "Choose the device", bn: "ডিভাইসটি বাছুন" },
-  chooseUnitHint: { en: "Match the IMEI/serial against the device in hand", bn: "হাতের ডিভাইসের সাথে IMEI/সিরিয়াল মিলিয়ে নিন" },
-  noStock: { en: "Out of stock", bn: "স্টক নেই" },
-  held: { en: "Held", bn: "আটকে রাখা" },
-  hold: { en: "Hold", bn: "রাখুন" },
-  newSale: { en: "New sale", bn: "নতুন বিক্রি" },
-  print: { en: "Print receipt", bn: "রসিদ প্রিন্ট" },
-  saleComplete: { en: "Sale complete", bn: "বিক্রয় সম্পন্ন" },
-  offline: { en: "Offline — catalog is cached; charges need internet", bn: "অফলাইন — ক্যাটালগ সংরক্ষিত; বিক্রয়ে ইন্টারনেট লাগবে" },
-  more: { en: "More", bn: "আরও" },
-} as const;
-const t = (key: keyof typeof STRINGS, lang: Lang) => STRINGS[key][lang];
-
-const FALLBACK_METHODS: PosMethod[] = [
-  { id: "cash", name: "Cash", active: true },
-  { id: "bkash", name: "bKash", active: true },
-  { id: "nagad", name: "Nagad", active: true },
-  { id: "card", name: "Card", active: true },
-  { id: "bank", name: "Bank", active: true },
-];
+const SCAN_HINT = "Scan goes straight to the cart · Enter adds";
 
 interface CartLine {
   key: string;
@@ -113,18 +75,21 @@ function saveHolds(holds: HeldTicket[]) {
   localStorage.setItem(HOLDS_KEY, JSON.stringify(holds));
 }
 
-/** Payment method icon by id (fallback: bank icon for unknown/owner-added). */
 function MethodIcon({ id }: { id: string }) {
-  const size = 12;
-  if (id === "cash") return <Banknote size={size} />;
-  if (id === "bkash" || id === "nagad") return <Smartphone size={size} />;
-  if (id === "card") return <Landmark size={size} />;
-  return <Landmark size={size} />;
+  if (id === "cash") return <Banknote size={12} />;
+  if (id === "bkash" || id === "nagad") return <Smartphone size={12} />;
+  return <Landmark size={12} />;
+}
+
+interface OtherPayment {
+  key: string;
+  methodId: string;
+  amount: string;
+  reference: string;
 }
 
 export default function PosPage() {
   const qc = useQueryClient();
-  const [lang, setLang] = useState<Lang>("en");
   const [q, setQ] = useState("");
   const [tab, setTab] = useState("All");
   const [cart, setCart] = useState<CartLine[]>([]);
@@ -132,21 +97,19 @@ export default function PosPage() {
   const [customerName, setCustomerName] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
   const [customerAddress, setCustomerAddress] = useState("");
-  const [payments, setPayments] = useState<{ method: string; amount: string; reference: string }[]>([]);
+  const [cashInput, setCashInput] = useState("");
+  const [cashTouched, setCashTouched] = useState(false);
+  const [otherPays, setOtherPays] = useState<OtherPayment[]>([]);
   const [moreOpen, setMoreOpen] = useState(false);
   const [unitSheet, setUnitSheet] = useState<PosCatalogItem | null>(null);
   const [held, setHeld] = useState<HeldTicket[]>([]);
   const [confirmClear, setConfirmClear] = useState(false);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [done, setDone] = useState<null | {
-    result: Awaited<ReturnType<typeof commitSale>>;
-    receipt: ReceiptData;
-  }>(null);
+  const [done, setDone] = useState<null | { result: Awaited<ReturnType<typeof commitSale>>; receipt: ReceiptData }>(null);
   const searchRef = useRef<HTMLInputElement>(null);
   const customerRef = useRef<HTMLInputElement>(null);
   const chargeRef = useRef<HTMLButtonElement>(null);
-  const moreRef = useRef<HTMLDivElement>(null);
 
   const { data: catalog = [], refetch: refetchCatalog } = useQuery({
     queryKey: ["pos-catalog"],
@@ -166,9 +129,8 @@ export default function PosPage() {
 
   const storeInfo = (settings?.store_info ?? {}) as Record<string, any>;
   const methods = posMethodsFromSettings(settings?.pos_methods);
-  const activeMethods = methods.filter((m) => m.active);
-  const cashMethod = activeMethods.find((m) => m.id === "cash") ?? null;
-  const otherMethods = activeMethods.filter((m) => m.id !== "cash");
+  const cashName = methods.find((m) => m.id === "cash")?.name ?? "Cash";
+  const otherMethods = methods.filter((m) => m.active && m.id !== "cash");
 
   // ── derived ───────────────────────────────────────────────────────────────
 
@@ -195,10 +157,17 @@ export default function PosPage() {
   const parsedDiscount = parseFloat(discountInput || "0");
   const discount = Number.isFinite(parsedDiscount) && parsedDiscount > 0 ? Math.round(parsedDiscount) : 0;
   const total = Math.max(0, subtotal - discount);
-  const paid = payments.reduce(
+  const otherPaid = otherPays.reduce(
     (s, p) => s + (Number.isFinite(parseFloat(p.amount)) ? Math.round(parseFloat(p.amount)) : 0),
     0,
   );
+  // Cash fills the remainder until the cashier types an amount.
+  const cashValue = cashTouched
+    ? cashInput
+    : Math.max(0, total - otherPaid) > 0
+      ? String(Math.max(0, total - otherPaid))
+      : "";
+  const paid = otherPaid + (Number.isFinite(parseFloat(cashValue)) ? Math.round(parseFloat(cashValue)) : 0);
   const change = Math.max(0, paid - total);
   const remaining = Math.max(0, total - paid);
   const canCharge = cart.length > 0 && remaining === 0 && !busy;
@@ -249,7 +218,7 @@ export default function PosPage() {
   const onTileClick = (item: PosCatalogItem) => {
     const out = item.requiresUnit ? item.sellableAvailable <= 0 : item.available <= 0;
     if (out) {
-      toast.error(t("noStock", lang));
+      toast.error("Out of stock");
       return;
     }
     if (item.requiresUnit) setUnitSheet(item);
@@ -325,7 +294,7 @@ export default function PosPage() {
     if (cart.length === 0) return;
     const ticket: HeldTicket = {
       id: crypto.randomUUID(),
-      label: `${t("held", lang)} ${held.length + 1}`,
+      label: `Held ${held.length + 1}`,
       at: Date.now(),
       lines: cart,
       customerName,
@@ -340,8 +309,10 @@ export default function PosPage() {
     setCustomerPhone("");
     setCustomerAddress("");
     setDiscountInput("");
-    setPayments([]);
-  }, [cart, held, customerName, customerPhone, customerAddress, discountInput, lang]);
+    setCashInput("");
+    setCashTouched(false);
+    setOtherPays([]);
+  }, [cart, held, customerName, customerPhone, customerAddress, discountInput]);
 
   const recallSale = useCallback((ticket: HeldTicket) => {
     const next = loadHolds().filter((h) => h.id !== ticket.id);
@@ -359,15 +330,23 @@ export default function PosPage() {
     if (!canCharge) return;
     setBusy(true);
     try {
+      const cashAmt = Number.isFinite(parseFloat(cashValue)) ? Math.round(parseFloat(cashValue)) : 0;
+      const allPayments = [
+        ...(cashAmt > 0 ? [{ method: "cash", amount: cashAmt, reference: undefined as string | undefined }] : []),
+        ...otherPays.map((p) => ({
+          method: p.methodId,
+          amount: Math.round(parseFloat(p.amount) || 0),
+          reference: p.reference.trim() || undefined,
+        })),
+      ];
       const result = await commitSale({
         idempotencyKey: crypto.randomUUID(),
         channel: "pos",
         customer:
           customerName.trim() || customerPhone.trim() || customerAddress.trim()
             ? {
-                name: customerName.trim() || t("walkIn", lang),
+                name: customerName.trim() || "Walk-in",
                 phone: customerPhone.trim() || undefined,
-                email: undefined,
               }
             : undefined,
         locationId: locations.find((l) => l.isDefault)?.name ?? locations[0]?.name,
@@ -378,11 +357,7 @@ export default function PosPage() {
           unitPrice: l.unitPrice,
           warrantyPolicyId: l.warrantyPolicyId,
         })),
-        payments: payments.map((p) => ({
-          method: p.method,
-          amount: Math.round(parseFloat(p.amount) || 0),
-          reference: p.reference.trim() || undefined,
-        })),
+        payments: allPayments,
       });
 
       const policies = String(storeInfo.receiptPolicies || "")
@@ -395,16 +370,13 @@ export default function PosPage() {
         barcodeNumber: result.sale.barcodeValue || result.sale.saleNumber,
         storeInfo: {
           name: storeInfo.name || "Your Shop",
-          address: customerAddress || storeInfo.address || "",
+          address: storeInfo.address || "",
           phone: storeInfo.phone || "",
           email: storeInfo.email || "",
           website: storeInfo.website || undefined,
           logo: storeInfo.logo || undefined,
         },
-        customer: {
-          name: customerName.trim() || t("walkIn", lang),
-          phone: customerPhone.trim() || undefined,
-        },
+        customer: { name: customerName.trim() || "Walk-in", phone: customerPhone.trim() || undefined },
         items: cart.map((l, idx) => ({
           sl: idx + 1,
           description: l.name,
@@ -421,11 +393,7 @@ export default function PosPage() {
           paid: result.sale.paidAmount,
           change: result.sale.changeAmount,
         },
-        payments: payments.map((p) => ({
-          method: p.method,
-          amount: Math.round(parseFloat(p.amount) || 0),
-          reference: p.reference.trim() || undefined,
-        })),
+        payments: allPayments.map((p) => ({ ...p })),
         policies,
         headerText: storeInfo.receiptHeader || undefined,
         footerText: storeInfo.receiptFooter || undefined,
@@ -448,26 +416,23 @@ export default function PosPage() {
     setCustomerName("");
     setCustomerPhone("");
     setCustomerAddress("");
-    setPayments([]);
+    setCashInput("");
+    setCashTouched(false);
+    setOtherPays([]);
     setQ("");
     setTimeout(() => searchRef.current?.focus(), 50);
   };
 
-  // ── keyboard shortcuts (researched POS set) ───────────────────────────────
+  // ── keyboard shortcuts ────────────────────────────────────────────────────
   // F2 search · F3 customer · F4 charge · F6 hold · F7 recall held ·
-  // F1 / ? cheat sheet · Esc close overlays. Typing is never interrupted.
+  // F1 / ? cheat sheet · Esc close overlays.
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      const el = document.activeElement;
-      const typing =
-        el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement || el instanceof HTMLSelectElement;
-
       if (e.key === "Escape") {
         setUnitSheet(null);
         setShortcutsOpen(false);
         setMoreOpen(false);
-        (el as HTMLElement)?.blur?.();
         return;
       }
       if (e.key === "F2") {
@@ -494,16 +459,17 @@ export default function PosPage() {
       }
       if (e.key === "F7") {
         e.preventDefault();
-        const latest = [...held].sort((a, b) => b.at - a.at);
-        if (latest[0]) recallSale(latest[0]);
+        const latest = [...loadHolds()].sort((a, b) => b.at - a.at)[0];
+        if (latest) recallSale(latest);
         return;
       }
+      const el = document.activeElement;
+      const typing =
+        el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement || el instanceof HTMLSelectElement;
       if (e.key === "F1" || (e.key === "?" && !typing)) {
         e.preventDefault();
         setShortcutsOpen((v) => !v);
-        return;
       }
-      void typing;
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
@@ -516,12 +482,12 @@ export default function PosPage() {
     const target = e.target as HTMLElement;
     if (!(target instanceof HTMLInputElement) && !(target instanceof HTMLSelectElement)) return;
     if (target.dataset.noEnterNav) return; // search field: Enter means lookup
-    const type = (target as HTMLInputElement).type;
-    if (type === "button" || type === "submit") return;
     e.preventDefault();
-    const scope = (e.currentTarget as HTMLElement) ?? document;
+    const container = (e.currentTarget as HTMLElement) ?? document;
     const focusables = Array.from(
-      scope.querySelectorAll<HTMLElement>("input:not([type='hidden']):not([disabled]), select:not([disabled])"),
+      container.querySelectorAll<HTMLElement>(
+        "input:not([type='hidden']):not([disabled]), select:not([disabled])",
+      ),
     ).filter((el) => el.offsetParent !== null && !el.dataset.noEnterNav);
     const idx = focusables.indexOf(target);
     const next = focusables[idx + 1];
@@ -542,13 +508,13 @@ export default function PosPage() {
         <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary text-primary-foreground">
           <Check size={22} />
         </div>
-        <h1 className="text-xl font-semibold tracking-tight">{t("saleComplete", lang)}</h1>
+        <h1 className="text-xl font-semibold tracking-tight">Sale complete</h1>
         <div className="w-full border border-border bg-background p-4 text-sm">
           <Row label="Sale" value={done.result.sale.saleNumber} mono />
           <Row label="Invoice" value={done.result.sale.invoiceNumber} mono />
-          <Row label={t("total", lang)} value={bdt(done.result.sale.totalAmount)} bold />
-          <Row label={t("paid", lang)} value={bdt(done.result.sale.paidAmount)} />
-          {done.result.sale.changeAmount > 0 && <Row label={t("change", lang)} value={bdt(done.result.sale.changeAmount)} />}
+          <Row label="Total" value={bdt(done.result.sale.totalAmount)} bold />
+          <Row label="Paid" value={bdt(done.result.sale.paidAmount)} />
+          {done.result.sale.changeAmount > 0 && <Row label="Change" value={bdt(done.result.sale.changeAmount)} />}
           <Row label="Verify" value={done.result.verificationCode} mono />
         </div>
         <div className="flex w-full gap-2">
@@ -556,13 +522,13 @@ export default function PosPage() {
             onClick={() => printReceipt(done.receipt)}
             className="flex flex-1 items-center justify-center gap-1.5 border border-border bg-background px-4 py-2.5 text-sm font-medium hover:bg-surface"
           >
-            <Printer size={15} /> {t("print", lang)}
+            <Printer size={15} /> Print receipt
           </button>
           <button
             onClick={resetSale}
             className="flex-1 bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground hover:bg-primary/90"
           >
-            {t("newSale", lang)}
+            New sale
           </button>
         </div>
       </div>
@@ -578,10 +544,10 @@ export default function PosPage() {
     >
       {/* Left: search + tiles */}
       <div className="flex min-w-0 flex-col">
-        {/* Single-border search bar: icon + input live in the one field */}
-        <div className="mb-2 flex items-center gap-2">
-          <div className="flex h-11 min-w-0 flex-1 items-center gap-2 border border-border bg-background px-3 focus-within:border-primary">
-            <Search size={16} className="shrink-0 text-muted-foreground" />
+        {/* Borderless search: icon + input in one unbordered field */}
+        <div className="mb-1 flex items-center gap-2">
+          <div className="flex h-11 min-w-0 flex-1 items-center gap-2 px-1">
+            <Search size={17} className="shrink-0 text-muted-foreground" />
             <input
               ref={searchRef}
               value={q}
@@ -592,8 +558,8 @@ export default function PosPage() {
                   void onSearchEnter();
                 }
               }}
-              placeholder={t("search", lang)}
-              className="h-full w-full bg-background text-sm outline-none"
+              placeholder="Search or scan name, SKU, barcode, IMEI…"
+              className="h-full w-full border-none bg-transparent text-[15px] outline-none placeholder:text-muted-foreground/70"
               autoFocus
               data-no-enter-nav
             />
@@ -603,23 +569,16 @@ export default function PosPage() {
               </button>
             )}
           </div>
-          <button
-            onClick={() => setLang(lang === "en" ? "bn" : "en")}
-            className="h-11 shrink-0 border border-border px-3 text-xs font-medium hover:bg-surface"
-            title="Switch language"
-          >
-            {lang === "en" ? "বাংলা" : "EN"}
-          </button>
         </div>
         <div className="mb-2 flex items-center justify-between text-[11px] text-muted-foreground">
-          <span>{t("scanHint", lang)}</span>
+          <span>{SCAN_HINT}</span>
           <button onClick={() => setShortcutsOpen(true)} className="underline hover:text-foreground">
             Shortcuts (F1)
           </button>
         </div>
         {offline.data && (
           <div className="mb-2 flex items-center gap-1.5 border border-amber-200 bg-amber-50 px-2 py-1 text-xs text-amber-700">
-            <WifiOff size={12} /> {t("offline", lang)}
+            <WifiOff size={12} /> Offline — catalog is cached; charges need internet
           </div>
         )}
 
@@ -680,7 +639,7 @@ export default function PosPage() {
                     <div className="mt-2 flex items-end justify-between gap-2">
                       <span className="text-sm font-semibold">{bdt(item.sellingPrice)}</span>
                       <span className={"text-[11px] " + (out ? "text-destructive" : stock <= 3 ? "text-amber-600" : "text-muted-foreground")}>
-                        {out ? t("noStock", lang) : `${stock}`}
+                        {out ? "Out of stock" : `${stock}`}
                       </span>
                     </div>
                   </button>
@@ -693,7 +652,6 @@ export default function PosPage() {
 
       {/* Right: customer → cart → payment */}
       <aside className="flex max-h-[85dvh] min-h-[380px] flex-col overflow-hidden border border-border bg-background lg:max-h-none lg:min-h-0 lg:h-[calc(100dvh-145px)]">
-        {/* held tickets strip */}
         {held.length > 0 && (
           <div className="flex shrink-0 flex-wrap items-center gap-1 border-b border-border px-2 py-1.5">
             <Pause size={12} className="text-muted-foreground" />
@@ -710,24 +668,25 @@ export default function PosPage() {
           </div>
         )}
 
-        {/* Customer: labeled fields stacked vertically + address */}
+        {/* Customer: stacked labeled fields + address */}
         <div className="shrink-0 space-y-2 border-b border-border px-3 py-2.5">
-          <div className="text-[9.5px] uppercase tracking-[0.1em] text-muted-foreground">{t("customer", lang)}</div>
+          <div className="text-[9.5px] uppercase tracking-[0.1em] text-muted-foreground">Customer</div>
           <div>
             <label className="mb-0.5 block text-[10px] font-medium text-muted-foreground" htmlFor="pos-cust-name">
-              {t("customer", lang)} — {t("walkIn", lang)}
+              Name
             </label>
             <input
               id="pos-cust-name"
               ref={customerRef}
               value={customerName}
               onChange={(e) => setCustomerName(e.target.value)}
+              placeholder="Walk-in"
               className="h-9 w-full border border-border bg-background px-2.5 text-sm outline-none focus:border-primary"
             />
           </div>
           <div>
             <label className="mb-0.5 block text-[10px] font-medium text-muted-foreground" htmlFor="pos-cust-phone">
-              {t("mobile", lang)}
+              Mobile
             </label>
             <input
               id="pos-cust-phone"
@@ -740,7 +699,7 @@ export default function PosPage() {
           </div>
           <div>
             <label className="mb-0.5 block text-[10px] font-medium text-muted-foreground" htmlFor="pos-cust-address">
-              {t("address", lang)}
+              Address
             </label>
             <input
               id="pos-cust-address"
@@ -753,7 +712,7 @@ export default function PosPage() {
 
         <div className="min-h-0 flex-1 overflow-y-auto">
           {cart.length === 0 ? (
-            <EmptyState icon={ScanLine} title={t("emptyCart", lang)} />
+            <EmptyState icon={ScanLine} title="Tap a product to add it" />
           ) : (
             <ul className="divide-y divide-border">
               {cart.map((l) => (
@@ -807,47 +766,91 @@ export default function PosPage() {
         {/* payment */}
         <div className="shrink-0 border-t border-border px-3 py-2">
           <div className="flex items-center justify-between text-sm">
-            <span className="text-muted-foreground">{t("subtotal", lang)}</span>
+            <span className="text-muted-foreground">Subtotal</span>
             <span>{bdt(subtotal)}</span>
           </div>
-          <div className="mt-1 flex items-center justify-between gap-2 text-sm">
-            <span className="text-muted-foreground">{t("discount", lang)}</span>
+
+          {/* Discount — full-width input, same width as Cash below */}
+          <div className="mt-2 flex items-center gap-1.5">
+            <label className="w-20 shrink-0 text-xs text-muted-foreground">Discount</label>
             <input
               value={discountInput}
               onChange={(e) => setDiscountInput(e.target.value.replace(/[^0-9]/g, ""))}
               placeholder="0"
               inputMode="numeric"
-              className="h-7 w-24 border border-border px-2 text-right text-sm outline-none focus:border-primary"
+              className="h-8 w-full min-w-0 flex-1 border border-border bg-background px-2 text-right text-sm outline-none focus:border-primary"
             />
           </div>
-          <div className="mt-1 flex items-center justify-between border-t border-border pt-1.5 text-base font-semibold">
-            <span>{t("total", lang)}</span>
+
+          {/* Cash — default payment row, same width as Discount, never removable */}
+          <div className="mt-1.5 flex items-center gap-1.5">
+            <label className="w-20 shrink-0 text-xs font-medium">{cashName}</label>
+            <input
+              value={cashValue}
+              onChange={(e) => {
+                setCashInput(e.target.value.replace(/[^0-9]/g, ""));
+                setCashTouched(true);
+              }}
+              inputMode="numeric"
+              placeholder="0"
+              className="h-8 w-full min-w-0 flex-1 border border-border bg-background px-2 text-right text-sm outline-none focus:border-primary"
+            />
+          </div>
+
+          {/* Other methods — added from the dropdown, removable */}
+          {otherPays.length > 0 && (
+            <div className="mt-1.5 space-y-1.5">
+              {otherPays.map((p) => {
+                const name = methods.find((m) => m.id === p.methodId)?.name ?? p.methodId;
+                return (
+                  <div key={p.key} className="flex items-center gap-1.5">
+                    <label className="w-20 shrink-0 text-xs text-muted-foreground">{name}</label>
+                    <input
+                      value={p.amount}
+                      onChange={(e) =>
+                        setOtherPays((prev) =>
+                          prev.map((x) => (x.key === p.key ? { ...x, amount: e.target.value.replace(/[^0-9]/g, "") } : x)),
+                        )
+                      }
+                      inputMode="numeric"
+                      placeholder="0"
+                      className="h-8 w-full min-w-0 flex-1 border border-border bg-background px-2 text-right text-sm outline-none focus:border-primary"
+                    />
+                    <input
+                      value={p.reference}
+                      onChange={(e) =>
+                        setOtherPays((prev) => prev.map((x) => (x.key === p.key ? { ...x, reference: e.target.value } : x)))
+                      }
+                      placeholder="TrxID"
+                      className="h-8 w-24 border border-border bg-background px-2 text-xs outline-none focus:border-primary"
+                    />
+                    <button
+                      onClick={() => setOtherPays((prev) => prev.filter((x) => x.key !== p.key))}
+                      className="text-muted-foreground hover:text-destructive"
+                      aria-label={`Remove ${name}`}
+                    >
+                      <X size={13} />
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          <div className="mt-2 flex items-center justify-between border-t border-border pt-1.5 text-base font-semibold">
+            <span>Total</span>
             <span>{bdt(total)}</span>
           </div>
 
-          {/* Cash always visible under discount; the rest in a dropdown */}
-          <div className="relative mt-2 flex items-center gap-1.5" ref={moreRef}>
-            {cashMethod && (
-              <button
-                onClick={() =>
-                  setPayments((prev) =>
-                    prev.some((p) => p.method === "cash")
-                      ? prev
-                      : [...prev, { method: "cash", amount: remaining > 0 ? String(remaining) : "", reference: "" }],
-                  )
-                }
-                className="flex items-center gap-1 border border-border px-2 py-1.5 text-xs hover:border-primary"
-              >
-                <Banknote size={12} /> {cashMethod.name}
-              </button>
-            )}
-            <div className="relative" ref={moreRef}>
+          {/* Other methods dropdown (Cash is pinned above) */}
+          <div className="relative mt-2 flex items-center justify-between">
+            <div className="relative">
               <button
                 onClick={() => setMoreOpen((v) => !v)}
                 disabled={otherMethods.length === 0}
                 className="flex items-center gap-1 border border-border px-2 py-1.5 text-xs hover:border-primary disabled:opacity-40"
               >
-                {t("more", lang)} <ChevronDown size={12} />
+                Split payment <ChevronDown size={12} />
               </button>
               {moreOpen && (
                 <div
@@ -860,10 +863,10 @@ export default function PosPage() {
                       role="menuitem"
                       onClick={() => {
                         setMoreOpen(false);
-                        setPayments((prev) =>
-                          prev.some((p) => p.method === m.id)
+                        setOtherPays((prev) =>
+                          prev.some((p) => p.methodId === m.id)
                             ? prev
-                            : [...prev, { method: m.id, amount: remaining > 0 ? String(remaining) : "", reference: "" }],
+                            : [...prev, { key: crypto.randomUUID(), methodId: m.id, amount: "", reference: "" }],
                         );
                       }}
                       className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-xs hover:bg-surface"
@@ -874,59 +877,12 @@ export default function PosPage() {
                 </div>
               )}
             </div>
-            {cart.length > 0 && (
-              <button
-                onClick={holdSale}
-                className="ml-auto flex items-center gap-1 border border-border px-2 py-1.5 text-xs text-muted-foreground hover:text-foreground"
-              >
-                <Pause size={12} /> {t("hold", lang)}
-              </button>
-            )}
-          </div>
-
-          {payments.length > 0 && (
-            <div className="mt-2 space-y-1.5">
-              {payments.map((p, idx) => (
-                <div key={p.method} className="flex items-center gap-1.5">
-                  <span className="w-14 text-xs font-medium">{methods.find((m) => m.id === p.method)?.name ?? p.method}</span>
-                  <input
-                    value={p.amount}
-                    onChange={(e) =>
-                      setPayments((prev) =>
-                        prev.map((x, i) => (i === idx ? { ...x, amount: e.target.value.replace(/[^0-9]/g, "") } : x)),
-                      )
-                    }
-                    inputMode="numeric"
-                    placeholder="0"
-                    className="h-8 w-24 border border-border px-2 text-right text-sm outline-none focus:border-primary"
-                  />
-                  {p.method !== "cash" && (
-                    <input
-                      value={p.reference}
-                      onChange={(e) =>
-                        setPayments((prev) => prev.map((x, i) => (i === idx ? { ...x, reference: e.target.value } : x)))
-                      }
-                      placeholder="TrxID"
-                      className="h-8 min-w-0 flex-1 border border-border px-2 text-xs outline-none focus:border-primary"
-                    />
-                  )}
-                  <button
-                    onClick={() => setPayments((prev) => prev.filter((_, i) => i !== idx))}
-                    className="text-muted-foreground hover:text-destructive"
-                    aria-label="Remove payment"
-                  >
-                    <X size={13} />
-                  </button>
-                </div>
-              ))}
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-muted-foreground">{paid > total ? "Change" : "Remaining"}</span>
+              <span className={"ml-2 font-semibold " + (paid >= total ? "text-primary" : "")}>
+                {bdt(paid > total ? change : remaining)}
+              </span>
             </div>
-          )}
-
-          <div className="mt-2 flex items-center justify-between text-sm">
-            <span className="text-muted-foreground">{paid > total ? t("change", lang) : t("remaining", lang)}</span>
-            <span className={"font-semibold " + (paid >= total ? "text-primary" : "")}>
-              {bdt(paid > total ? change : remaining)}
-            </span>
           </div>
 
           <button
@@ -935,7 +891,7 @@ export default function PosPage() {
             disabled={!canCharge}
             className="mt-2 h-12 w-full bg-primary text-sm font-semibold text-primary-foreground hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-40"
           >
-            {busy ? "…" : `${t("charge", lang)} ${bdt(total)}`}
+            {busy ? "…" : `Charge ${bdt(total)}`}
           </button>
           <div className="mt-1 flex items-center justify-between text-[10px] text-muted-foreground">
             <span>F2 search · F3 customer · F4 charge · F6 hold · F1 help</span>
@@ -957,11 +913,11 @@ export default function PosPage() {
           >
             <div className="border-b border-border px-4 py-3">
               <div className="text-sm font-semibold">{unitSheet.productName}</div>
-              <div className="text-xs text-muted-foreground">{t("chooseUnitHint", lang)}</div>
+              <div className="text-xs text-muted-foreground">Match the IMEI/serial against the device in hand</div>
             </div>
             <div className="max-h-[55dvh] overflow-y-auto">
               {unitSheet.units.filter((u) => u.sellable).length === 0 ? (
-                <EmptyState icon={Smartphone} title={t("noStock", lang)} hint="All units are sold or FIFO-locked behind an older batch." />
+                <EmptyState icon={Smartphone} title="Out of stock" hint="All units are sold or FIFO-locked behind an older batch." />
               ) : (
                 <ul className="divide-y divide-border">
                   {unitSheet.units
@@ -1030,12 +986,14 @@ export default function PosPage() {
         open={confirmClear}
         onOpenChange={setConfirmClear}
         title="Clear cart"
-        description="Remove all items from the current sale?"
+        description="Remove all items from the current sale? The cash amount resets too."
         confirmLabel="Clear"
         onConfirm={() => {
           setCart([]);
-          setPayments([]);
+          setOtherPays([]);
           setDiscountInput("");
+          setCashInput("");
+          setCashTouched(false);
         }}
       />
     </div>
