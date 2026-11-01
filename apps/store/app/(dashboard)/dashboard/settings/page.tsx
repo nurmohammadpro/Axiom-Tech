@@ -5,7 +5,8 @@ import { Card } from "@/components/dashboard/dashboard-shell";
 import { Button } from "@/components/ui/button";
 import { LocationsManager } from "@/components/dashboard/locations-manager";
 import { THEMES } from "@/lib/themes";
-import { useSettings, useUpdateSettings } from "@/lib/hooks";
+import { posMethodsFromSettings, type PosMethod } from "@/lib/payment-methods";
+import { useSessionScope, useSettings, useUpdateSettings } from "@/lib/hooks";
 import type { PaymentAccount, PaymentAccountsByMethod } from "@/lib/store-settings";
 import { toast } from "sonner";
 import { Save, RotateCcw, CreditCard, Receipt, Gift, Plus, X, Upload, Trash2, Check, Palette } from "lucide-react";
@@ -80,6 +81,9 @@ export default function Settings() {
           {tab === "Taxes" && <TaxesTab settings={settings} onSave={updateSettings.mutateAsync} />}
           {tab === "Payments" && (
             <PaymentsTab settings={settings} onSave={updateSettings.mutateAsync} />
+          )}
+          {tab === "Payments" && (
+            <PosMethodsManager settings={settings} onSave={updateSettings.mutateAsync} />
           )}
           {tab === "Receipts" && (
             <ReceiptsTab settings={settings} onSave={updateSettings.mutateAsync} />
@@ -809,6 +813,130 @@ function AppearanceTab({
       <p className="mt-2 text-xs text-muted-foreground">
         Applying reloads the app so every page picks up the theme.
       </p>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// POS payment methods — owner-managed; consumed by the POS charge panel
+// ---------------------------------------------------------------------------
+
+function PosMethodsManager({
+  settings,
+  onSave,
+}: {
+  settings?: Record<string, any>;
+  onSave: (data: Record<string, any>) => Promise<any>;
+}) {
+  const { data: session } = useSessionScope();
+  const isOwner = session?.role === "owner";
+  const [methods, setMethods] = useState<PosMethod[]>(() => posMethodsFromSettings(settings?.pos_methods));
+  const [newName, setNewName] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [dirty, setDirty] = useState(false);
+
+  useEffect(() => {
+    setMethods(posMethodsFromSettings(settings?.pos_methods));
+    setDirty(false);
+  }, [settings]);
+
+  const commit = async (next: PosMethod[]) => {
+    setSaving(true);
+    try {
+      await onSave({ pos_methods: next });
+      setMethods(next);
+      setDirty(false);
+      toast.success("Payment methods updated");
+    } catch {
+      toast.error("Failed to save");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const patch = (next: PosMethod[]) => {
+    setMethods(next);
+    setDirty(true);
+  };
+
+  const add = () => {
+    const name = newName.trim();
+    if (!name) return;
+    if (methods.some((m) => m.name.toLowerCase() === name.toLowerCase())) {
+      toast.error("A method with this name already exists");
+      return;
+    }
+    patch([...methods, { id: crypto.randomUUID(), name, active: true }]);
+    setNewName("");
+  };
+
+  return (
+    <div className="mt-6 border-t border-border pt-5">
+      <div className="text-sm font-medium">POS payment methods</div>
+      <p className="mt-1 text-xs text-muted-foreground">
+        The methods cashiers see on the POS charge panel. Cash is pinned and always shown first.
+        {isOwner ? "" : " Only the shop owner can change these."}
+      </p>
+      <div className="mt-3 space-y-1.5">
+        {methods.map((m, idx) => (
+          <div key={m.id} className="flex items-center gap-2">
+            <input
+              value={m.name}
+              onChange={(e) =>
+                isOwner &&
+                patch(methods.map((x, i) => (i === idx ? { ...x, name: e.target.value } : x)))
+              }
+              disabled={!isOwner || m.id === "cash"}
+              className="h-8 w-40 border border-border px-2 text-sm outline-none focus:border-primary disabled:opacity-60"
+            />
+            <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <input
+                type="checkbox"
+                checked={m.active}
+                onChange={(e) => isOwner && patch(methods.map((x, i) => (i === idx ? { ...x, active: e.target.checked } : x)))}
+                disabled={!isOwner}
+              />
+              active
+            </label>
+            {m.id !== "cash" && isOwner && (
+              <button
+                onClick={() => patch(methods.filter((_, i) => i !== idx))}
+                className="text-muted-foreground hover:text-destructive"
+                aria-label={`Remove ${m.name}`}
+              >
+                <Trash2 size={13} />
+              </button>
+            )}
+            {m.id === "cash" && <span className="text-[10px] text-muted-foreground">pinned</span>}
+          </div>
+        ))}
+      </div>
+      {isOwner && (
+        <div className="mt-3 flex items-center gap-2">
+          <input
+            value={newName}
+            onChange={(e) => setNewName(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && add()}
+            placeholder="New method name (e.g. Rocket)"
+            className="h-8 w-52 border border-border px-2 text-sm outline-none focus:border-primary"
+          />
+          <button onClick={add} className="border border-border px-3 py-1.5 text-xs hover:bg-surface">
+            Add
+          </button>
+          {dirty && (
+            <button
+              onClick={() => void commit(methods)}
+              disabled={saving}
+              className="ml-auto bg-primary px-4 py-1.5 text-xs font-semibold text-primary-foreground disabled:opacity-50"
+            >
+              {saving ? "Saving…" : "Save methods"}
+            </button>
+          )}
+        </div>
+      )}
+      {!isOwner && (
+        <p className="mt-2 text-xs text-muted-foreground">Sign in as the shop owner to edit payment methods.</p>
+      )}
     </div>
   );
 }

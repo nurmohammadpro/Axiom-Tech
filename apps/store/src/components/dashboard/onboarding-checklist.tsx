@@ -52,7 +52,7 @@ export function OnboardingChecklist() {
     {
       done: saleDone,
       label: "Complete your first sale in the POS",
-      href: "/dashboard/pos-v2",
+      href: "/dashboard/pos",
     },
   ];
 

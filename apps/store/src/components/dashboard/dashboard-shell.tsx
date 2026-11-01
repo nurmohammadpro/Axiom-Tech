@@ -49,7 +49,6 @@ const groups: Group[] = [
     items: [
       { to: "/dashboard", label: "Overview", icon: LayoutDashboard },
       { to: "/dashboard/pos", label: "POS", icon: ScanLine, featureKey: "pos" },
-      { to: "/dashboard/pos-v2", label: "POS v2 (beta)", icon: ScanLine, featureKey: "pos" },
       { to: "/dashboard/orders", label: "Orders", icon: ShoppingBag, featureKey: "orders" },
       { to: "/dashboard/customers", label: "Customers", icon: Users, featureKey: "customers" },
     ],
