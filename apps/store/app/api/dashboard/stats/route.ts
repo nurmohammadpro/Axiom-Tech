@@ -56,6 +56,31 @@ function rangeDates(range: Range): { from: string | null; to: string | null } {
   return { from: ymd(f), to };
 }
 
+/**
+ * The window immediately BEFORE the range — powers the "vs previous period"
+ * deltas on the metric cards. today -> yesterday, 7d -> prior 7, 30d -> prior 30.
+ */
+function prevRangeDates(range: Range): { from: string | null; to: string | null } {
+  if (range === "all") return { from: null, to: null };
+  const now = new Date();
+  const ymd = (d: Date) =>
+    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  const days = range === "today" ? 1 : range === "7d" ? 7 : 30;
+  const toD = new Date(now);
+  toD.setDate(toD.getDate() - days);
+  const fromD = new Date(toD);
+  fromD.setDate(fromD.getDate() - days + 1);
+  return { from: ymd(fromD), to: ymd(toD) };
+}
+
+/** Start-of-window SQL fragment for the previous period. */
+function prevRangeStart(range: Range) {
+  if (range === "today") return sql`current_date - interval '1 day'`;
+  if (range === "7d") return sql`current_date - interval '13 days'`;
+  if (range === "30d") return sql`current_date - interval '59 days'`;
+  return null;
+}
+
 export async function GET(request: NextRequest) {
   const scope = await getScope(request.headers);
   const denied = requireStaff(scope);
@@ -99,6 +124,43 @@ export async function GET(request: NextRequest) {
   const grossProfit = pnl.salesGrossProfit;
   const expensesTotal = pnl.expenses;
   const netProfit = pnl.netProfit;
+
+  // ── Previous period (for "vs previous" deltas on the metric cards) ───────
+  let prevNetRevenue: number | null = null;
+  let prevTotalOrders: number | null = null;
+  let prevNetProfit: number | null = null;
+  if (range !== "all") {
+    const prev = prevRangeDates(range);
+    const prevPnl = await computePnl(prev.from, prev.to);
+    const pStart = prevRangeStart(range);
+    const prevSalesRange = pStart ? sql`${sales.createdAt} >= ${pStart} and ${sales.createdAt} < ${rangeStart(range)}` : undefined;
+    const prevOrdersRange = pStart ? sql`${orders.createdAt} >= ${pStart} and ${orders.createdAt} < ${rangeStart(range)}` : undefined;
+    const [prevPos] = await db
+      .select({ count: count() })
+      .from(sales)
+      .where(prevSalesRange);
+    const [prevOnline] = await db
+      .select({ count: count() })
+      .from(orders)
+      .where(prevOrdersRange);
+    // Online revenue for the previous window:
+    const [prevOnlineRev] = await db
+      .select({ revenue: sum(orders.total) })
+      .from(orders)
+      .where(prevOrdersRange);
+    prevNetRevenue = prevPnl.netRevenue + Number(prevOnlineRev?.revenue || 0);
+    prevTotalOrders = Number(prevPos?.count || 0) + Number(prevOnline?.count || 0);
+    prevNetProfit = prevPnl.netProfit;
+  }
+
+  // Month-to-date revenue (for the monthly-target ring).
+  const [mtd] = await db
+    .select({ revenue: sql<number>`coalesce(sum(${sales.totalAmount}), 0)::int` })
+    .from(sales)
+    .where(sql`${sales.createdAt} >= date_trunc('month', current_date)`);
+  const mtdRevenue = Number(mtd?.revenue || 0);
+
+
 
   // ── Counts (point-in-time) ───────────────────────────────────────────────
   // Registered customers + distinct non-empty phone numbers that bought in-store.
@@ -229,6 +291,9 @@ export async function GET(request: NextRequest) {
     threshold: Number(r.threshold || 5),
   }));
   const outOfStockList = availableRows.filter((r) => r.available <= 0);
+  const totalVariants = availableRows.length;
+  const outVariants = outOfStockList.length;
+  const stockHealthPct = totalVariants > 0 ? Math.round(((totalVariants - outVariants) / totalVariants) * 100) : 100;
   const lowStockList = availableRows
     .filter((r) => r.available > 0 && r.available <= r.threshold)
     .sort((a, b) => a.available - b.available);
@@ -301,6 +366,13 @@ export async function GET(request: NextRequest) {
   const aov = totalOrders > 0 ? Math.round(totalRevenue / totalOrders) : 0;
 
   return NextResponse.json({
+    prev: {
+      netRevenue: prevNetRevenue,
+      totalOrders: prevTotalOrders,
+      netProfit: prevNetProfit,
+    },
+    mtdRevenue,
+    stockHealthPct,
     range,
     rangeLabel: RANGE_LABELS[range],
     // Sales / profit (range)

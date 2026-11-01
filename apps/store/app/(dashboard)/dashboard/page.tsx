@@ -3,7 +3,18 @@
 import Link from "next/link";
 import { useState, type ReactNode } from "react";
 import { Card, Stat, Pill } from "@/components/dashboard/dashboard-shell";
-import { useDashboardStats, useReports, useAuditLog, useMyPermissions } from "@/lib/hooks";
+import {
+  useDashboardStats,
+  useReports,
+  useAuditLog,
+  useMyPermissions,
+  useSettings,
+  useSessionScope,
+} from "@/lib/hooks";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import * as apiNs from "@/lib/api";
+import { MetricCard, TargetRing, pctChange, absChange } from "@/components/dashboard/metric-cards";
+import { Banknote, PackagePlus, RefreshCw, Undo2, ShoppingBag, TrendingUp, TriangleAlert } from "lucide-react";
 import { bdt } from "@/lib/utils";
 import { UpgradeBanner } from "@/components/dashboard/upgrade-banner";
 import { OnboardingChecklist } from "@/components/dashboard/onboarding-checklist";
@@ -18,6 +29,7 @@ import {
   RotateCcw,
   Boxes,
 } from "lucide-react";
+import type { DashboardStats } from "@/lib/api";
 import {
   ResponsiveContainer,
   ComposedChart,
@@ -188,77 +200,48 @@ export default function Overview() {
       {/* Today */}
       <Section title="Today" caption={new Date().toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short", year: "numeric" })}>
         <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-          <Stat
-            label="Daily sales"
-            value={stats ? formatCurrency(stats.dailySalesRevenue) : "—"}
-            hint={`${stats?.dailySalesCount ?? 0} sales today`}
-            href="/dashboard/reports"
-            spark={revenueSpark}
-          />
-          <Stat
-            label="Newly stocked"
-            value={String(stats?.newlyStockedCount ?? 0)}
-            hint="units added today"
-            href="/dashboard/inventory"
-          />
-          <Stat
-            label="Exchanged products"
-            value={String(stats?.exchangedCount ?? 0)}
-            hint={`${stats?.exchangedTotal ?? 0} all-time`}
-            href="/dashboard/exchanges"
-          />
-          <Stat
-            label="Returned products"
-            value={String(stats?.returnedCount ?? 0)}
-            hint={`${stats?.returnedTotal ?? 0} all-time`}
-            href="/dashboard/returns"
-          />
+          <MetricCard icon={Banknote} label="Daily sales" value={stats ? formatCurrency(stats.dailySalesRevenue) : "—"} sub={`${stats?.dailySalesCount ?? 0} sales today`} />
+          <MetricCard icon={PackagePlus} label="Newly stocked" value={String(stats?.newlyStockedCount ?? 0)} sub="units added today" />
+          <MetricCard icon={RefreshCw} label="Exchanged products" value={String(stats?.exchangedCount ?? 0)} sub={`${stats?.exchangedTotal ?? 0} all-time`} />
+          <MetricCard icon={Undo2} label="Returned products" value={String(stats?.returnedCount ?? 0)} sub={`${stats?.returnedTotal ?? 0} all-time`} />
         </div>
       </Section>
 
       {/* Sales */}
       <Section title="Sales" caption={stats?.rangeLabel}>
         <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6">
-          <Stat
+          <MonthlyTargetRing stats={stats} />
+          <MetricCard
+            icon={Banknote}
             label="Net sales"
             value={stats ? formatCurrency(stats.totalRevenue) : "—"}
-            hint={
-              stats
-                ? `list ${formatCurrency(stats.grossRevenue)} · −${formatCurrency(stats.discounts)} disc`
-                : "all channels"
-            }
-            href="/dashboard/reports"
-            spark={revenueSpark}
+            sub={stats ? `list ${formatCurrency(stats.grossRevenue)} · −${formatCurrency(stats.discounts)} disc` : "all channels"}
+            delta={stats ? { pct: pctChange(stats.totalRevenue, stats.prev?.netRevenue), abs: absChange(stats.totalRevenue, stats.prev?.netRevenue, "৳") } : undefined}
           />
-          <Stat
-            label="POS sales"
-            value={stats ? formatCurrency(stats.posRevenue) : "—"}
-            hint={`${stats?.posOrders ?? 0} orders`}
-            href="/dashboard/cash"
-          />
-          <Stat
-            label="Online sales"
-            value={stats ? formatCurrency(stats.onlineRevenue) : "—"}
-            hint={`${stats?.onlineOrders ?? 0} orders`}
-            href="/dashboard/orders"
-          />
-          <Stat
+          <MetricCard
+            icon={ShoppingBag}
             label="Orders"
             value={String(stats?.totalOrders ?? 0)}
-            hint={`${stats?.posOrders ?? 0} POS · ${stats?.onlineOrders ?? 0} online`}
-            href="/dashboard/orders"
+            sub={`${stats?.posOrders ?? 0} POS · ${stats?.onlineOrders ?? 0} online`}
+            delta={stats ? { pct: pctChange(stats.totalOrders, stats.prev?.totalOrders), abs: absChange(stats.totalOrders, stats.prev?.totalOrders) } : undefined}
           />
-          <Stat
+          <MetricCard
+            icon={Banknote}
+            label="POS sales"
+            value={stats ? formatCurrency(stats.posRevenue) : "—"}
+            sub={`${stats?.posOrders ?? 0} orders`}
+          />
+          <MetricCard
+            icon={TrendingUp}
             label="Avg order value"
             value={stats ? formatCurrency(stats.aov) : "—"}
-            hint={`${stats?.unitsSold ?? 0} units sold`}
-            href="/dashboard/reports"
+            sub={`${stats?.unitsSold ?? 0} units sold`}
           />
-          <Stat
+          <MetricCard
+            icon={Boxes}
             label="Units sold"
             value={String(stats?.unitsSold ?? 0)}
-            hint={stats?.rangeLabel ?? "—"}
-            href="/dashboard/inventory"
+            sub={stats?.rangeLabel ?? "—"}
           />
         </div>
       </Section>
@@ -266,16 +249,24 @@ export default function Overview() {
       {/* Profit */}
       <Section title="Profit" caption={stats?.rangeLabel}>
         <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-5">
-          <Stat
+          <MetricCard
+            icon={TrendingUp}
             label="Net profit"
             value={stats ? formatCurrency(stats.netProfit) : "—"}
-            hint={
+            sub={
               stats
                 ? `after ${formatCurrency(stats.cogsTotal)} cost + ${formatCurrency(stats.expensesTotal)} exp`
                 : "—"
             }
-            href="/dashboard/expenses"
-            spark={profitSpark}
+            danger={Boolean(stats && stats.netProfit < 0)}
+            delta={stats ? { pct: pctChange(stats.netProfit, stats.prev?.netProfit), abs: absChange(stats.netProfit, stats.prev?.netProfit, "৳") } : undefined}
+          />
+          <TargetRing
+            label="Gross margin"
+            pct={stats ? Math.max(0, Math.min(100, stats.grossMarginPct)) : 0}
+            center={stats ? `${stats.grossMarginPct.toFixed(0)}%` : "—"}
+            sub="of revenue"
+            tone={stats && stats.grossMarginPct < 5 ? "warning" : "primary"}
           />
           <Stat
             label="Gross profit"
@@ -324,6 +315,13 @@ export default function Overview() {
             value={String(stats?.lowStockItems ?? 0)}
             hint="at/below threshold"
             href="/dashboard/inventory"
+          />
+          <TargetRing
+            label="Stock health"
+            pct={stats?.stockHealthPct ?? 100}
+            center={`${stats?.stockHealthPct ?? 100}%`}
+            sub={`${stats?.outOfStockItems ?? 0} out of stock`}
+            tone={stats && stats.stockHealthPct < 80 ? "warning" : "primary"}
           />
           <Stat
             label="Out of stock"
@@ -651,5 +649,95 @@ export default function Overview() {
         </Card>
       </div>
     </>
+  );
+}
+
+
+// ---------------------------------------------------------------------------
+// Monthly target ring — style 7; target is optional per shop (owner sets it)
+// ---------------------------------------------------------------------------
+
+function MonthlyTargetRing({ stats }: { stats: DashboardStats | undefined }) {
+  const qc = useQueryClient();
+  const { data: settings } = useSettings();
+  const { data: session } = useSessionScope();
+  const isOwner = session?.role === "owner";
+  const target = Number(settings?.monthly_target ?? 0);
+  const [editing, setEditing] = useState(false);
+  const [value, setValue] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  const save = async () => {
+    const n = parseInt(value.replace(/[^0-9]/g, ""), 10);
+    if (!Number.isFinite(n)) return;
+    setSaving(true);
+    try {
+      await apiNs.updateSettings({ monthly_target: n });
+      await qc.invalidateQueries({ queryKey: ["dashboard", "settings"] });
+      setEditing(false);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (editing) {
+    return (
+      <div className="border border-border bg-card p-3">
+        <div className="text-[9.5px] uppercase tracking-[0.1em] text-muted-foreground">Monthly target</div>
+        <input
+          autoFocus
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") void save();
+          }}
+          placeholder="৳ e.g. 500000"
+          inputMode="numeric"
+          className="mt-2 w-full border border-border bg-background px-2 py-1.5 text-sm outline-none focus:border-primary"
+        />
+        <div className="mt-2 flex gap-1.5">
+          <button onClick={() => void save()} disabled={saving} className="flex-1 bg-primary px-2 py-1.5 text-xs font-semibold text-primary-foreground">
+            {saving ? "…" : "Set"}
+          </button>
+          <button onClick={() => setEditing(false)} className="border border-border px-2 py-1.5 text-xs">Cancel</button>
+        </div>
+      </div>
+    );
+  }
+
+  if (!target || target <= 0) {
+    if (!isOwner) {
+      return (
+        <div className="border border-dashed border-border p-3 text-center text-[11px] text-muted-foreground">
+          No monthly target set
+        </div>
+      );
+    }
+    return (
+      <div className="border border-dashed border-border p-3 text-center">
+        <div className="text-[9.5px] uppercase tracking-[0.1em] text-muted-foreground">Monthly target</div>
+        <button onClick={() => setEditing(true)} className="mt-1.5 w-full border border-primary px-2 py-1.5 text-xs font-semibold text-primary">
+          + Set target
+        </button>
+      </div>
+    );
+  }
+
+  const pct = stats ? Math.min(100, (stats.mtdRevenue / target) * 100) : 0;
+  return (
+    <TargetRing
+      label="Monthly target"
+      pct={pct}
+      center={`${Math.round(pct)}%`}
+      sub={`${formatCurrency(stats?.mtdRevenue ?? 0)} of ${formatCurrency(target)}`}
+      tone={pct >= 100 ? "primary" : pct < 30 ? "warning" : "primary"}
+      action={
+        isOwner ? (
+          <button onClick={() => setEditing(true)} className="text-[10px] text-muted-foreground underline hover:text-foreground">
+            change
+          </button>
+        ) : undefined
+      }
+    />
   );
 }

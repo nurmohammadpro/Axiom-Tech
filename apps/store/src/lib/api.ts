@@ -358,6 +358,16 @@ export interface StockAgingBucket {
 export interface DashboardStats {
   range: DashboardRange;
   rangeLabel: string;
+  // Previous period (for "vs previous" deltas); nulls for "all" range
+  prev?: {
+    netRevenue: number | null;
+    totalOrders: number | null;
+    netProfit: number | null;
+  };
+  /** Month-to-date POS revenue, for the monthly-target ring. */
+  mtdRevenue: number;
+  /** Share of active variants with stock, 0–100. */
+  stockHealthPct: number;
   // Sales & profit (range)
   totalOrders: number;
   totalRevenue: number;
