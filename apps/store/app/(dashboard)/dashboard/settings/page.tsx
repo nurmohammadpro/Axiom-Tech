@@ -4,10 +4,11 @@ import { useEffect, useState } from "react";
 import { Card } from "@/components/dashboard/dashboard-shell";
 import { Button } from "@/components/ui/button";
 import { LocationsManager } from "@/components/dashboard/locations-manager";
+import { THEMES } from "@/lib/themes";
 import { useSettings, useUpdateSettings } from "@/lib/hooks";
 import type { PaymentAccount, PaymentAccountsByMethod } from "@/lib/store-settings";
 import { toast } from "sonner";
-import { Save, RotateCcw, CreditCard, Receipt, Gift, Plus, X, Upload, Trash2 } from "lucide-react";
+import { Save, RotateCcw, CreditCard, Receipt, Gift, Plus, X, Upload, Trash2, Check, Palette } from "lucide-react";
 
 const tabs = [
   { id: "General", icon: null },
@@ -16,6 +17,7 @@ const tabs = [
   { id: "Payments", icon: CreditCard },
   { id: "Receipts", icon: Receipt },
   { id: "Loyalty", icon: Gift },
+  { id: "Appearance", icon: Palette },
 ];
 
 /** Downscale an oversized raster image so it fits Cloudinary's 10MB cap. */
@@ -84,6 +86,9 @@ export default function Settings() {
           )}
           {tab === "Loyalty" && (
             <LoyaltyTab settings={settings} onSave={updateSettings.mutateAsync} />
+          )}
+          {tab === "Appearance" && (
+            <AppearanceTab settings={settings} onSave={updateSettings.mutateAsync} />
           )}
         </Card>
       </div>
@@ -725,5 +730,85 @@ function LoyaltyTab({
         { key: "welcomeBonus", label: "Welcome bonus points", type: "number", placeholder: "50" },
       ]}
     />
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Appearance — per-shop theme picker (applies instantly via the layout)
+// ---------------------------------------------------------------------------
+
+function AppearanceTab({
+  settings,
+  onSave,
+}: {
+  settings?: Record<string, any>;
+  onSave: (data: Record<string, any>) => Promise<any>;
+}) {
+  const current = (settings?.appearance_theme as string) || "axiom-teal";
+  const [picked, setPicked] = useState(current);
+  const [saving, setSaving] = useState(false);
+  const dirty = picked !== current;
+
+  const save = async () => {
+    setSaving(true);
+    try {
+      await onSave({ appearance_theme: picked === "axiom-teal" ? "" : picked });
+      // Full reload so the layout's server-read theme class applies everywhere.
+      window.location.reload();
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div>
+      <div className="text-sm font-medium">Appearance</div>
+      <p className="mt-1 text-xs text-muted-foreground">
+        Pick the color theme for this shop. Applies to every signed-in user within a few seconds.
+      </p>
+      <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3">
+        {THEMES.map((t) => (
+          <button
+            key={t.id}
+            onClick={() => setPicked(t.id)}
+            className={
+              "border p-3 text-left text-xs transition-colors " +
+              (picked === t.id ? "border-primary bg-primary/5" : "border-border hover:bg-surface")
+            }
+          >
+            <div className="flex items-center gap-1.5 font-semibold">
+              {picked === t.id && <Check size={12} className="text-primary" />}
+              {t.name}
+              {t.dark && (
+                <span className="ml-auto rounded-sm bg-muted px-1 text-[9px] uppercase tracking-wide text-muted-foreground">
+                  dark
+                </span>
+              )}
+            </div>
+            <div className="mt-2 flex gap-1">
+              {[t.vars["--primary"], t.vars["--accent"] ?? t.vars["--surface"], t.vars["--highlight"] ?? t.vars["--card"] ?? "#64748b"].map(
+                (c, i) => (
+                  <span
+                    key={i}
+                    className="inline-block h-4 w-4 border border-border"
+                    style={{ background: c }}
+                  />
+                ),
+              )}
+            </div>
+          </button>
+        ))}
+      </div>
+      <button
+        onClick={() => void save()}
+        disabled={!dirty || saving}
+        className="mt-4 bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
+      >
+        {saving ? "Applying…" : "Apply theme"}
+      </button>
+      <p className="mt-2 text-xs text-muted-foreground">
+        Applying reloads the app so every page picks up the theme.
+      </p>
+    </div>
   );
 }
