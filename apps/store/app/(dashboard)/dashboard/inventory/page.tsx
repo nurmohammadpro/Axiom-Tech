@@ -621,7 +621,8 @@ export default function Inventory() {
         </div>
       ) : (
         <>
-          <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+          {/* Category filters — compact metric-strip, horizontally scrollable */}
+          <div className="mt-4 flex gap-2 overflow-x-auto pb-1">
             {(
               [
                 ...categoryCards.map((c) => ({
@@ -640,18 +641,36 @@ export default function Inventory() {
                 })),
                 { key: null, label: "All Products", count: totalCount, value: totalValue },
               ] as const
-            ).map((card) => (
-              <button
-                key={card.key ?? "all"}
-                type="button"
-                onClick={() => setCatFilter(catFilter === card.key ? null : card.key)}
-                className={`rounded-lg border p-3 text-left transition-colors ${catFilter === card.key ? "border-primary bg-primary/5" : "border-border hover:border-primary/50 hover:bg-surface"}`}
-              >
-                <div className="text-xs text-muted-foreground">{card.label}</div>
-                <div className="mt-1 text-2xl font-bold">{card.count.toLocaleString()}</div>
-                <div className="mt-0.5 text-xs text-muted-foreground">{bdt(card.value)}</div>
-              </button>
-            ))}
+            ).map((card) => {
+              const active = catFilter === card.key;
+              return (
+                <button
+                  key={card.key ?? "all"}
+                  type="button"
+                  onClick={() => setCatFilter(active ? null : card.key)}
+                  className={
+                    "flex min-w-[168px] shrink-0 items-center gap-2.5 border p-2.5 text-left transition-colors " +
+                    (active
+                      ? "border-primary bg-primary/5"
+                      : "border-border bg-card hover:border-primary/50 hover:bg-surface")
+                  }
+                >
+                  <span
+                    className={
+                      "flex h-9 w-9 flex-none items-center justify-center text-xs font-bold " +
+                      (active ? "bg-primary text-primary-foreground" : "bg-primary/10 text-primary")
+                    }
+                  >
+                    {card.label.slice(0, 2).toUpperCase()}
+                  </span>
+                  <span className="min-w-0">
+                    <span className="block truncate text-xs font-medium">{card.label}</span>
+                    <span className="block text-[15px] font-extrabold leading-tight">{card.count.toLocaleString()}</span>
+                    <span className="block text-[10.5px] text-muted-foreground">{bdt(card.value)}</span>
+                  </span>
+                </button>
+              );
+            })}
           </div>
           <div className="mt-2 flex gap-4 text-xs text-muted-foreground">
             <span>Below reorder: {lowCount}</span>
