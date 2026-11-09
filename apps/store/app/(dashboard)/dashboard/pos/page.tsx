@@ -624,7 +624,7 @@ export default function PosPage() {
                     onClick={() => onTileClick(item)}
                     disabled={out}
                     className={
-                      "flex min-h-[92px] flex-col justify-between border p-3 text-left transition-colors " +
+                      "flex min-h-[92px] flex-col justify-between rounded-lg border p-3 text-left transition-colors " +
                       (out
                         ? "cursor-not-allowed border-border bg-surface opacity-50"
                         : "border-border bg-background hover:border-primary hover:bg-surface active:bg-surface")
@@ -908,7 +908,7 @@ export default function PosPage() {
       {unitSheet && (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-0 sm:items-center sm:p-4" onClick={() => setUnitSheet(null)}>
           <div
-            className="max-h-[75dvh] w-full max-w-md overflow-hidden border border-border bg-background sm:rounded-none"
+            className="max-h-[75dvh] w-full max-w-md overflow-hidden rounded-lg border border-border bg-background"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="border-b border-border px-4 py-3">

@@ -25,7 +25,7 @@ export function MetricCard({
   danger?: boolean;
 }) {
   return (
-    <div className="border border-border bg-card p-3">
+    <div className="rounded-lg border border-border bg-card p-3">
       <div className="flex items-center gap-3">
         <span
           className={
@@ -94,7 +94,7 @@ export function TargetRing({
   const c = 2 * Math.PI * r;
   const offset = c * (1 - clamped / 100);
   return (
-    <div className="border border-border bg-card p-3 text-center">
+    <div className="rounded-lg border border-border bg-card p-3 text-center">
       <div className="relative mx-auto h-[74px] w-[74px]">
         <svg width="74" height="74" viewBox="0 0 74 74">
           <circle cx="37" cy="37" r={r} fill="none" stroke="var(--border)" strokeWidth="7" />

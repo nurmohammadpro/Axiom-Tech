@@ -4,11 +4,11 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
-  --radius-sm: 0.5rem;
-  --radius-md: 0.75rem;
-  --radius-lg: 0.875rem;
-  --radius-xl: 1.125rem;
-  --radius-2xl: 1.5rem;
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 10px;
+  --radius-2xl: 12px;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -37,7 +37,7 @@
 /* ==========================================================================
    DESIGN TOKEN SYSTEM — adopted from the Data Table v3 Figma design
    Brand primary set to the dashboard violet from the merged redesign;
-   radii zeroed per the zero-radius directive (circles keep --radius-full).
+   Radii follow the GitHub/Vercel scale (4/6/8/10/12px).
    ========================================================================== */
 
 /* ==========================================================================
@@ -283,13 +283,15 @@
      ------------------------------------------------------------------------ */
 
   --radius-none: 0;
-  --radius-xs: 0; /* zero-radius directive */
-  --radius-sm: 0;
-  --radius-md: 0;
-  --radius-lg: 0;
-  --radius-xl: 0;
-  --radius-2xl: 0;
-  --radius-3xl: 0;
+  --radius-xs: 2px;
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 10px;
+  --radius-2xl: 12px;
+  --radius-3xl: 16px;
+  --radius-2xl: 12px;
+  --radius-3xl: 16px;
   --radius-full: 9999px; /* circles (avatars, dots) keep their shape */
 
   --radius-button: var(--radius-md);
@@ -698,7 +700,7 @@
 
 :root {
   /* App variables resolved from the design token system (brand = dashboard violet) */
-  --radius: var(--radius-none);
+  --radius: var(--radius-md);
   --background: var(--color-background);
   --foreground: var(--color-text-primary);
   --surface: var(--color-surface-sunken);
@@ -794,10 +796,9 @@
 
 /* ===== Axiom Orbit surface language ===== */
 .card-orbit {
-  border: 1px solid color-mix(in oklch, var(--color-border) 78%, transparent);
-  border-radius: 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
   background: var(--color-card);
-  box-shadow: 0 12px 32px color-mix(in oklch, var(--foreground) 5%, transparent);
 }
 
 .surface-orbit {
@@ -1047,10 +1048,3 @@
   --input: #27272a;
 }
 
-/* ===== Clean professional look: no rounded corners, no shadows anywhere ===== */
-.rounded-sm, .rounded-md, .rounded-lg, .rounded-xl, .rounded-2xl, .rounded-3xl, .rounded-full, .rounded {
-  border-radius: 0 !important;
-}
-.shadow-sm, .shadow, .shadow-md, .shadow-lg, .shadow-xl, .shadow-2xl {
-  box-shadow: none !important;
-}

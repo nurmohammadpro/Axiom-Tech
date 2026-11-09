@@ -728,13 +728,13 @@ function MonthlyTargetRing({ stats }: { stats: DashboardStats | undefined }) {
   if (!target || target <= 0) {
     if (!isOwner) {
       return (
-        <div className="border border-dashed border-border p-3 text-center text-[11px] text-muted-foreground">
+        <div className="rounded-lg border border-dashed border-border p-3 text-center text-[11px] text-muted-foreground">
           No monthly target set
         </div>
       );
     }
     return (
-      <div className="border border-dashed border-border p-3 text-center">
+      <div className="rounded-lg border border-dashed border-border p-3 text-center">
         <div className="text-[9.5px] uppercase tracking-[0.1em] text-muted-foreground">Monthly target</div>
         <button onClick={() => setEditing(true)} className="mt-1.5 w-full border border-primary px-2 py-1.5 text-xs font-semibold text-primary">
           + Set target
