@@ -226,7 +226,7 @@ export function DashboardShell({
   };
 
   return (
-    <div className="flex min-h-screen bg-surface">
+    <div className="surface-orbit flex min-h-screen">
       <CommandPalette open={paletteOpen} onOpenChange={setPaletteOpen} />
       {/* Mobile backdrop */}
       {mobileNavOpen && (
@@ -379,7 +379,7 @@ export function DashboardShell({
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-20 flex h-12 items-center gap-3 border-b border-border bg-background px-4">
+        <header className="sticky top-0 z-20 flex h-16 items-center gap-3 border-b border-border/70 bg-background/90 px-5 backdrop-blur-xl">
           <button
             onClick={() => setMobileNavOpen(!mobileNavOpen)}
             className="grid h-8 w-8 shrink-0 place-items-center text-muted-foreground hover:text-foreground md:hidden"
@@ -405,7 +405,7 @@ export function DashboardShell({
           {/* User profile moved to sidebar bottom - navbar simplified */}
         </header>
 
-        <div className="border-b border-border bg-background px-6 py-5">
+        <div className="border-b border-border/70 bg-background/70 px-5 py-7 backdrop-blur-xl sm:px-8">
           <div className="flex flex-wrap items-end justify-between gap-3">
             <div className="min-w-0">
               <h1 className="text-xl font-semibold tracking-tight">{title}</h1>
@@ -415,14 +415,14 @@ export function DashboardShell({
           </div>
         </div>
 
-        <main className="min-w-0 flex-1 p-4 sm:p-6">{children}</main>
+        <main className="min-w-0 flex-1 p-5 sm:p-8">{children}</main>
       </div>
     </div>
   );
 }
 
 export function Card({ children, className = "" }: { children: ReactNode; className?: string }) {
-  return <div className={"border border-border bg-background " + className}>{children}</div>;
+  return <div className={"card-orbit " + className}>{children}</div>;
 }
 
 export function Stat({
@@ -464,7 +464,7 @@ export function Stat({
   if (href) {
     return (
       <Link href={href}>
-        <Card className="p-4 cursor-pointer transition-colors hover:border-foreground/20 hover:bg-surface">
+        <Card className="p-4 transition-all hover:-translate-y-0.5 hover:border-primary/30 hover:bg-surface">
           {inner}
         </Card>
       </Link>
