@@ -33,6 +33,7 @@ import { PettyCashTab } from "./_components/petty-cash-tab";
 import { RecurringTab } from "./_components/recurring-tab";
 import { EditExpenseDialog, EditableExpense } from "./_components/edit-expense-dialog";
 import { ExpenseInsights } from "./_components/insights";
+import { TabStrip } from "@/components/dashboard/tab-strip";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -169,27 +170,7 @@ function ExpensesPageInner() {
   return (
     <>
       {/* Tabs */}
-      <div className="flex gap-1 overflow-x-auto border-b border-border">
-        {TABS.map((t) => {
-          const Icon = t.icon;
-          const active = tab === t.key;
-          return (
-            <button
-              key={t.key}
-              onClick={() => setTab(t.key)}
-              className={
-                "flex items-center gap-1.5 whitespace-nowrap border-b-2 px-4 py-2 text-sm transition-colors " +
-                (active
-                  ? "border-foreground text-foreground"
-                  : "border-transparent text-muted-foreground hover:text-foreground")
-              }
-            >
-              <Icon size={14} />
-              {t.label}
-            </button>
-          );
-        })}
-      </div>
+      <TabStrip tabs={TABS} active={tab} onChange={(k) => setTab(k)} />
 
       {/* Tab content */}
       <div className="mt-4 space-y-4">

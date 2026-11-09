@@ -46,6 +46,7 @@ import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { BrowserMultiFormatReader } from "@zxing/library";
 import { parseBarcode, type ParsedBarcode } from "@/lib/barcode-parser";
+import { TabStrip } from "@/components/dashboard/tab-strip";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -260,25 +261,11 @@ export default function ExchangesPage() {
 
       {/* Tabs */}
       <div className="flex gap-1 border-b border-border">
-        {TABS.map((t) => {
-          const Icon = t.icon;
-          const active = tab === t.key;
-          return (
-            <button
-              key={t.key}
-              onClick={() => setTab(t.key)}
-              className={
-                "flex items-center gap-1.5 border-b-2 px-4 py-2 text-sm transition-colors " +
-                (active
-                  ? "border-foreground text-foreground"
-                  : "border-transparent text-muted-foreground hover:text-foreground")
-              }
-            >
-              <Icon size={14} />
-              {t.label}
-            </button>
-          );
-        })}
+        <TabStrip
+          tabs={TABS.map((t) => ({ key: t.key, label: t.label, icon: t.icon }))}
+          active={tab}
+          onChange={(k) => setTab(k as typeof tab)}
+        />
       </div>
 
       {/* Tab content */}

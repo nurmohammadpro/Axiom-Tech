@@ -28,6 +28,7 @@ import { Card as UICard } from "@/components/ui/card";
 import { SearchInput } from "@/components/ui/search-input";
 import Link from "next/link";
 import { confirmDialog } from "@/components/confirm-host";
+import { TabStrip } from "@/components/dashboard/tab-strip";
 
 // ---------------------------------------------------------------------------
 // Tabs
@@ -850,21 +851,16 @@ export default function Warranties() {
 
   return (
     <div style={{ fontSize: "0.95em" }}>
-      <div className="flex gap-4 border-b border-border mb-4">
-        {(["overview", "claims", "policies"] as const).map((tab) => (
-          <button
-            key={tab}
-            onClick={() => setActiveTab(tab)}
-            className={`px-4 py-2 text-sm font-medium transition-colors ${
-              activeTab === tab
-                ? "border-b-2 border-primary text-primary"
-                : "text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            {tab === "overview" ? "Overview" : tab === "claims" ? "Claims" : "Policies"}
-          </button>
-        ))}
-      </div>
+      <TabStrip
+        className="mb-4"
+        tabs={[
+          { key: "overview", label: "Overview" },
+          { key: "claims", label: "Claims" },
+          { key: "policies", label: "Policies" },
+        ]}
+        active={activeTab}
+        onChange={(k) => setActiveTab(k)}
+      />
 
       {activeTab === "overview" && <OverviewTab />}
       {activeTab === "claims" && <ClaimsTab />}

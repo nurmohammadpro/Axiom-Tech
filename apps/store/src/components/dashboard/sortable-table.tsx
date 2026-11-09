@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, Fragment, type ReactNode } from "react";
+import { useEffect, useState, useMemo, Fragment, type ReactNode } from "react";
 
 type SortDirection = "asc" | "desc" | null;
 
@@ -24,6 +24,8 @@ interface SortableTableProps<T> {
   detailRow?: (row: T, isExpanded: boolean) => ReactNode;
   expandedKeys?: Set<string | number>;
   onToggleExpand?: (key: string | number, expanded: boolean) => void;
+  /** Rows per page; omit for no pagination (all rows render). */
+  pageSize?: number;
 }
 
 export function SortableTable<T extends Record<string, any>>({
@@ -32,6 +34,7 @@ export function SortableTable<T extends Record<string, any>>({
   defaultSortColumn,
   defaultSortDirection = "asc",
   emptyMessage = "No data available",
+  pageSize,
   onRowClick,
   rowClassName,
   rowKey,
@@ -88,6 +91,19 @@ export function SortableTable<T extends Record<string, any>>({
     });
   }, [data, sortColumn, sortDirection]);
 
+  const [page, setPage] = useState(1);
+
+  const pageCount = pageSize ? Math.max(1, Math.ceil(sortedData.length / pageSize)) : 1;
+  const safePage = Math.min(page, pageCount);
+  const pagedData = pageSize
+    ? sortedData.slice((safePage - 1) * pageSize, safePage * pageSize)
+    : sortedData;
+
+  // Reset to page 1 when the dataset changes size (new data arrives).
+  useEffect(() => {
+    setPage(1);
+  }, [data.length, pageSize]);
+
   const handleSort = (columnKey: string) => {
     const column = columns.find((col) => col.key === columnKey);
     if (!column?.sortable) return;
@@ -143,14 +159,14 @@ export function SortableTable<T extends Record<string, any>>({
           </tr>
         </thead>
         <tbody>
-          {sortedData.length === 0 ? (
+          {pagedData.length === 0 ? (
             <tr>
               <td colSpan={columns.length} className="px-3 py-8 text-center text-muted-foreground">
                 {emptyMessage}
               </td>
             </tr>
           ) : (
-            sortedData.map((row, rowIndex) => {
+            pagedData.map((row, rowIndex) => {
               const key = rowKey ? rowKey(row) : rowIndex;
               const isExpanded = expandedRows.has(key);
               return (
@@ -183,6 +199,44 @@ export function SortableTable<T extends Record<string, any>>({
           )}
         </tbody>
       </table>
+      {pageSize && sortedData.length > 0 && (
+        <div className="flex items-center justify-between border-t border-border px-3 py-2 text-xs text-muted-foreground">
+          <span>
+            {(safePage - 1) * pageSize + 1}–{(safePage - 1) * pageSize + pagedData.length} of{" "}
+            {sortedData.length}
+          </span>
+          <div className="flex items-center gap-2">
+            <span>Rows per page</span>
+            <select
+              value={pageSize}
+              onChange={() => setPage(1)}
+              className="h-7 border border-border bg-background px-1 text-xs"
+              aria-label="Rows per page"
+            >
+              <option value={pageSize}>{pageSize}</option>
+            </select>
+            <button
+              onClick={() => setPage((v) => Math.max(1, v - 1))}
+              disabled={safePage <= 1}
+              className="border border-border px-2 py-1 hover:bg-surface disabled:opacity-40"
+              aria-label="Previous page"
+            >
+              ‹
+            </button>
+            <span className="text-foreground">
+              {safePage} / {pageCount}
+            </span>
+            <button
+              onClick={() => setPage((v) => Math.min(pageCount, v + 1))}
+              disabled={safePage >= pageCount}
+              className="border border-border px-2 py-1 hover:bg-surface disabled:opacity-40"
+              aria-label="Next page"
+            >
+              ›
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

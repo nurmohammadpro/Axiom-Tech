@@ -28,6 +28,7 @@ import {
 import { SearchInput } from "@/components/ui/search-input";
 import { toast } from "sonner";
 import { ImeiUnitsTable } from "@/components/inventory/imei-units-table";
+import { TabStrip } from "@/components/dashboard/tab-strip";
 
 type View = "stock" | "warehouses" | "transfers";
 
@@ -596,20 +597,11 @@ export default function Inventory() {
 
   return (
     <>
-      <div className="flex flex-wrap items-center gap-1">
-        {tabs.map((t) => (
-          <button
-            key={t.id}
-            onClick={() => setView(t.id)}
-            className={
-              "border px-3 py-1.5 text-sm transition-colors " +
-              (view === t.id ? activeCls : idleCls)
-            }
-          >
-            {t.label}
-          </button>
-        ))}
-      </div>
+      <TabStrip
+        tabs={tabs.map((t) => ({ key: t.id, label: t.label }))}
+        active={view}
+        onChange={(k) => setView(k as View)}
+      />
 
       {view === "warehouses" ? (
         <div className="mt-4">
@@ -876,6 +868,7 @@ export default function Inventory() {
           <div className="mt-3">
             <SortableTable
               rowKey={(item) => item.variantId}
+              pageSize={25}
               columns={columns}
               data={filtered}
               defaultSortColumn="productName"

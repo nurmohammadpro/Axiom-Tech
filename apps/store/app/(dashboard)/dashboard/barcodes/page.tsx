@@ -47,6 +47,7 @@ import { useBarcodeScanner } from "@/lib/scanner";
 import { specKey } from "@/lib/label-specs";
 import { useCart } from "@/lib/cart";
 import { toast } from "sonner";
+import { TabStrip } from "@/components/dashboard/tab-strip";
 
 type Symbology = "CODE128" | "EAN13" | "UPCA" | "QR";
 type LabelSize = "40x25";
@@ -929,20 +930,11 @@ export default function Barcodes() {
     <div>
       {/* Tab bar */}
       <div className="mb-4 flex gap-1 border-b border-border">
-        {tabs.map((t) => (
-          <button
-            key={t.id}
-            onClick={() => setTab(t.id)}
-            className={`flex items-center gap-1.5 border-b-2 px-4 py-2 text-sm font-medium transition-colors ${
-              tab === t.id
-                ? "border-primary text-primary"
-                : "border-transparent text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            {t.icon}
-            {t.label}
-          </button>
-        ))}
+        <TabStrip
+            tabs={tabs.map((t) => ({ key: t.id, label: t.label }))}
+            active={tab}
+            onChange={(k) => setTab(k as typeof tab)}
+          />
       </div>
 
       {/* ════════════════════════════════════════════════════════ */}

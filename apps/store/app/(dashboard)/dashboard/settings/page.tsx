@@ -10,6 +10,7 @@ import { useSessionScope, useSettings, useUpdateSettings } from "@/lib/hooks";
 import type { PaymentAccount, PaymentAccountsByMethod } from "@/lib/store-settings";
 import { toast } from "sonner";
 import { Save, RotateCcw, CreditCard, Receipt, Gift, Plus, X, Upload, Trash2, Check, Palette } from "lucide-react";
+import { TabStrip } from "@/components/dashboard/tab-strip";
 
 const tabs = [
   { id: "General", icon: null },
@@ -45,28 +46,11 @@ export default function Settings() {
   return (
     <>
       <div className="grid grid-cols-1 gap-3 lg:grid-cols-[220px_1fr]">
-        <nav className="border border-border bg-background p-2 overflow-x-auto">
-          <div className="min-w-max">
-            {tabs.map((t) => {
-              const Icon = t.icon;
-              return (
-                <button
-                  key={t.id}
-                  onClick={() => setTab(t.id)}
-                  className={
-                    "flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-left text-sm " +
-                    (tab === t.id
-                      ? "bg-surface text-foreground"
-                      : "text-muted-foreground hover:bg-surface hover:text-foreground")
-                  }
-                >
-                  {Icon && <Icon size={14} className="shrink-0" />}
-                  {t.id}
-                </button>
-              );
-            })}
-          </div>
-        </nav>
+        <TabStrip
+          tabs={tabs.map((t) => ({ key: t.id, label: t.id, icon: t.icon ?? undefined }))}
+          active={tab}
+          onChange={(k) => setTab(k)}
+        />
 
         <Card className="p-5">
           {tab === "General" && (

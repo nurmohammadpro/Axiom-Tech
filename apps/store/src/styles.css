@@ -31,32 +31,695 @@
   --color-ring-offset-background: var(--background);
   --color-sale: var(--sale);
   --color-surface: var(--surface);
-  --font-sans: "Inter", "Hind Siliguri", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Inter", "Noto Sans Bengali", ui-sans-serif, system-ui, sans-serif;
 }
 
+/* ==========================================================================
+   DESIGN TOKEN SYSTEM — adopted from the Data Table v3 Figma design
+   Brand primary set to the dashboard violet from the merged redesign;
+   radii zeroed per the zero-radius directive (circles keep --radius-full).
+   ========================================================================== */
+
+/* ==========================================================================
+   TECH-BASED INVENTORY, POS, WARRANTY, RETURNS, REPORTS, EXPENSES, HR & PAYROLL
+   Complete Design Token System
+   Format: CSS Custom Properties
+   ========================================================================== */
+
 :root {
-  --radius: 0.875rem;
-  --background: oklch(0.985 0.006 270);
-  --foreground: oklch(0.18 0.01 250);
-  --surface: oklch(0.975 0.003 250);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.18 0.01 250);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.18 0.01 250);
-  --primary: oklch(0.58 0.22 285);
-  --primary-foreground: oklch(1 0 0);
-  --secondary: oklch(0.97 0.003 250);
-  --secondary-foreground: oklch(0.18 0.01 250);
-  --muted: oklch(0.965 0.003 250);
-  --muted-foreground: oklch(0.5 0.01 250);
-  --accent: oklch(0.965 0.003 250);
-  --accent-foreground: oklch(0.18 0.01 250);
-  --destructive: oklch(0.55 0.22 25);
-  --destructive-foreground: oklch(1 0 0);
-  --sale: oklch(0.55 0.22 25);
-  --border: oklch(0.9 0.005 250);
-  --input: oklch(0.9 0.005 250);
-  --ring: oklch(0.59 0.1 180);
+  /* ------------------------------------------------------------------------
+     1. BRAND COLORS
+     ------------------------------------------------------------------------ */
+
+  --color-brand-primary: oklch(0.58 0.22 285);
+  --color-brand-primary-hover: oklch(0.52 0.22 285);
+  --color-brand-primary-active: oklch(0.47 0.2 285);
+  --color-brand-primary-subtle: #f3f1ff;
+  --color-brand-primary-muted: #e4e0ff;
+  --color-brand-primary-foreground: #ffffff;
+
+  --color-brand-secondary: #0f172a;
+  --color-brand-secondary-hover: #1e293b;
+  --color-brand-secondary-subtle: #f1f5f9;
+  --color-brand-secondary-foreground: #ffffff;
+
+  --color-brand-accent: #06b6d4;
+  --color-brand-accent-hover: #0891b2;
+  --color-brand-accent-subtle: #ecfeff;
+  --color-brand-accent-foreground: #083344;
+
+  /* ------------------------------------------------------------------------
+     2. NEUTRAL COLORS
+     ------------------------------------------------------------------------ */
+
+  --color-neutral-0: #ffffff;
+  --color-neutral-50: #f8fafc;
+  --color-neutral-100: #f1f5f9;
+  --color-neutral-150: #eaf0f6;
+  --color-neutral-200: #e2e8f0;
+  --color-neutral-300: #cbd5e1;
+  --color-neutral-400: #94a3b8;
+  --color-neutral-500: #64748b;
+  --color-neutral-600: #475569;
+  --color-neutral-700: #334155;
+  --color-neutral-800: #1e293b;
+  --color-neutral-900: #0f172a;
+  --color-neutral-950: #020617;
+
+  /* ------------------------------------------------------------------------
+     3. SEMANTIC COLORS
+     ------------------------------------------------------------------------ */
+
+  /* Success */
+
+  --color-success: #16a34a;
+  --color-success-hover: #15803d;
+  --color-success-active: #166534;
+  --color-success-subtle: #f0fdf4;
+  --color-success-muted: #dcfce7;
+  --color-success-border: #bbf7d0;
+  --color-success-foreground: #14532d;
+
+  /* Warning */
+
+  --color-warning: #d97706;
+  --color-warning-hover: #b45309;
+  --color-warning-active: #92400e;
+  --color-warning-subtle: #fffbeb;
+  --color-warning-muted: #fef3c7;
+  --color-warning-border: #fde68a;
+  --color-warning-foreground: #78350f;
+
+  /* Danger */
+
+  --color-danger: #dc2626;
+  --color-danger-hover: #b91c1c;
+  --color-danger-active: #991b1b;
+  --color-danger-subtle: #fef2f2;
+  --color-danger-muted: #fee2e2;
+  --color-danger-border: #fecaca;
+  --color-danger-foreground: #7f1d1d;
+
+  /* Information */
+
+  --color-info: #0284c7;
+  --color-info-hover: #0369a1;
+  --color-info-active: #075985;
+  --color-info-subtle: #f0f9ff;
+  --color-info-muted: #e0f2fe;
+  --color-info-border: #bae6fd;
+  --color-info-foreground: #0c4a6e;
+
+  /* ------------------------------------------------------------------------
+     4. APPLICATION SURFACES
+     ------------------------------------------------------------------------ */
+
+  --color-background: #f8fafc;
+  --color-background-muted: #f1f5f9;
+  --color-background-subtle: #ffffff;
+
+  --color-surface: #ffffff;
+  --color-surface-raised: #ffffff;
+  --color-surface-sunken: #f8fafc;
+  --color-surface-overlay: #ffffff;
+  --color-surface-hover: #f8fafc;
+  --color-surface-active: #f1f5f9;
+  --color-surface-selected: #f3f1ff;
+  --color-surface-disabled: #f1f5f9;
+
+  --color-sidebar: #ffffff;
+  --color-sidebar-hover: #f8fafc;
+  --color-sidebar-active: #eff6ff;
+  --color-sidebar-border: #e2e8f0;
+
+  --color-header: #ffffff;
+  --color-header-border: #e2e8f0;
+
+  --color-modal: #ffffff;
+  --color-popover: #ffffff;
+  --color-tooltip: #0f172a;
+
+  /* ------------------------------------------------------------------------
+     5. TEXT COLORS
+     ------------------------------------------------------------------------ */
+
+  --color-text-primary: #0f172a;
+  --color-text-secondary: #475569;
+  --color-text-tertiary: #64748b;
+  --color-text-muted: #94a3b8;
+  --color-text-placeholder: #94a3b8;
+  --color-text-disabled: #cbd5e1;
+  --color-text-inverse: #ffffff;
+
+  --color-text-link: oklch(0.58 0.22 285);
+  --color-text-link-hover: oklch(0.52 0.22 285);
+
+  /* ------------------------------------------------------------------------
+     6. BORDER COLORS
+     ------------------------------------------------------------------------ */
+
+  --color-border: #e2e8f0;
+  --color-border-subtle: #f1f5f9;
+  --color-border-strong: #cbd5e1;
+  --color-border-hover: #94a3b8;
+  --color-border-focus: oklch(0.58 0.22 285);
+  --color-border-disabled: #e2e8f0;
+
+  --color-divider: #e2e8f0;
+  --color-divider-subtle: #f1f5f9;
+
+  /* ------------------------------------------------------------------------
+     7. TYPOGRAPHY
+     ------------------------------------------------------------------------ */
+
+  --font-family-sans:
+    "Inter",
+    "Noto Sans Bengali",
+    "Segoe UI",
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    sans-serif;
+
+  --font-family-mono:
+    "JetBrains Mono",
+    "SFMono-Regular",
+    Consolas,
+    "Liberation Mono",
+    monospace;
+
+  --font-size-2xs: 0.625rem;   /* 10px */
+  --font-size-xs: 0.75rem;      /* 12px */
+  --font-size-sm: 0.875rem;     /* 14px */
+  --font-size-md: 1rem;         /* 16px */
+  --font-size-lg: 1.125rem;     /* 18px */
+  --font-size-xl: 1.25rem;      /* 20px */
+  --font-size-2xl: 1.5rem;      /* 24px */
+  --font-size-3xl: 1.875rem;    /* 30px */
+  --font-size-4xl: 2.25rem;     /* 36px */
+  --font-size-5xl: 3rem;        /* 48px */
+
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+  --font-weight-extrabold: 800;
+
+  --line-height-tight: 1.2;
+  --line-height-snug: 1.35;
+  --line-height-normal: 1.5;
+  --line-height-relaxed: 1.65;
+  --line-height-loose: 1.8;
+
+  --letter-spacing-tight: -0.025em;
+  --letter-spacing-normal: 0;
+  --letter-spacing-wide: 0.025em;
+  --letter-spacing-wider: 0.05em;
+
+  /* ------------------------------------------------------------------------
+     8. SPACING
+     ------------------------------------------------------------------------ */
+
+  --spacing-0: 0;
+  --spacing-0-5: 0.125rem; /* 2px */
+  --spacing-1: 0.25rem;    /* 4px */
+  --spacing-1-5: 0.375rem; /* 6px */
+  --spacing-2: 0.5rem;     /* 8px */
+  --spacing-2-5: 0.625rem; /* 10px */
+  --spacing-3: 0.75rem;    /* 12px */
+  --spacing-3-5: 0.875rem; /* 14px */
+  --spacing-4: 1rem;       /* 16px */
+  --spacing-5: 1.25rem;    /* 20px */
+  --spacing-6: 1.5rem;     /* 24px */
+  --spacing-7: 1.75rem;    /* 28px */
+  --spacing-8: 2rem;       /* 32px */
+  --spacing-9: 2.25rem;    /* 36px */
+  --spacing-10: 2.5rem;    /* 40px */
+  --spacing-12: 3rem;       /* 48px */
+  --spacing-14: 3.5rem;     /* 56px */
+  --spacing-16: 4rem;       /* 64px */
+  --spacing-20: 5rem;       /* 80px */
+  --spacing-24: 6rem;       /* 96px */
+
+  /* ------------------------------------------------------------------------
+     9. LAYOUT
+     ------------------------------------------------------------------------ */
+
+  --layout-sidebar-width: 16rem;          /* 256px */
+  --layout-sidebar-collapsed-width: 4.5rem; /* 72px */
+  --layout-header-height: 4rem;            /* 64px */
+  --layout-content-max-width: 100rem;      /* 1600px */
+
+  --layout-page-padding-x: 1.5rem;
+  --layout-page-padding-y: 1.5rem;
+  --layout-section-gap: 1.5rem;
+  --layout-card-gap: 1rem;
+
+  --layout-table-min-width: 48rem;
+  --layout-pos-panel-width: 24rem;
+
+  /* ------------------------------------------------------------------------
+     10. BORDER RADIUS
+     ------------------------------------------------------------------------ */
+
+  --radius-none: 0;
+  --radius-xs: 0; /* zero-radius directive */
+  --radius-sm: 0;
+  --radius-md: 0;
+  --radius-lg: 0;
+  --radius-xl: 0;
+  --radius-2xl: 0;
+  --radius-3xl: 0;
+  --radius-full: 9999px; /* circles (avatars, dots) keep their shape */
+
+  --radius-button: var(--radius-md);
+  --radius-input: var(--radius-md);
+  --radius-card: var(--radius-xl);
+  --radius-modal: var(--radius-2xl);
+  --radius-badge: var(--radius-full);
+
+  /* ------------------------------------------------------------------------
+     11. SHADOWS
+     ------------------------------------------------------------------------ */
+
+  --shadow-xs: 0 1px 2px rgb(15 23 42 / 0.04);
+  --shadow-sm:
+    0 1px 2px rgb(15 23 42 / 0.05),
+    0 1px 3px rgb(15 23 42 / 0.08);
+
+  --shadow-md:
+    0 4px 6px -1px rgb(15 23 42 / 0.08),
+    0 2px 4px -2px rgb(15 23 42 / 0.06);
+
+  --shadow-lg:
+    0 10px 15px -3px rgb(15 23 42 / 0.08),
+    0 4px 6px -4px rgb(15 23 42 / 0.06);
+
+  --shadow-xl:
+    0 20px 25px -5px rgb(15 23 42 / 0.1),
+    0 8px 10px -6px rgb(15 23 42 / 0.08);
+
+  --shadow-2xl: 0 25px 50px -12px rgb(15 23 42 / 0.2);
+
+  --shadow-card: var(--shadow-sm);
+  --shadow-card-hover: var(--shadow-md);
+  --shadow-dropdown: var(--shadow-lg);
+  --shadow-modal: var(--shadow-2xl);
+
+  --shadow-focus:
+    0 0 0 3px rgb(37 99 235 / 0.18);
+
+  /* ------------------------------------------------------------------------
+     12. FOCUS, TRANSITIONS & INTERACTION
+     ------------------------------------------------------------------------ */
+
+  --focus-ring-width: 2px;
+  --focus-ring-offset: 2px;
+  --focus-ring-color: var(--color-brand-primary);
+
+  --transition-fast: 120ms ease;
+  --transition-normal: 180ms ease;
+  --transition-slow: 250ms ease;
+
+  --transition-colors:
+    color var(--transition-fast),
+    background-color var(--transition-fast),
+    border-color var(--transition-fast);
+
+  --transition-transform:
+    transform var(--transition-normal);
+
+  --transition-shadow:
+    box-shadow var(--transition-normal);
+
+  --opacity-disabled: 0.5;
+  --opacity-muted: 0.65;
+  --opacity-overlay: 0.5;
+
+  /* ------------------------------------------------------------------------
+     13. Z-INDEX
+     ------------------------------------------------------------------------ */
+
+  --z-index-base: 0;
+  --z-index-raised: 10;
+  --z-index-sticky: 20;
+  --z-index-sidebar: 30;
+  --z-index-header: 40;
+  --z-index-dropdown: 50;
+  --z-index-overlay: 60;
+  --z-index-modal: 70;
+  --z-index-popover: 80;
+  --z-index-tooltip: 90;
+  --z-index-toast: 100;
+
+  /* ------------------------------------------------------------------------
+     14. COMPONENT TOKENS — BUTTONS
+     ------------------------------------------------------------------------ */
+
+  --button-height-xs: 1.75rem; /* 28px */
+  --button-height-sm: 2rem;    /* 32px */
+  --button-height-md: 2.25rem; /* 36px */
+  --button-height-lg: 2.5rem;  /* 40px */
+  --button-height-xl: 3rem;    /* 48px */
+
+  --button-padding-x-xs: 0.5rem;
+  --button-padding-x-sm: 0.75rem;
+  --button-padding-x-md: 1rem;
+  --button-padding-x-lg: 1.25rem;
+  --button-padding-x-xl: 1.5rem;
+
+  --button-font-size-sm: var(--font-size-xs);
+  --button-font-size-md: var(--font-size-sm);
+  --button-font-size-lg: var(--font-size-md);
+
+  --button-font-weight: var(--font-weight-medium);
+  --button-radius: var(--radius-md);
+  --button-transition: var(--transition-colors);
+
+  /* ------------------------------------------------------------------------
+     15. COMPONENT TOKENS — INPUTS
+     ------------------------------------------------------------------------ */
+
+  --input-height-sm: 2rem;    /* 32px */
+  --input-height-md: 2.25rem; /* 36px */
+  --input-height-lg: 2.75rem; /* 44px */
+
+  --input-padding-x: 0.75rem;
+  --input-padding-y: 0.5rem;
+
+  --input-background: var(--color-surface);
+  --input-background-disabled: var(--color-surface-disabled);
+
+  --input-border: var(--color-border);
+  --input-border-hover: var(--color-border-hover);
+  --input-border-focus: var(--color-border-focus);
+  --input-border-error: var(--color-danger);
+
+  --input-text: var(--color-text-primary);
+  --input-placeholder: var(--color-text-placeholder);
+
+  --input-radius: var(--radius-md);
+  --input-font-size: var(--font-size-sm);
+  --input-shadow-focus: var(--shadow-focus);
+
+  /* ------------------------------------------------------------------------
+     16. COMPONENT TOKENS — CARDS
+     ------------------------------------------------------------------------ */
+
+  --card-background: var(--color-surface);
+  --card-border: var(--color-border);
+  --card-radius: var(--radius-xl);
+  --card-padding-sm: 1rem;
+  --card-padding-md: 1.25rem;
+  --card-padding-lg: 1.5rem;
+  --card-shadow: var(--shadow-card);
+  --card-shadow-hover: var(--shadow-card-hover);
+
+  /* ------------------------------------------------------------------------
+     17. COMPONENT TOKENS — TABLES & DATA GRIDS
+     ------------------------------------------------------------------------ */
+
+  --table-background: var(--color-surface);
+  --table-header-background: var(--color-neutral-50);
+  --table-header-text: var(--color-text-secondary);
+  --table-row-background: var(--color-surface);
+  --table-row-hover: var(--color-neutral-50);
+  --table-row-selected: var(--color-brand-primary-subtle);
+  --table-border: var(--color-border);
+  --table-divider: var(--color-divider-subtle);
+
+  --table-cell-padding-x: 1rem;
+  --table-cell-padding-y: 0.75rem;
+  --table-header-padding-y: 0.75rem;
+
+  --table-font-size: var(--font-size-sm);
+  --table-header-font-size: var(--font-size-xs);
+  --table-header-font-weight: var(--font-weight-semibold);
+
+  --table-checkbox-width: 2.75rem;
+  --table-action-width: 3rem;
+
+  /* ------------------------------------------------------------------------
+     18. COMPONENT TOKENS — BADGES & STATUS
+     ------------------------------------------------------------------------ */
+
+  --badge-height-sm: 1.25rem;
+  --badge-height-md: 1.5rem;
+
+  --badge-padding-x: 0.5rem;
+  --badge-font-size: var(--font-size-xs);
+  --badge-font-weight: var(--font-weight-medium);
+  --badge-radius: var(--radius-full);
+
+  --status-active: var(--color-success);
+  --status-active-bg: var(--color-success-subtle);
+
+  --status-inactive: var(--color-neutral-500);
+  --status-inactive-bg: var(--color-neutral-100);
+
+  --status-pending: var(--color-warning);
+  --status-pending-bg: var(--color-warning-subtle);
+
+  --status-expired: var(--color-danger);
+  --status-expired-bg: var(--color-danger-subtle);
+
+  --status-processing: var(--color-info);
+  --status-processing-bg: var(--color-info-subtle);
+
+  /* ------------------------------------------------------------------------
+     19. COMPONENT TOKENS — POS
+     ------------------------------------------------------------------------ */
+
+  --pos-background: var(--color-background);
+  --pos-product-panel-background: var(--color-surface);
+  --pos-cart-background: var(--color-surface);
+  --pos-cart-border: var(--color-border);
+
+  --pos-product-card-radius: var(--radius-lg);
+  --pos-cart-radius: var(--radius-xl);
+
+  --pos-product-card-padding: 0.75rem;
+  --pos-cart-padding: 1rem;
+
+  --pos-product-grid-gap: 0.75rem;
+  --pos-cart-item-gap: 0.75rem;
+
+  --pos-search-height: 2.75rem;
+  --pos-quantity-control-height: 2rem;
+  --pos-payment-button-height: 3rem;
+
+  --pos-total-background: var(--color-neutral-50);
+  --pos-total-border: var(--color-border);
+
+  --pos-total-label: var(--color-text-secondary);
+  --pos-total-value: var(--color-text-primary);
+
+  --pos-payable-label: var(--color-text-secondary);
+  --pos-payable-value: var(--color-success);
+
+  /* ------------------------------------------------------------------------
+     20. COMPONENT TOKENS — INVENTORY
+     ------------------------------------------------------------------------ */
+
+  --inventory-stock-high: var(--color-success);
+  --inventory-stock-high-bg: var(--color-success-subtle);
+
+  --inventory-stock-normal: var(--color-info);
+  --inventory-stock-normal-bg: var(--color-info-subtle);
+
+  --inventory-stock-low: var(--color-warning);
+  --inventory-stock-low-bg: var(--color-warning-subtle);
+
+  --inventory-stock-out: var(--color-danger);
+  --inventory-stock-out-bg: var(--color-danger-subtle);
+
+  --inventory-stock-expired: var(--color-danger);
+  --inventory-stock-expired-bg: var(--color-danger-subtle);
+
+  /* ------------------------------------------------------------------------
+     21. COMPONENT TOKENS — WARRANTY & RETURNS
+     ------------------------------------------------------------------------ */
+
+  --warranty-valid: var(--color-success);
+  --warranty-valid-bg: var(--color-success-subtle);
+
+  --warranty-expiring: var(--color-warning);
+  --warranty-expiring-bg: var(--color-warning-subtle);
+
+  --warranty-expired: var(--color-danger);
+  --warranty-expired-bg: var(--color-danger-subtle);
+
+  --return-requested: var(--color-info);
+  --return-requested-bg: var(--color-info-subtle);
+
+  --return-approved: var(--color-success);
+  --return-approved-bg: var(--color-success-subtle);
+
+  --return-rejected: var(--color-danger);
+  --return-rejected-bg: var(--color-danger-subtle);
+
+  --return-refunded: var(--color-neutral-700);
+  --return-refunded-bg: var(--color-neutral-100);
+
+  /* ------------------------------------------------------------------------
+     22. COMPONENT TOKENS — REPORTS & ANALYTICS
+     ------------------------------------------------------------------------ */
+
+  --report-positive: var(--color-success);
+  --report-negative: var(--color-danger);
+  --report-neutral: var(--color-neutral-500);
+
+  --report-chart-grid: var(--color-border);
+  --report-chart-axis: var(--color-text-tertiary);
+  --report-chart-tooltip-bg: var(--color-neutral-900);
+  --report-chart-tooltip-text: var(--color-neutral-0);
+
+  --report-chart-series-1: #2563eb;
+  --report-chart-series-2: #16a34a;
+  --report-chart-series-3: #d97706;
+  --report-chart-series-4: #7c3aed;
+  --report-chart-series-5: #0891b2;
+  --report-chart-series-6: #db2777;
+  --report-chart-series-7: #64748b;
+  --report-chart-series-8: #ea580c;
+
+  /* ------------------------------------------------------------------------
+     23. COMPONENT TOKENS — EXPENSES
+     ------------------------------------------------------------------------ */
+
+  --expense-approved: var(--color-success);
+  --expense-approved-bg: var(--color-success-subtle);
+
+  --expense-pending: var(--color-warning);
+  --expense-pending-bg: var(--color-warning-subtle);
+
+  --expense-rejected: var(--color-danger);
+  --expense-rejected-bg: var(--color-danger-subtle);
+
+  --expense-paid: var(--color-info);
+  --expense-paid-bg: var(--color-info-subtle);
+
+  /* ------------------------------------------------------------------------
+     24. COMPONENT TOKENS — HR & PAYROLL
+     ------------------------------------------------------------------------ */
+
+  --hr-present: var(--color-success);
+  --hr-present-bg: var(--color-success-subtle);
+
+  --hr-late: var(--color-warning);
+  --hr-late-bg: var(--color-warning-subtle);
+
+  --hr-absent: var(--color-danger);
+  --hr-absent-bg: var(--color-danger-subtle);
+
+  --hr-leave: var(--color-info);
+  --hr-leave-bg: var(--color-info-subtle);
+
+  --payroll-paid: var(--color-success);
+  --payroll-paid-bg: var(--color-success-subtle);
+
+  --payroll-processing: var(--color-warning);
+  --payroll-processing-bg: var(--color-warning-subtle);
+
+  --payroll-unpaid: var(--color-danger);
+  --payroll-unpaid-bg: var(--color-danger-subtle);
+
+  --payroll-deduction: var(--color-danger);
+  --payroll-earning: var(--color-success);
+
+  /* ------------------------------------------------------------------------
+     25. COMPONENT TOKENS — NOTIFICATIONS
+     ------------------------------------------------------------------------ */
+
+  --toast-background: var(--color-neutral-900);
+  --toast-text: var(--color-neutral-0);
+  --toast-radius: var(--radius-lg);
+  --toast-shadow: var(--shadow-xl);
+
+  --notification-unread-bg: var(--color-brand-primary-subtle);
+  --notification-unread-indicator: var(--color-brand-primary);
+
+  /* ------------------------------------------------------------------------
+     26. COMPONENT TOKENS — SKELETONS
+     ------------------------------------------------------------------------ */
+
+  --skeleton-background: var(--color-neutral-100);
+  --skeleton-highlight: var(--color-neutral-50);
+  --skeleton-radius: var(--radius-md);
+
+  /* ------------------------------------------------------------------------
+     27. COMPONENT TOKENS — SCROLLBARS
+     ------------------------------------------------------------------------ */
+
+  --scrollbar-size: 0.5rem;
+  --scrollbar-track: transparent;
+  --scrollbar-thumb: var(--color-neutral-300);
+  --scrollbar-thumb-hover: var(--color-neutral-400);
+
+  /* ------------------------------------------------------------------------
+     28. COMPONENT TOKENS — EMPTY STATES
+     ------------------------------------------------------------------------ */
+
+  --empty-state-icon-color: var(--color-neutral-400);
+  --empty-state-title-color: var(--color-text-primary);
+  --empty-state-description-color: var(--color-text-secondary);
+  --empty-state-icon-size: 3rem;
+
+  /* ------------------------------------------------------------------------
+     29. COMPONENT TOKENS — FILTERS & SEARCH
+     ------------------------------------------------------------------------ */
+
+  --filter-chip-background: var(--color-neutral-100);
+  --filter-chip-background-active: var(--color-brand-primary-subtle);
+  --filter-chip-text: var(--color-text-secondary);
+  --filter-chip-text-active: var(--color-brand-primary);
+  --filter-chip-border: var(--color-border);
+  --filter-chip-radius: var(--radius-full);
+
+  --search-background: var(--color-surface);
+  --search-border: var(--color-border);
+  --search-border-focus: var(--color-brand-primary);
+  --search-radius: var(--radius-lg);
+  --search-height: 2.75rem;
+
+  /* ------------------------------------------------------------------------
+     30. COMPONENT TOKENS — PAGINATION
+     ------------------------------------------------------------------------ */
+
+  --pagination-item-size: 2rem;
+  --pagination-item-radius: var(--radius-md);
+  --pagination-item-background: transparent;
+  --pagination-item-background-hover: var(--color-neutral-100);
+  --pagination-item-background-active: var(--color-brand-primary);
+  --pagination-item-text-active: var(--color-brand-primary-foreground);
+  --pagination-item-border: var(--color-border);
+}
+
+
+:root {
+  /* App variables resolved from the design token system (brand = dashboard violet) */
+  --radius: var(--radius-none);
+  --background: var(--color-background);
+  --foreground: var(--color-text-primary);
+  --surface: var(--color-surface-sunken);
+  --card: var(--color-surface);
+  --card-foreground: var(--color-text-primary);
+  --popover: var(--color-popover);
+  --popover-foreground: var(--color-text-primary);
+  --primary: var(--color-brand-primary);
+  --primary-foreground: var(--color-brand-primary-foreground);
+  --secondary: var(--color-neutral-100);
+  --secondary-foreground: var(--color-text-primary);
+  --muted: var(--color-neutral-100);
+  --muted-foreground: var(--color-text-tertiary);
+  --accent: var(--color-neutral-100);
+  --accent-foreground: var(--color-text-primary);
+  --destructive: var(--color-danger);
+  --destructive-foreground: #ffffff;
+  --sale: var(--color-danger);
+  --border: var(--color-border);
+  --input: var(--color-border);
+  --ring: var(--color-border-focus);
 }
 
 @layer base {
@@ -384,3 +1047,10 @@
   --input: #27272a;
 }
 
+/* ===== Clean professional look: no rounded corners, no shadows anywhere ===== */
+.rounded-sm, .rounded-md, .rounded-lg, .rounded-xl, .rounded-2xl, .rounded-3xl, .rounded-full, .rounded {
+  border-radius: 0 !important;
+}
+.shadow-sm, .shadow, .shadow-md, .shadow-lg, .shadow-xl, .shadow-2xl {
+  box-shadow: none !important;
+}

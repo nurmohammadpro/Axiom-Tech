@@ -13,6 +13,7 @@ import { Plus, Trash2, Pencil } from "lucide-react";
 import { SearchInput } from "@/components/ui/search-input";
 import { toast } from "sonner";
 import Select from "react-select";
+import { TabStrip } from "@/components/dashboard/tab-strip";
 
 interface BrandOpt {
   value: string;
@@ -190,20 +191,11 @@ export default function Catalog() {
     <>
       <div>
         <div className="mb-4 flex items-center gap-1 border-b border-border">
-          {tabs.map((t) => (
-            <button
-              key={t.key}
-              onClick={() => setTab(t.key)}
-              className={
-                "-mb-px border-b-2 px-3 py-2 text-sm transition-colors " +
-                (tab === t.key
-                  ? "border-foreground font-medium text-foreground"
-                  : "border-transparent text-muted-foreground hover:text-foreground")
-              }
-            >
-              {t.label}
-            </button>
-          ))}
+          <TabStrip
+          tabs={tabs.map((t) => ({ key: t.key, label: t.label }))}
+          active={tab}
+          onChange={(k) => setTab(k as typeof tab)}
+        />
         </div>
 
         {tab === "products" && (
