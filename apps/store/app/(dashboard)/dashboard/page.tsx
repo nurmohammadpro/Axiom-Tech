@@ -24,6 +24,8 @@ import {
   Package,
   ShoppingCart,
   ArrowRight,
+  ArrowUpRight,
+  Plus,
   Clock,
   CheckCircle2,
   RotateCcw,
@@ -126,6 +128,24 @@ export default function Overview() {
 
   return (
     <>
+      <section className="mb-7 flex flex-col gap-5 rounded-2xl border border-primary/15 bg-gradient-to-br from-primary/[0.12] via-background to-cyan-400/[0.08] p-5 shadow-sm sm:flex-row sm:items-end sm:justify-between sm:p-7">
+        <div>
+          <div className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-primary">
+            <span className="size-2 rounded-full bg-primary" />
+            Store command center
+          </div>
+          <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">Your business at a glance.</h2>
+          <p className="mt-2 max-w-xl text-sm text-muted-foreground">Monitor today&apos;s momentum, spot inventory risks, and move from insight to action without leaving the dashboard.</p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Link href="/dashboard/pos" className="inline-flex items-center gap-2 rounded-lg bg-primary px-3.5 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition hover:opacity-90">
+            <Plus data-icon="inline-start" /> New sale
+          </Link>
+          <Link href="/dashboard/catalog/add" className="inline-flex items-center gap-2 rounded-lg border border-border bg-background/80 px-3.5 py-2.5 text-sm font-semibold transition hover:border-primary/40 hover:bg-background">
+            Add product <ArrowUpRight data-icon="inline-end" />
+          </Link>
+        </div>
+      </section>
       <OnboardingChecklist />
       <UpgradeBanner />
       {/* Alerts */}
@@ -175,14 +195,14 @@ export default function Overview() {
       )}
 
       {/* Range selector */}
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-        <div className="flex items-center gap-1 border border-border p-0.5">
+      <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-1 rounded-xl border border-border/70 bg-background/70 p-1 shadow-sm">
           {RANGES.map((r) => (
             <button
               key={r.id}
               onClick={() => setRange(r.id)}
               className={
-                "px-3 py-1.5 text-xs font-medium transition-colors " +
+                "rounded-lg px-3 py-1.5 text-xs font-medium transition-colors " +
                 (range === r.id
                   ? "bg-primary text-primary-foreground"
                   : "text-muted-foreground hover:bg-surface hover:text-foreground")
