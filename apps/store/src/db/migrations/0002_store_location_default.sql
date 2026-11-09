@@ -1,0 +1,1 @@
+ALTER TABLE "staff" ALTER COLUMN "store_location" SET DEFAULT 'Main Store';

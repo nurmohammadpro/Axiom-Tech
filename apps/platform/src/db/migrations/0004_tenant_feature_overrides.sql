@@ -1,0 +1,1 @@
+ALTER TABLE "tenants" ADD COLUMN "feature_overrides" jsonb DEFAULT '{}'::jsonb NOT NULL;

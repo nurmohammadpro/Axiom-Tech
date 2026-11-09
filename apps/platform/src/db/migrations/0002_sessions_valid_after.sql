@@ -1,0 +1,1 @@
+ALTER TABLE "tenants" ADD COLUMN "sessions_valid_after" timestamp with time zone;
