@@ -28,26 +28,15 @@ const SearchInput = forwardRef<HTMLInputElement, SearchInputProps>(
       />
     );
 
-    if (label) {
-      return (
-        <div className="mb-4">
-          <div className="mb-1.5 flex items-center gap-2">
-            <Search size={14} className="text-muted-foreground" />
-            <span className="text-sm font-medium">{label}</span>
-            {description && (
-              <span className="text-xs text-muted-foreground">— {description}</span>
-            )}
-          </div>
-          {/* Wrap on narrow screens so fixed-width actions (scan box, location
-              select) never force the whole bar wider than the viewport. */}
-          <div className="flex flex-wrap items-center gap-1.5 rounded-md border border-border bg-background px-3 py-1.5 focus-within:border-primary [&_button]:border-0 [&_button]:bg-transparent [&_button]:text-foreground hover:[&_button]:bg-surface">
-            <Search size={14} className="shrink-0 text-muted-foreground" />
-            {input}
-            {actions}
-          </div>
+    return (
+      <div className="mb-4">
+        <div className="flex flex-wrap items-center gap-1.5 rounded-md border border-border bg-background px-3 py-1.5 focus-within:border-primary [&_button]:border-0 [&_button]:bg-transparent [&_button]:text-foreground hover:[&_button]:bg-surface">
+          <Search size={14} className="shrink-0 text-muted-foreground" />
+          {input}
+          {actions}
         </div>
-      );
-    }
+      </div>
+    );
 
     return (
       <div className="flex items-center gap-2 rounded-md border border-border bg-background px-3 py-2 focus-within:border-primary [&_button]:border-0 [&_button]:bg-transparent [&_button]:text-foreground hover:[&_button]:bg-surface">
