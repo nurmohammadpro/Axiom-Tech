@@ -20,6 +20,7 @@ import { printReceipt, type ReceiptData } from "@/lib/receipt";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { EmptyState } from "@/components/dashboard/empty-state";
 import { toast } from "sonner";
+import { FilterChips } from "@/components/ui/filter-chips";
 import {
   Banknote,
   Check,
@@ -585,22 +586,12 @@ export default function PosPage() {
         )}
 
         {cats.length > 1 && (
-          <div className="mb-2 flex flex-wrap gap-1">
-            {cats.map((c) => (
-              <button
-                key={c}
-                onClick={() => setTab(c)}
-                className={
-                  "rounded-md px-3 py-1.5 text-xs font-medium transition-colors " +
-                  (tab === c
-                    ? "bg-primary text-primary-foreground"
-                    : "text-muted-foreground hover:bg-surface hover:text-foreground")
-                }
-              >
-                {c}
-              </button>
-            ))}
-          </div>
+          <FilterChips
+            className="mb-2"
+            items={cats.map((c) => ({ key: c, label: c }))}
+            active={tab}
+            onChange={(k) => setTab(k)}
+          />
         )}
 
         <div className="min-h-0 flex-1 overflow-y-auto pb-4">

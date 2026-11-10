@@ -34,6 +34,7 @@ import { RecurringTab } from "./_components/recurring-tab";
 import { EditExpenseDialog, EditableExpense } from "./_components/edit-expense-dialog";
 import { ExpenseInsights } from "./_components/insights";
 import { TabStrip } from "@/components/dashboard/tab-strip";
+import { FilterChips } from "@/components/ui/filter-chips";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -379,28 +380,19 @@ function OverviewTab({ isOwner }: { isOwner: boolean }) {
           </Button>
         </div>
         <div className="mt-3 flex flex-wrap gap-2">
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="h-9 border border-border bg-background px-3 text-sm outline-none transition-colors hover:border-border/80 focus:border-foreground/80"
-          >
-            {STATUS_OPTIONS.map((s) => (
-              <option key={s} value={s}>
-                {s === "All" ? "All statuses" : s[0].toUpperCase() + s.slice(1)}
-              </option>
-            ))}
-          </select>
-          <select
-            value={paymentFilter}
-            onChange={(e) => setPaymentFilter(e.target.value)}
-            className="h-9 border border-border bg-background px-3 text-sm outline-none transition-colors hover:border-border/80 focus:border-foreground/80"
-          >
-            {PAYMENT_METHOD_FILTERS.map((m) => (
-              <option key={m} value={m}>
-                {m === "All" ? "All payments" : METHOD_LABELS[m] || m}
-              </option>
-            ))}
-          </select>
+          <FilterChips
+              items={STATUS_OPTIONS.map((s) => ({ key: s, label: s === "All" ? "All statuses" : s[0].toUpperCase() + s.slice(1) }))}
+              active={statusFilter}
+              onChange={(k) => setStatusFilter(k)}
+            />
+          <FilterChips
+            items={PAYMENT_METHOD_FILTERS.map((m) => ({
+              key: m,
+              label: m === "All" ? "All payments" : METHOD_LABELS[m] || m,
+            }))}
+            active={paymentFilter}
+            onChange={(k) => setPaymentFilter(k)}
+          />
           <div className="w-48">
             <SearchSelect
               value={categoryFilter}
