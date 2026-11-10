@@ -45,6 +45,7 @@ import {
   type PDFReportConfig,
 } from "@/lib/pdf-utils";
 import { getCustomerPurchases } from "@/lib/api";
+import { FilterChips } from "@/components/ui/filter-chips";
 
 const PAGE_SIZE = 15;
 
@@ -324,23 +325,14 @@ export default function Customers() {
           <span className="flex items-center gap-1 text-xs uppercase tracking-widest text-muted-foreground">
             <Filter size={12} /> Channel
           </span>
-          {channels.map((ch) => (
-            <button
-              key={ch}
-              onClick={() => {
-                setChannel(ch);
-                setPage(1);
-              }}
-              className={
-                "border px-2.5 py-1 text-xs transition-colors " +
-                (channel === ch
-                  ? "border-primary bg-primary text-primary-foreground"
-                  : "border-border text-muted-foreground hover:text-foreground")
-              }
-            >
-              {ch}
-            </button>
-          ))}
+          <FilterChips
+            items={channels.map((ch) => ({ key: ch, label: ch }))}
+            active={channel}
+            onChange={(k) => {
+              setChannel(k);
+              setPage(1);
+            }}
+          />
         </div>
         <div className="flex gap-2">
           <Button variant="surface" size="sm" onClick={exportCSV} disabled={customers.length === 0}>
