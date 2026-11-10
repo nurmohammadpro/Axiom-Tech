@@ -424,7 +424,7 @@ export default function PosPage() {
   };
 
   // ── keyboard shortcuts ────────────────────────────────────────────────────
-  // F2 search · F3 customer · F4 charge · F6 hold · F7 recall held ·
+  // F2 search · F3 customer · F4 complete sale · F6 hold · F7 recall held ·
   // F1 / ? cheat sheet · Esc close overlays.
 
   useEffect(() => {
@@ -683,7 +683,7 @@ export default function PosPage() {
               value={customerName}
               onChange={(e) => setCustomerName(e.target.value)}
               placeholder="Walk-in"
-              className="h-9 w-full border border-border bg-background px-2.5 text-sm outline-none focus:border-primary"
+              className="h-9 w-full rounded-md border border-border bg-background px-2.5 text-sm outline-none focus:border-primary"
             />
           </div>
           <div>
@@ -696,7 +696,7 @@ export default function PosPage() {
               onChange={(e) => setCustomerPhone(e.target.value)}
               inputMode="tel"
               placeholder="01…"
-              className="h-9 w-full border border-border bg-background px-2.5 text-sm outline-none focus:border-primary"
+              className="h-9 w-full rounded-md border border-border bg-background px-2.5 text-sm outline-none focus:border-primary"
             />
           </div>
           <div>
@@ -707,7 +707,7 @@ export default function PosPage() {
               id="pos-cust-address"
               value={customerAddress}
               onChange={(e) => setCustomerAddress(e.target.value)}
-              className="h-9 w-full border border-border bg-background px-2.5 text-sm outline-none focus:border-primary"
+              className="h-9 w-full rounded-md border border-border bg-background px-2.5 text-sm outline-none focus:border-primary"
             />
           </div>
         </div>
@@ -780,7 +780,7 @@ export default function PosPage() {
               onChange={(e) => setDiscountInput(e.target.value.replace(/[^0-9]/g, ""))}
               placeholder="0"
               inputMode="numeric"
-              className="h-8 w-full min-w-0 flex-1 border border-border bg-background px-2 text-right text-sm outline-none focus:border-primary"
+              className="h-8 w-full min-w-0 flex-1 rounded-md border border-border bg-background px-2 text-right text-sm outline-none focus:border-primary"
             />
           </div>
 
@@ -795,7 +795,7 @@ export default function PosPage() {
               }}
               inputMode="numeric"
               placeholder="0"
-              className="h-8 w-full min-w-0 flex-1 border border-border bg-background px-2 text-right text-sm outline-none focus:border-primary"
+              className="h-8 w-full min-w-0 flex-1 rounded-md border border-border bg-background px-2 text-right text-sm outline-none focus:border-primary"
             />
           </div>
 
@@ -816,7 +816,7 @@ export default function PosPage() {
                       }
                       inputMode="numeric"
                       placeholder="0"
-                      className="h-8 w-full min-w-0 flex-1 border border-border bg-background px-2 text-right text-sm outline-none focus:border-primary"
+                      className="h-8 w-full min-w-0 flex-1 rounded-md border border-border bg-background px-2 text-right text-sm outline-none focus:border-primary"
                     />
                     <input
                       value={p.reference}
@@ -850,7 +850,7 @@ export default function PosPage() {
               <button
                 onClick={() => setMoreOpen((v) => !v)}
                 disabled={otherMethods.length === 0}
-                className="flex items-center gap-1 border border-border px-2 py-1.5 text-xs hover:border-primary disabled:opacity-40"
+                className="flex items-center gap-1 rounded-md border border-border px-2 py-1.5 text-xs hover:border-primary disabled:opacity-40"
               >
                 Split payment <ChevronDown size={12} />
               </button>
@@ -891,9 +891,9 @@ export default function PosPage() {
             ref={chargeRef}
             onClick={() => void charge()}
             disabled={!canCharge}
-            className="mt-2 h-12 w-full bg-primary text-sm font-semibold text-primary-foreground hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-40"
+            className="mt-2 h-12 w-full rounded-md bg-primary text-sm font-semibold text-primary-foreground hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-40"
           >
-            {busy ? "…" : `Charge ${bdt(total)}`}
+            {busy ? "…" : `Complete Sale · ${bdt(total)}`}
           </button>
           <div className="mt-1 flex items-center justify-between text-[10px] text-muted-foreground">
             <span>F2 search · F3 customer · F4 charge · F6 hold · F1 help</span>
@@ -965,7 +965,7 @@ export default function PosPage() {
                   ["Enter (in search)", "Add scanned item to cart"],
                   ["F3", "Customer name"],
                   ["Enter", "Next field"],
-                  ["F4", "Charge"],
+                  ["F4", "Complete sale"],
                   ["F6", "Hold current sale"],
                   ["F7", "Recall latest held sale"],
                   ["F1 or ?", "This cheat sheet"],
