@@ -539,15 +539,15 @@ export default function PosPage() {
 
   return (
     <div
-      className="grid grid-cols-1 gap-3 lg:h-[calc(100dvh-145px)] lg:grid-cols-[1fr_400px]"
+      className="grid grid-cols-1 gap-3 lg:h-[calc(100dvh-105px)] lg:grid-cols-[1fr_400px]"
       onKeyDown={erpEnterNav}
     >
       {/* Left: search + tiles */}
       <div className="flex min-w-0 flex-col">
-        {/* Borderless search: icon + input in one unbordered field */}
+        {/* Search: icon + input inside one bordered field */}
         <div className="mb-1 flex items-center gap-2">
-          <div className="flex h-11 min-w-0 flex-1 items-center gap-2 px-1">
-            <Search size={17} className="shrink-0 text-muted-foreground" />
+          <div className="flex h-11 min-w-0 flex-1 items-center gap-2.5 rounded-md border border-border bg-background px-3 focus-within:border-primary">
+            <Search size={16} className="shrink-0 text-muted-foreground" />
             <input
               ref={searchRef}
               value={q}
@@ -559,7 +559,7 @@ export default function PosPage() {
                 }
               }}
               placeholder="Search or scan name, SKU, barcode, IMEI…"
-              className="h-full w-full border-none bg-transparent text-[15px] outline-none placeholder:text-muted-foreground/70"
+              className="h-full w-full border-0 bg-transparent text-sm outline-none placeholder:text-muted-foreground/70"
               autoFocus
               data-no-enter-nav
             />
@@ -569,13 +569,15 @@ export default function PosPage() {
               </button>
             )}
           </div>
-        </div>
-        <div className="mb-2 flex items-center justify-between text-[11px] text-muted-foreground">
-          <span>{SCAN_HINT}</span>
-          <button onClick={() => setShortcutsOpen(true)} className="underline hover:text-foreground">
-            Shortcuts (F1)
+          <button
+            onClick={() => setShortcutsOpen(true)}
+            className="h-11 shrink-0 rounded-md border border-border px-3 text-xs font-medium text-muted-foreground hover:bg-surface hover:text-foreground"
+            title="Keyboard shortcuts"
+          >
+            F1
           </button>
         </div>
+        <div className="mb-2 text-[11px] text-muted-foreground">{SCAN_HINT}</div>
         {offline.data && (
           <div className="mb-2 flex items-center gap-1.5 border border-amber-200 bg-amber-50 px-2 py-1 text-xs text-amber-700">
             <WifiOff size={12} /> Offline — catalog is cached; charges need internet
@@ -589,10 +591,10 @@ export default function PosPage() {
                 key={c}
                 onClick={() => setTab(c)}
                 className={
-                  "px-2.5 py-1.5 text-xs " +
+                  "rounded-md px-3 py-1.5 text-xs font-medium transition-colors " +
                   (tab === c
                     ? "bg-primary text-primary-foreground"
-                    : "border border-border text-muted-foreground hover:text-foreground")
+                    : "text-muted-foreground hover:bg-surface hover:text-foreground")
                 }
               >
                 {c}
