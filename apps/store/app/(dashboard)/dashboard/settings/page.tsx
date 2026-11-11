@@ -3,20 +3,23 @@
 import { useEffect, useState } from "react";
 import { Card } from "@/components/dashboard/dashboard-shell";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
 import { LocationsManager } from "@/components/dashboard/locations-manager";
 import { THEMES } from "@/lib/themes";
 import { posMethodsFromSettings, type PosMethod } from "@/lib/payment-methods";
 import { useSessionScope, useSettings, useUpdateSettings } from "@/lib/hooks";
 import type { PaymentAccount, PaymentAccountsByMethod } from "@/lib/store-settings";
 import { toast } from "sonner";
-import { Save, RotateCcw, CreditCard, Receipt, Gift, Plus, X, Upload, Trash2, Check, Palette } from "lucide-react";
+import { Save, RotateCcw, CreditCard, Receipt, Gift, Plus, X, Upload, Trash2, Check, Palette, Settings as SettingsIcon, MapPin, Percent } from "lucide-react";
 import { TabStrip } from "@/components/dashboard/tab-strip";
 import { SortableTable } from "@/components/dashboard/sortable-table";
 
 const tabs = [
-  { id: "General", icon: null },
-  { id: "Locations", icon: null },
-  { id: "Taxes", icon: null },
+  { id: "General", icon: SettingsIcon },
+  { id: "Locations", icon: MapPin },
+  { id: "Taxes", icon: Percent },
   { id: "Payments", icon: CreditCard },
   { id: "Receipts", icon: Receipt },
   { id: "Loyalty", icon: Gift },
@@ -48,7 +51,8 @@ export default function Settings() {
     <>
       <div className="grid grid-cols-1 gap-3 lg:grid-cols-[220px_1fr]">
         <TabStrip
-          tabs={tabs.map((t) => ({ key: t.id, label: t.id, icon: t.icon ?? undefined }))}
+          variant="rail"
+          tabs={tabs.map((t) => ({ key: t.id, label: t.id, icon: t.icon }))}
           active={tab}
           onChange={(k) => setTab(k)}
         />
@@ -59,16 +63,31 @@ export default function Settings() {
           )}
           {tab === "Locations" && (
             <div>
-              <div className="text-sm font-medium">Locations</div>
+              <SectionHeader
+                label="Locations"
+                description="Warehouses and stores that stock, sell and transfer inventory."
+              />
               <LocationsManager />
             </div>
           )}
           {tab === "Taxes" && <TaxesTab settings={settings} onSave={updateSettings.mutateAsync} />}
           {tab === "Payments" && (
-            <PaymentsTab settings={settings} onSave={updateSettings.mutateAsync} />
-          )}
-          {tab === "Payments" && (
-            <PosMethodsManager settings={settings} onSave={updateSettings.mutateAsync} />
+            <div className="space-y-6">
+              <section>
+                <SectionHeader
+                  label="Card acceptance"
+                  description="Whether card payments are accepted and how they appear on receipts."
+                />
+                <PaymentsTab settings={settings} onSave={updateSettings.mutateAsync} />
+              </section>
+              <section>
+                <SectionHeader
+                  label="POS payment methods"
+                  description="Methods the POS till offers at charge. Cash is always first."
+                />
+                <PosMethodsManager settings={settings} onSave={updateSettings.mutateAsync} />
+              </section>
+            </div>
           )}
           {tab === "Receipts" && (
             <ReceiptsTab settings={settings} onSave={updateSettings.mutateAsync} />
@@ -82,6 +101,19 @@ export default function Settings() {
         </Card>
       </div>
     </>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Shared section header — every settings panel opens with the same pattern
+// ---------------------------------------------------------------------------
+
+function SectionHeader({ label, description }: { label: string; description?: string }) {
+  return (
+    <div className="mb-4">
+      <div className="text-sm font-medium">{label}</div>
+      {description && <div className="mt-0.5 text-xs text-muted-foreground">{description}</div>}
+    </div>
   );
 }
 
@@ -145,7 +177,7 @@ function StoreInfoForm({
 
   return (
     <div>
-      <div className="mb-4 text-sm font-medium">{section}</div>
+      <SectionHeader label={section} />
       <div className="grid gap-4 md:grid-cols-2">
         {fields.map((f) => (
           <label
@@ -157,7 +189,7 @@ function StoreInfoForm({
               <select
                 value={form[f.key] ?? ""}
                 onChange={(e) => setForm((prev) => ({ ...prev, [f.key]: e.target.value }))}
-                className="rounded border border-border bg-background px-2 py-1.5 text-sm"
+                className="rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring md:text-sm"
               >
                 {f.options.map((opt) => (
                   <option key={opt} value={opt}>
@@ -166,21 +198,10 @@ function StoreInfoForm({
                 ))}
               </select>
             ) : f.type === "toggle" ? (
-              <button
-                type="button"
-                onClick={() => setForm((prev) => ({ ...prev, [f.key]: !prev[f.key] }))}
-                className={
-                  "flex h-6 w-11 items-center rounded-full transition-colors " +
-                  (form[f.key] ? "bg-primary" : "bg-border")
-                }
-              >
-                <span
-                  className={
-                    "h-4 w-4 rounded-full bg-background transition-transform " +
-                    (form[f.key] ? "translate-x-6" : "translate-x-1")
-                  }
-                />
-              </button>
+              <Switch
+                checked={Boolean(form[f.key])}
+                onCheckedChange={(v) => setForm((prev) => ({ ...prev, [f.key]: v }))}
+              />
             ) : f.type === "logo" ? (
               <div className="flex flex-wrap items-center gap-2">
                 {form[f.key] ? (
@@ -236,20 +257,18 @@ function StoreInfoForm({
                 />
               </div>
             ) : f.type === "textarea" ? (
-              <textarea
+              <Textarea
                 value={form[f.key] ?? ""}
                 onChange={(e) => setForm((prev) => ({ ...prev, [f.key]: e.target.value }))}
                 placeholder={f.placeholder}
                 rows={8}
-                className="rounded border border-border bg-background px-2 py-1.5 text-sm"
               />
             ) : (
-              <input
+              <Input
                 type={f.type || "text"}
                 value={form[f.key] ?? ""}
                 onChange={(e) => setForm((prev) => ({ ...prev, [f.key]: e.target.value }))}
                 placeholder={f.placeholder}
-                className="rounded border border-border bg-background px-2 py-1.5 text-sm"
               />
             )}
           </label>
@@ -426,7 +445,7 @@ function AccountGroupEditor({
                 value={draft[f.key]}
                 onChange={(e) => setDraft((d) => ({ ...d, [f.key]: e.target.value }))}
                 placeholder={f.placeholder}
-                className="rounded border border-border bg-background px-2 py-1.5 text-sm"
+                className="rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring md:text-sm"
               />
             </label>
           ))}
