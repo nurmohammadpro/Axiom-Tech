@@ -1048,3 +1048,23 @@
   --input: #27272a;
 }
 
+
+/* ── Token-driven pill / badge (Data Table v3) ── */
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  height: var(--badge-height-sm);
+  padding: 0 var(--badge-padding-x);
+  font-size: var(--badge-font-size);
+  font-weight: var(--badge-font-weight);
+  border-radius: var(--badge-radius);
+  border: 1px solid transparent;
+  white-space: nowrap;
+  line-height: 1;
+}
+.pill-muted   { background: var(--color-neutral-100); color: var(--color-neutral-600); border-color: var(--color-neutral-200); }
+.pill-success { background: var(--color-success-subtle); color: var(--color-success-foreground); border-color: var(--color-success-border); }
+.pill-warn    { background: var(--color-warning-subtle); color: var(--color-warning-foreground); border-color: var(--color-warning-border); }
+.pill-danger  { background: var(--color-danger-subtle); color: var(--color-danger-foreground); border-color: var(--color-danger-border); }
+.pill-info    { background: var(--color-info-subtle); color: var(--color-info-foreground); border-color: var(--color-info-border); }

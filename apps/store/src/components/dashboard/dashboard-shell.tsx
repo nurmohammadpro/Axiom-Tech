@@ -573,16 +573,5 @@ export function Pill({
   children: ReactNode;
   tone?: "muted" | "success" | "warn" | "danger" | "info";
 }) {
-  const tones: Record<string, string> = {
-    muted: "border-border text-muted-foreground",
-    success: "border-emerald-200 text-emerald-700 bg-emerald-50",
-    warn: "border-amber-200 text-amber-700 bg-amber-50",
-    danger: "border-red-200 text-sale bg-red-50",
-    info: "border-blue-200 text-blue-700 bg-blue-50",
-  };
-  return (
-    <span className={"inline-flex items-center border px-1.5 py-0.5 text-[11px] " + tones[tone]}>
-      {children}
-    </span>
-  );
+  return <span className={`pill pill-${tone}`}>{children}</span>;
 }
