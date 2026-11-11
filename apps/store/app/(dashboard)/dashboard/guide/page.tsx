@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Card } from "@/components/dashboard/dashboard-shell";
 import { Button } from "@/components/ui/button";
 import { useSessionScope } from "@/lib/hooks";
+import { SortableTable } from "@/components/dashboard/sortable-table";
 import {
   LayoutDashboard,
   BarChart3,
@@ -434,27 +435,30 @@ function ShortcutsSection() {
   return (
     <Section title="Keyboard Shortcuts">
       <p>Speed up your workflow with these keyboard shortcuts:</p>
-      <div className="mt-3 overflow-hidden rounded border border-border">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-border bg-surface text-left text-xs uppercase tracking-widest text-muted-foreground">
-              <th className="px-3 py-2 font-medium">Shortcut</th>
-              <th className="px-3 py-2 font-medium">Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            {shortcuts.map((s) => (
-              <tr key={s.keys} className="border-b border-border last:border-b-0">
-                <td className="px-3 py-2">
-                  <kbd className="rounded border border-border bg-surface px-1.5 py-0.5 text-xs font-mono">
-                    {s.keys}
-                  </kbd>
-                </td>
-                <td className="px-3 py-2 text-muted-foreground">{s.action}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      <div className="mt-3">
+        <SortableTable
+          columns={[
+            {
+              key: "keys",
+              header: "Shortcut",
+              sortable: true,
+              render: (v) => (
+                <kbd className="rounded border border-border bg-surface px-1.5 py-0.5 text-xs font-mono">
+                  {v}
+                </kbd>
+              ),
+            },
+            {
+              key: "action",
+              header: "Action",
+              sortable: true,
+              className: "text-muted-foreground",
+            },
+          ]}
+          data={shortcuts}
+          rowKey={(s) => s.keys}
+          emptyMessage="No shortcuts."
+        />
       </div>
     </Section>
   );

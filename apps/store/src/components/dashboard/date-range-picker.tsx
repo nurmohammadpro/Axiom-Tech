@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Calendar } from "lucide-react";
 import { RANGE_PRESETS, resolveRange, type DateRange } from "@/lib/date-range";
+import { FilterChips } from "@/components/ui/filter-chips";
 
 /** Preset chips + a custom from/to pair. Fully controlled by the parent's DateRange. */
 export function DateRangePicker({
@@ -16,38 +17,24 @@ export function DateRangePicker({
   const [from, setFrom] = useState(value.from ?? "");
   const [to, setTo] = useState(value.to ?? "");
 
-  const activeCls = "border-primary bg-primary text-primary-foreground";
-  const idleCls = "border-border text-muted-foreground hover:text-foreground";
-
   return (
     <div className="flex flex-wrap items-center gap-2">
       <Calendar size={14} className="text-muted-foreground" />
-      <div className="flex flex-wrap items-center gap-1">
-        {RANGE_PRESETS.map((p) => (
-          <button
-            key={p.id}
-            onClick={() => {
-              setShowCustom(false);
-              onChange(resolveRange(p.id));
-            }}
-            className={
-              "border px-2.5 py-1 text-xs transition-colors " +
-              (value.preset === p.id ? activeCls : idleCls)
-            }
-          >
-            {p.label}
-          </button>
-        ))}
-        <button
-          onClick={() => setShowCustom((s) => !s)}
-          className={
-            "border px-2.5 py-1 text-xs transition-colors " +
-            (value.preset === "custom" ? activeCls : idleCls)
+      <FilterChips
+        items={[
+          ...RANGE_PRESETS.map((p) => ({ key: p.id, label: p.label })),
+          { key: "custom", label: "Custom" },
+        ]}
+        active={value.preset}
+        onChange={(k) => {
+          if (k === "custom") {
+            setShowCustom(true);
+          } else {
+            setShowCustom(false);
+            onChange(resolveRange(k));
           }
-        >
-          Custom
-        </button>
-      </div>
+        }}
+      />
 
       {showCustom && (
         <div className="flex flex-wrap items-center gap-1.5">

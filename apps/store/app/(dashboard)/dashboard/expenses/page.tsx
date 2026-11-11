@@ -34,6 +34,7 @@ import { RecurringTab } from "./_components/recurring-tab";
 import { EditExpenseDialog, EditableExpense } from "./_components/edit-expense-dialog";
 import { ExpenseInsights } from "./_components/insights";
 import { TabStrip } from "@/components/dashboard/tab-strip";
+import { SortableTable } from "@/components/dashboard/sortable-table";
 import { FilterChips } from "@/components/ui/filter-chips";
 
 // ---------------------------------------------------------------------------
@@ -429,97 +430,113 @@ function OverviewTab({ isOwner }: { isOwner: boolean }) {
           </div>
         ) : (
           <>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-border bg-surface text-left text-xs uppercase tracking-widest text-muted-foreground">
-                    <th className="px-3 py-2 font-medium">Date</th>
-                    <th className="px-3 py-2 font-medium">Number</th>
-                    <th className="px-3 py-2 font-medium">Name</th>
-                    <th className="px-3 py-2 font-medium">Category</th>
-                    <th className="px-3 py-2 font-medium text-right">Total</th>
-                    <th className="px-3 py-2 font-medium">Payment</th>
-                    <th className="px-3 py-2 font-medium">Status</th>
-                    <th className="px-3 py-2 font-medium text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {accum.map((e) => (
-                    <tr
-                      key={e.id}
-                      className="border-b border-border last:border-b-0 hover:bg-surface"
-                    >
-                      <td className="px-3 py-2.5">
-                        {new Date(e.expenseDate).toLocaleDateString("en-BD")}
-                      </td>
-                      <td className="px-3 py-2.5 font-mono text-xs">{e.expenseNumber}</td>
-                      <td className="px-3 py-2.5">
-                        <div className="font-medium">{e.name}</div>
-                        {e.payeeName && (
-                          <div className="text-xs text-muted-foreground">→ {e.payeeName}</div>
-                        )}
-                      </td>
-                      <td className="px-3 py-2.5">{e.categoryName || "—"}</td>
-                      <td className="px-3 py-2.5 text-right font-medium">{bdt(e.totalAmount)}</td>
-                      <td className="px-3 py-2.5">
-                        <div className="flex flex-col items-start gap-1">
-                          {methodPill(e.paymentMethod)}
-                          {e.paymentStatus !== "paid" && paymentStatusPill(e.paymentStatus)}
-                        </div>
-                      </td>
-                      <td className="px-3 py-2.5">{statusPill(e.status)}</td>
-                      <td className="px-3 py-2.5 text-right">
-                        <div className="flex items-center justify-end gap-0.5">
+            <SortableTable
+              columns={[
+                {
+                  key: "expenseDate",
+                  header: "Date",
+                  sortable: true,
+                  render: (v: string) => new Date(v).toLocaleDateString("en-BD"),
+                },
+                { key: "expenseNumber", header: "Number", sortable: true, className: "font-mono text-xs" },
+                {
+                  key: "name",
+                  header: "Name",
+                  sortable: true,
+                  render: (_v: unknown, e: ExpenseRow) => (
+                    <div>
+                      <div className="font-medium">{e.name}</div>
+                      {e.payeeName && (
+                        <div className="text-xs text-muted-foreground">→ {e.payeeName}</div>
+                      )}
+                    </div>
+                  ),
+                },
+                {
+                  key: "categoryName",
+                  header: "Category",
+                  sortable: true,
+                  render: (v: string | null) => v || "—",
+                },
+                {
+                  key: "totalAmount",
+                  header: "Total",
+                  sortable: true,
+                  className: "text-right",
+                  render: (v: number) => <span className="font-medium">{bdt(v)}</span>,
+                },
+                {
+                  key: "paymentMethod",
+                  header: "Payment",
+                  render: (_v: unknown, e: ExpenseRow) => (
+                    <div className="flex flex-col items-start gap-1">
+                      {methodPill(e.paymentMethod)}
+                      {e.paymentStatus !== "paid" && paymentStatusPill(e.paymentStatus)}
+                    </div>
+                  ),
+                },
+                {
+                  key: "status",
+                  header: "Status",
+                  render: (_v: unknown, e: ExpenseRow) => statusPill(e.status),
+                },
+                {
+                  key: "actions",
+                  header: "Actions",
+                  className: "text-right",
+                  render: (_v: unknown, e: ExpenseRow) => (
+                    <div className="flex items-center justify-end gap-0.5">
+                      <button
+                        onClick={() => setViewExpense(e)}
+                        className="rounded p-1 text-muted-foreground hover:bg-background hover:text-foreground"
+                        title="View"
+                      >
+                        <Eye size={14} />
+                      </button>
+                      {isOwner && e.status === "pending" && (
+                        <>
                           <button
-                            onClick={() => setViewExpense(e)}
-                            className="rounded p-1 text-muted-foreground hover:bg-background hover:text-foreground"
-                            title="View"
+                            onClick={() => setStatus(e, "approved")}
+                            className="rounded p-1 text-muted-foreground hover:bg-emerald-500/10 hover:text-emerald-600"
+                            title="Approve"
                           >
-                            <Eye size={14} />
+                            <Check size={14} />
                           </button>
-                          {isOwner && e.status === "pending" && (
-                            <>
-                              <button
-                                onClick={() => setStatus(e, "approved")}
-                                className="rounded p-1 text-muted-foreground hover:bg-emerald-500/10 hover:text-emerald-600"
-                                title="Approve"
-                              >
-                                <Check size={14} />
-                              </button>
-                              <button
-                                onClick={() => setStatus(e, "rejected")}
-                                className="rounded p-1 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
-                                title="Reject"
-                              >
-                                <XCircle size={14} />
-                              </button>
-                            </>
-                          )}
-                          {isOwner && (
-                            <>
-                              <button
-                                onClick={() => setEditTarget({ ...e, id: String(e.id) })}
-                                className="rounded p-1 text-muted-foreground hover:bg-background hover:text-foreground"
-                                title="Edit"
-                              >
-                                <Pencil size={14} />
-                              </button>
-                              <button
-                                onClick={() => setDeleteTarget(e)}
-                                className="rounded p-1 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
-                                title="Delete"
-                              >
-                                <Trash2 size={14} />
-                              </button>
-                            </>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                          <button
+                            onClick={() => setStatus(e, "rejected")}
+                            className="rounded p-1 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                            title="Reject"
+                          >
+                            <XCircle size={14} />
+                          </button>
+                        </>
+                      )}
+                      {isOwner && (
+                        <>
+                          <button
+                            onClick={() => setEditTarget({ ...e, id: String(e.id) })}
+                            className="rounded p-1 text-muted-foreground hover:bg-background hover:text-foreground"
+                            title="Edit"
+                          >
+                            <Pencil size={14} />
+                          </button>
+                          <button
+                            onClick={() => setDeleteTarget(e)}
+                            className="rounded p-1 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                            title="Delete"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  ),
+                },
+              ]}
+              data={accum.map((e) => ({ ...e }))}
+              rowKey={(e) => e.id}
+              emptyMessage="No expenses found"
+            />
             {hasMore && (
               <div className="border-t border-border p-3 text-center">
                 <Button

@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { bdt } from "@/lib/utils";
+import { SortableTable } from "@/components/dashboard/sortable-table";
 
 const statusConfig: Record<
   string,
@@ -297,126 +298,163 @@ export default function Returns() {
           </Card>
         ) : (
           <Card className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-border bg-surface text-left text-xs uppercase tracking-widest text-muted-foreground">
-                  <th className="px-3 py-2 font-medium">RMA</th>
-                  <th className="px-3 py-2 font-medium">Customer</th>
-                  <th className="px-3 py-2 font-medium">Item</th>
-                  <th className="px-3 py-2 font-medium">Channel</th>
-                  <th className="px-3 py-2 font-medium">Issue</th>
-                  <th className="px-3 py-2 font-medium">Resolution</th>
-                  <th className="px-3 py-2 font-medium">Stage</th>
-                  <th className="px-3 py-2 font-medium">Amount</th>
-                  <th className="px-3 py-2 text-right font-medium">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {visible.map((r) => {
-                  const config = statusConfig[r.status] || statusConfig.pending;
-                  const Icon = config.icon;
-                  return (
-                    <tr
-                      key={r.id}
-                      className="cursor-pointer border-b border-border last:border-b-0 hover:bg-surface"
-                      onClick={() => {
-                        setSelectedReturn(r);
-                        setShowDetails(true);
-                      }}
-                    >
-                      <td className="px-3 py-2">
-                        <div className="font-mono text-xs">{r.id.slice(0, 12)}</div>
-                        <div className="mt-1 text-xs text-muted-foreground">
-                          {new Date(r.createdAt).toLocaleDateString()}
+            <SortableTable
+              columns={[
+                {
+                  key: "id",
+                  header: "RMA",
+                  sortable: true,
+                  render: (v, row) => (
+                    <div>
+                      <div className="font-mono text-xs">{v.slice(0, 12)}</div>
+                      <div className="mt-1 text-xs text-muted-foreground">
+                        {new Date(row.createdAt).toLocaleDateString()}
+                      </div>
+                    </div>
+                  ),
+                },
+                {
+                  key: "customerName",
+                  header: "Customer",
+                  sortable: true,
+                  render: (v, row) => (
+                    <div className="flex items-center gap-2">
+                      <div className="grid h-7 w-7 shrink-0 place-items-center rounded-full border border-border bg-surface text-[10px] font-medium">
+                        {(row.userFirstName || v || "G")?.[0]}
+                      </div>
+                      <div className="min-w-0">
+                        <div className="truncate font-medium">
+                          {row.userFirstName && row.userLastName
+                            ? `${row.userFirstName} ${row.userLastName}`
+                            : v || "Guest"}
                         </div>
-                      </td>
-                      <td className="px-3 py-2">
-                        <div className="flex items-center gap-2">
-                          <div className="grid h-7 w-7 shrink-0 place-items-center rounded-full border border-border bg-surface text-[10px] font-medium">
-                            {(r.userFirstName || r.customerName || "G")?.[0]}
-                          </div>
-                          <div className="min-w-0">
-                            <div className="truncate font-medium">
-                              {r.userFirstName && r.userLastName
-                                ? `${r.userFirstName} ${r.userLastName}`
-                                : r.customerName || "Guest"}
-                            </div>
-                            <div className="truncate text-xs text-muted-foreground">
-                              {r.customerPhone || r.customerEmail || "No contact"}
-                            </div>
-                          </div>
+                        <div className="truncate text-xs text-muted-foreground">
+                          {row.customerPhone || row.customerEmail || "No contact"}
                         </div>
-                      </td>
-                      <td className="px-3 py-2">
-                        <div className="font-medium">{r.productName || r.productId}</div>
-                        <div className="text-xs text-muted-foreground">
-                          Qty: {r.qty}
-                          {r.orderId ? ` · Order ${r.orderId.slice(0, 8)}` : ""}
+                      </div>
+                    </div>
+                  ),
+                },
+                {
+                  key: "productName",
+                  header: "Item",
+                  sortable: true,
+                  render: (v, row) => (
+                    <div>
+                      <div className="font-medium">{v || row.productId}</div>
+                      <div className="text-xs text-muted-foreground">
+                        Qty: {row.qty}
+                        {row.orderId ? ` · Order ${row.orderId.slice(0, 8)}` : ""}
+                      </div>
+                    </div>
+                  ),
+                },
+                {
+                  key: "channel",
+                  header: "Channel",
+                  sortable: true,
+                  render: (v) => (
+                    <Pill tone={v === "online" ? "info" : "muted"}>
+                      {v === "online" ? "Online" : "In-store"}
+                    </Pill>
+                  ),
+                },
+                {
+                  key: "reason",
+                  header: "Issue",
+                  sortable: true,
+                  render: (v, row) => (
+                    <div>
+                      <div className="max-w-[150px] truncate text-xs">{v || "—"}</div>
+                      {row.condition && (
+                        <div className="mt-1 text-xs text-muted-foreground capitalize">
+                          {row.condition}
                         </div>
-                      </td>
-                      <td className="px-3 py-2">
-                        <Pill tone={r.channel === "online" ? "info" : "muted"}>
-                          {r.channel === "online" ? "Online" : "In-store"}
-                        </Pill>
-                      </td>
-                      <td className="px-3 py-2">
-                        <div className="max-w-[150px] truncate text-xs">{r.reason || "—"}</div>
-                        {r.condition && (
-                          <div className="mt-1 text-xs text-muted-foreground capitalize">
-                            {r.condition}
+                      )}
+                    </div>
+                  ),
+                },
+                {
+                  key: "resolutionType",
+                  header: "Resolution",
+                  sortable: true,
+                  render: (v) => <div className="text-xs capitalize">{v || "refund"}</div>,
+                },
+                {
+                  key: "status",
+                  header: "Stage",
+                  sortable: true,
+                  render: (v) => {
+                    const config = statusConfig[v] || statusConfig.pending;
+                    const Icon = config.icon;
+                    return (
+                      <Pill tone={config.tone}>
+                        <span className="flex items-center gap-1">
+                          <Icon size={10} /> {config.label}
+                        </span>
+                      </Pill>
+                    );
+                  },
+                },
+                {
+                  key: "refundAmount",
+                  header: "Amount",
+                  sortable: true,
+                  render: (v, row) =>
+                    v ? (
+                      <>
+                        <div className="font-medium">{bdt(v)}</div>
+                        {row.refundMethod && (
+                          <div className="text-xs capitalize text-muted-foreground">
+                            via {row.refundMethod}
                           </div>
                         )}
-                      </td>
-                      <td className="px-3 py-2">
-                        <div className="text-xs capitalize">{r.resolutionType || "refund"}</div>
-                      </td>
-                      <td className="px-3 py-2">
-                        <Pill tone={config.tone}>
-                          <span className="flex items-center gap-1">
-                            <Icon size={10} /> {config.label}
-                          </span>
-                        </Pill>
-                      </td>
-                      <td className="px-3 py-2">
-                        {r.refundAmount ? (
-                          <>
-                            <div className="font-medium">{bdt(r.refundAmount)}</div>
-                            {r.refundMethod && (
-                              <div className="text-xs capitalize text-muted-foreground">
-                                via {r.refundMethod}
-                              </div>
-                            )}
-                          </>
-                        ) : (
-                          <span className="text-muted-foreground">—</span>
-                        )}
-                      </td>
-                      <td className="px-3 py-2 text-right" onClick={(e) => e.stopPropagation()}>
-                        <div className="flex items-center justify-end gap-2">
-                          <button
-                            onClick={() => {
-                              setSelectedReturn(r);
-                              setShowDetails(true);
-                            }}
-                            className="text-primary hover:underline"
-                          >
-                            View
-                          </button>
-                          {r.channel !== "online" && r.saleLineId != null && (
-                            <button
-                              onClick={() => setEditingReturn(r)}
-                              className="flex items-center gap-1 text-primary hover:underline"
-                            >
-                              <Pencil size={11} /> Edit
-                            </button>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                      </>
+                    ) : (
+                      <span className="text-muted-foreground">—</span>
+                    ),
+                },
+                {
+                  key: "actions",
+                  header: "Actions",
+                  className: "text-right",
+                  render: (_v, row) => (
+                    <div className="flex items-center justify-end gap-2">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedReturn(row);
+                          setShowDetails(true);
+                        }}
+                        className="text-primary hover:underline"
+                      >
+                        View
+                      </button>
+                      {row.channel !== "online" && row.saleLineId != null && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setEditingReturn(row);
+                          }}
+                          className="flex items-center gap-1 text-primary hover:underline"
+                        >
+                          <Pencil size={11} /> Edit
+                        </button>
+                      )}
+                    </div>
+                  ),
+                },
+              ]}
+              data={visible}
+              rowKey={(row) => row.id}
+              onRowClick={(row) => {
+                setSelectedReturn(row);
+                setShowDetails(true);
+              }}
+              rowClassName={() => "cursor-pointer"}
+              pageSize={25}
+              emptyMessage="No returns found."
+            />
           </Card>
         )}
       </div>

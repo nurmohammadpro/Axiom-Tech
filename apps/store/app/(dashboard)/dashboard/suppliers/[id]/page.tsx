@@ -25,6 +25,7 @@ import { useSettings } from "@/lib/hooks";
 import { ArrowLeft, Phone, Mail, MapPin, Plus, Download, Printer, FileText } from "lucide-react";
 import { toast } from "sonner";
 import Link from "next/link";
+import { SortableTable } from "@/components/dashboard/sortable-table";
 
 interface Supplier {
   id: string;
@@ -430,45 +431,55 @@ export default function SupplierDetailPage() {
         <h3 className="mb-2 text-xs font-medium uppercase tracking-widest text-muted-foreground">
           Payment History
         </h3>
-        <div className="overflow-x-auto border border-border">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-border bg-surface text-left text-xs uppercase tracking-widest text-muted-foreground">
-                <th className="px-3 py-2 font-medium">Date</th>
-                <th className="px-3 py-2 font-medium">Method</th>
-                <th className="px-3 py-2 font-medium">Amount</th>
-                <th className="px-3 py-2 font-medium">Linked PO</th>
-                <th className="px-3 py-2 font-medium">Reference</th>
-                <th className="px-3 py-2 font-medium">Notes</th>
-              </tr>
-            </thead>
-            <tbody>
-              {payments.map((p) => (
-                <tr key={p.id} className="border-b border-border last:border-b-0 hover:bg-surface">
-                  <td className="px-3 py-2 text-xs text-muted-foreground">
-                    {new Date(p.createdAt).toLocaleDateString("en-BD")}
-                  </td>
-                  <td className="px-3 py-2">
-                    <span className="inline-flex items-center border border-border px-1.5 py-0.5 text-[11px]">
-                      {methodLabels[p.paymentMethod] || p.paymentMethod}
-                    </span>
-                  </td>
-                  <td className="px-3 py-2 font-medium">{bdt(p.amount)}</td>
-                  <td className="px-3 py-2 text-muted-foreground">{p.purchaseOrderId || "—"}</td>
-                  <td className="px-3 py-2 text-muted-foreground">{p.reference || "—"}</td>
-                  <td className="px-3 py-2 text-muted-foreground">{p.notes || "—"}</td>
-                </tr>
-              ))}
-              {payments.length === 0 && (
-                <tr>
-                  <td colSpan={6} className="p-6 text-center text-sm text-muted-foreground">
-                    No payments recorded yet.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+        <SortableTable
+          columns={[
+            {
+              key: "createdAt",
+              header: "Date",
+              sortable: true,
+              className: "text-xs text-muted-foreground",
+              render: (v: string) => new Date(v).toLocaleDateString("en-BD"),
+            },
+            {
+              key: "paymentMethod",
+              header: "Method",
+              render: (v: string) => (
+                <span className="inline-flex items-center border border-border px-1.5 py-0.5 text-[11px]">
+                  {methodLabels[v] || v}
+                </span>
+              ),
+            },
+            {
+              key: "amount",
+              header: "Amount",
+              sortable: true,
+              className: "font-medium",
+              render: (v: number) => bdt(v),
+            },
+            {
+              key: "purchaseOrderId",
+              header: "Linked PO",
+              className: "text-muted-foreground",
+              render: (v: string | null) => v || "—",
+            },
+            {
+              key: "reference",
+              header: "Reference",
+              className: "text-muted-foreground",
+              render: (v: string | null) => v || "—",
+            },
+            {
+              key: "notes",
+              header: "Notes",
+              className: "text-muted-foreground",
+              render: (v: string | null) => v || "—",
+            },
+          ]}
+          data={payments.map((p) => ({ ...p }))}
+          rowKey={(p) => p.id}
+          pageSize={25}
+          emptyMessage="No payments recorded yet."
+        />
       </div>
 
       {/* Record Payment Modal */}

@@ -4,8 +4,8 @@ import { notFound } from "next/navigation";
 import { asc, desc, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { invoices, payments, plans, tenantEvents, tenants } from "@/db/schema";
-import { formatInvoiceNumber, rootDomain, taka } from "@/lib/domain";
-import { daysUntil, fmtDate, fmtDateTime, methodLabel } from "@/lib/format";
+import { rootDomain, taka } from "@/lib/domain";
+import { daysUntil, fmtDate, fmtDateTime } from "@/lib/format";
 import { can } from "@/lib/rbac";
 import { requireUser } from "@/lib/session";
 import {
@@ -18,10 +18,11 @@ import {
   resumeAction,
   suspendAction,
 } from "../../actions";
-import { Badge, Field, Notice, td, th } from "../../../ui";
+import { Badge, Field, Notice } from "../../../ui";
 import { SubmitButton } from "../../submit-button";
 import { ALL_FEATURES, FEATURE_LABELS } from "@/lib/features";
 import { FeaturesPanel, type FeatureRow } from "./features-panel";
+import { TenantInvoicesTable, TenantPaymentsTable } from "./tenant-tables";
 import { setFeatureOverridesAction } from "../../actions";
 import { OwnerResetPanel } from "./owner-reset-panel";
 import { ProvisionPanel } from "./provision-panel";
@@ -205,33 +206,38 @@ export default async function TenantDetail({ params, searchParams }: { params: P
         />
       )}
 
-      <section className="card overflow-x-auto">
+      <section className="card">
         <h2 className="px-4 pt-4 text-sm font-bold">Invoices</h2>
-        <table className="mt-2 w-full">
-          <thead><tr style={{ color: "var(--muted-foreground)" }}><th className={th}>No.</th><th className={th}>Description</th><th className={th}>Amount</th><th className={th}>Status</th><th className={th}>Paid</th></tr></thead>
-          <tbody>
-            {invs.map((i) => (
-              <tr key={i.id} className="border-t" style={{ borderColor: "var(--line)" }}>
-                <td className={td}>{formatInvoiceNumber(i.seq, i.createdAt)}</td><td className={td}>{i.description}</td><td className={td}>{taka(i.amount)}</td><td className={td}><Badge value={i.status} /></td><td className={td}>{fmtDate(i.paidAt)}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <div className="mt-2 px-2 pb-2">
+          <TenantInvoicesTable
+            rows={invs.map((i) => ({
+              id: i.id,
+              seq: i.seq,
+              createdAt: i.createdAt,
+              description: i.description,
+              amount: i.amount,
+              status: i.status,
+              paidAt: i.paidAt,
+            }))}
+          />
+        </div>
       </section>
 
-      <section className="card overflow-x-auto">
+      <section className="card">
         <h2 className="px-4 pt-4 text-sm font-bold">Payments</h2>
-        <table className="mt-2 w-full">
-          <thead><tr style={{ color: "var(--muted-foreground)" }}><th className={th}>Date</th><th className={th}>Kind</th><th className={th}>Amount</th><th className={th}>Method</th><th className={th}>Reference</th><th className={th}>Months</th></tr></thead>
-          <tbody>
-            {pays.length === 0 && <tr><td colSpan={6} className={td} style={{ color: "var(--muted-foreground)" }}>No payments yet</td></tr>}
-            {pays.map((p) => (
-              <tr key={p.id} className="border-t" style={{ borderColor: "var(--line)" }}>
-                <td className={td}>{fmtDate(p.receivedAt)}</td><td className={`${td} capitalize`}>{p.kind}</td><td className={td}>{taka(p.amount)}</td><td className={td}>{methodLabel(p.method)}</td><td className={td}>{p.reference ?? "-"}</td><td className={td}>{p.months || "-"}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <div className="mt-2 px-2 pb-2">
+          <TenantPaymentsTable
+            rows={pays.map((p) => ({
+              id: p.id,
+              receivedAt: p.receivedAt,
+              kind: p.kind,
+              amount: p.amount,
+              method: p.method,
+              reference: p.reference,
+              months: p.months,
+            }))}
+          />
+        </div>
       </section>
 
       <section className="card p-5">

@@ -9,6 +9,7 @@ import { generatePayroll, updatePayrollRun } from "@/lib/api";
 import { bdt } from "@/lib/utils";
 import { toast } from "sonner";
 import { Download, Play, X } from "lucide-react";
+import { SortableTable } from "@/components/dashboard/sortable-table";
 
 const inputCls =
   "w-full border border-border bg-background px-2 py-1.5 text-sm outline-none focus:border-foreground";
@@ -180,46 +181,56 @@ export function PayrollView() {
               </button>
             </div>
           </div>
-          <div className="mt-3 overflow-x-auto border border-border">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-border bg-surface text-left text-xs uppercase tracking-widest text-muted-foreground">
-                  <th className="px-3 py-2 font-medium">Staff</th>
-                  <th className="px-3 py-2 text-right font-medium">Basic</th>
-                  <th className="px-3 py-2 font-medium">Allowances</th>
-                  <th className="px-3 py-2 text-right font-medium">Gross</th>
-                  <th className="px-3 py-2 font-medium">Deductions</th>
-                  <th className="px-3 py-2 text-right font-medium">Net</th>
-                </tr>
-              </thead>
-              <tbody>
-                {detail.items.map((it) => (
-                  <tr key={it.id} className="border-b border-border last:border-b-0">
-                    <td className="px-3 py-2">{it.staffName || "—"}</td>
-                    <td className="px-3 py-2 text-right">{bdt(it.baseSalary)}</td>
-                    <td className="px-3 py-2 text-xs text-muted-foreground">
-                      {(it.allowances ?? [])
-                        .map((a) => `${a.label}: ${bdt(a.amount)}`)
-                        .join(", ") || "—"}
-                    </td>
-                    <td className="px-3 py-2 text-right font-medium">{bdt(it.grossSalary)}</td>
-                    <td className="px-3 py-2 text-xs text-muted-foreground">
-                      {(it.deductions ?? [])
-                        .map((d) => `${d.label}: ${bdt(d.amount)}`)
-                        .join(", ") || "—"}
-                    </td>
-                    <td className="px-3 py-2 text-right font-medium">{bdt(it.netSalary)}</td>
-                  </tr>
-                ))}
-                {detail.items.length === 0 && (
-                  <tr>
-                    <td colSpan={6} className="p-6 text-center text-sm text-muted-foreground">
-                      No staff with a salary for this period.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
+          <div className="mt-3">
+            <SortableTable
+              columns={[
+                {
+                  key: "staffName",
+                  header: "Staff",
+                  sortable: true,
+                  render: (v: string | null) => v || "—",
+                },
+                {
+                  key: "baseSalary",
+                  header: "Basic",
+                  sortable: true,
+                  className: "text-right",
+                  render: (v: number) => bdt(v),
+                },
+                {
+                  key: "allowances",
+                  header: "Allowances",
+                  className: "text-xs text-muted-foreground",
+                  render: (v: { label: string; amount: number }[] | null) =>
+                    (v ?? []).map((a) => `${a.label}: ${bdt(a.amount)}`).join(", ") || "—",
+                },
+                {
+                  key: "grossSalary",
+                  header: "Gross",
+                  sortable: true,
+                  className: "text-right",
+                  render: (v: number) => <span className="font-medium">{bdt(v)}</span>,
+                },
+                {
+                  key: "deductions",
+                  header: "Deductions",
+                  className: "text-xs text-muted-foreground",
+                  render: (v: { label: string; amount: number }[] | null) =>
+                    (v ?? []).map((d) => `${d.label}: ${bdt(d.amount)}`).join(", ") || "—",
+                },
+                {
+                  key: "netSalary",
+                  header: "Net",
+                  sortable: true,
+                  className: "text-right",
+                  render: (v: number) => <span className="font-medium">{bdt(v)}</span>,
+                },
+              ]}
+              data={(detail.items ?? []).map((it) => ({ ...it }))}
+              rowKey={(it) => it.id}
+              pageSize={25}
+              emptyMessage="No staff with a salary for this period."
+            />
           </div>
         </Card>
       )}

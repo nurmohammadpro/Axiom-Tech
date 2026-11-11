@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { sessionToken } from "@/lib/api";
 import { bdt } from "@/lib/utils";
+import { SortableTable } from "@/components/dashboard/sortable-table";
 
 interface Fund {
   id: number;
@@ -232,51 +233,50 @@ export function PettyCashTab({ isOwner }: { isOwner: boolean }) {
       </Card>
 
       <Card>
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-border bg-surface text-left text-xs uppercase tracking-widest text-muted-foreground">
-                <th className="px-3 py-2 font-medium">Date</th>
-                <th className="px-3 py-2 font-medium">Type</th>
-                <th className="px-3 py-2 font-medium">Description</th>
-                <th className="px-3 py-2 font-medium text-right">Amount</th>
-                <th className="px-3 py-2 font-medium text-right">Balance</th>
-                <th className="px-3 py-2 font-medium">By</th>
-              </tr>
-            </thead>
-            <tbody>
-              {transactions.map((t) => (
-                <tr key={t.id} className="border-b border-border last:border-b-0 hover:bg-surface">
-                  <td className="px-3 py-2.5">
-                    {new Date(t.createdAt).toLocaleDateString("en-BD")}
-                  </td>
-                  <td className="px-3 py-2.5">{txnPill(t.type)}</td>
-                  <td className="px-3 py-2.5">{t.description}</td>
-                  <td
-                    className={
-                      "px-3 py-2.5 text-right font-medium " +
-                      (t.type === "replenishment" ? "text-emerald-600" : "")
-                    }
-                  >
-                    {t.type === "replenishment" ? "+" : "−"}
-                    {bdt(t.amount)}
-                  </td>
-                  <td className="px-3 py-2.5 text-right tabular-nums">{bdt(t.balanceAfter)}</td>
-                  <td className="px-3 py-2.5 text-xs text-muted-foreground">
-                    {t.createdByName || "—"}
-                  </td>
-                </tr>
-              ))}
-              {!transactions.length && (
-                <tr>
-                  <td colSpan={6} className="px-3 py-8 text-center text-sm text-muted-foreground">
-                    No movements yet.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+        <SortableTable
+          columns={[
+            {
+              key: "createdAt",
+              header: "Date",
+              sortable: true,
+              render: (v: string) => new Date(v).toLocaleDateString("en-BD"),
+            },
+            { key: "type", header: "Type", render: (v: string) => txnPill(v) },
+            { key: "description", header: "Description", sortable: true },
+            {
+              key: "amount",
+              header: "Amount",
+              sortable: true,
+              className: "text-right",
+              render: (v: number, t: FundTxn) => (
+                <span
+                  className={
+                    "font-medium " + (t.type === "replenishment" ? "text-emerald-600" : "")
+                  }
+                >
+                  {t.type === "replenishment" ? "+" : "−"}
+                  {bdt(v)}
+                </span>
+              ),
+            },
+            {
+              key: "balanceAfter",
+              header: "Balance",
+              sortable: true,
+              className: "text-right tabular-nums",
+              render: (v: number) => bdt(v),
+            },
+            {
+              key: "createdByName",
+              header: "By",
+              className: "text-xs text-muted-foreground",
+              render: (v: string | null) => v || "—",
+            },
+          ]}
+          data={transactions.map((t) => ({ ...t }))}
+          rowKey={(t) => t.id}
+          emptyMessage="No movements yet."
+        />
       </Card>
 
       <ConfirmDialog

@@ -10,12 +10,13 @@ import { getInvoice } from "@/lib/invoices";
 import { can } from "@/lib/rbac";
 import { getCurrentUser } from "@/lib/session";
 import { payInvoiceAction, voidInvoiceAction } from "../../actions";
-import { Badge, Field, Notice, td, th } from "../../../ui";
+import { Badge, Field, Notice } from "../../../ui";
 import { SubmitButton } from "../../submit-button";
 import { OwnerLinkButtons } from "./owner-link-buttons";
 import { ownerInvoiceToken, ownerReminderMessage } from "@/lib/invoice-link";
 import { headers } from "next/headers";
 import { PrintButton } from "./print-button";
+import { HistoryTable } from "./history-table";
 
 function VoidButton({ action }: { action: () => void }) {
   return (
@@ -169,27 +170,20 @@ export default async function InvoicePage({
         </section>
       )}
 
-      <section className="card no-print overflow-x-auto">
+      <section className="card no-print">
         <h2 className="px-4 pt-4 text-sm font-bold">Shop payment history</h2>
-        <table className="mt-2 w-full">
-          <thead>
-            <tr style={{ color: "var(--muted-foreground)" }}>
-              <th className={th}>Kind</th><th className={th}>Amount</th><th className={th}>Method</th><th className={th}>Reference</th><th className={th}>Received</th>
-            </tr>
-          </thead>
-          <tbody>
-            {history.length === 0 && <tr><td colSpan={5} className={td} style={{ color: "var(--muted-foreground)" }}>No payments yet</td></tr>}
-            {history.map((p) => (
-              <tr key={p.id} className="border-t" style={{ borderColor: "var(--line)" }}>
-                <td className={`${td} capitalize`}>{p.kind}</td>
-                <td className={td}>{taka(p.amount)}</td>
-                <td className={td}>{methodLabel(p.method)}</td>
-                <td className={`${td} font-mono text-xs`}>{p.reference ?? "-"}</td>
-                <td className={td}>{fmtDate(p.receivedAt)}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <div className="mt-2 px-2 pb-2">
+          <HistoryTable
+            rows={history.map((p) => ({
+              id: p.id,
+              kind: p.kind,
+              amount: p.amount,
+              method: p.method,
+              reference: p.reference,
+              receivedAt: p.receivedAt,
+            }))}
+          />
+        </div>
       </section>
 
       {inv.status === "paid" && (

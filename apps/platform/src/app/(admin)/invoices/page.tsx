@@ -4,14 +4,13 @@ import Link from "next/link";
 import { asc } from "drizzle-orm";
 import { db } from "@/db";
 import { tenants } from "@/db/schema";
-import { formatInvoiceNumber, taka } from "@/lib/domain";
-import { fmtDate, daysUntil } from "@/lib/format";
 import { listInvoices, type InvoiceFilter } from "@/lib/invoices";
 import { can } from "@/lib/rbac";
 import { getCurrentUser } from "@/lib/session";
 import { generateInvoicesAction } from "../actions";
-import { Badge, Notice, td, th } from "../../ui";
+import { Notice } from "../../ui";
 import { SubmitButton } from "../submit-button";
+import { InvoicesTable, type InvoiceRow } from "./invoices-table";
 
 const FILTERS: { key: string; label: string }[] = [
   { key: "", label: "All" },
@@ -32,7 +31,6 @@ export default async function InvoicesPage({ searchParams }: { searchParams: Pro
     listInvoices({ status: isFilter(status) ? status : undefined, tenantId: shop || undefined }),
     db.select({ id: tenants.id, name: tenants.name }).from(tenants).orderBy(asc(tenants.name)),
   ]);
-  const now = new Date();
 
   return (
     <div className="space-y-4">
@@ -80,49 +78,23 @@ export default async function InvoicesPage({ searchParams }: { searchParams: Pro
         </form>
       </div>
 
-      <section className="card overflow-x-auto">
-        <table className="w-full">
-          <thead>
-            <tr style={{ color: "var(--muted-foreground)" }}>
-              <th className={th}>Invoice</th>
-              <th className={th}>Shop</th>
-              <th className={th}>Description</th>
-              <th className={th}>Amount</th>
-              <th className={th}>Due date</th>
-              <th className={th}>Status</th>
-              <th className={th}></th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.length === 0 && (
-              <tr>
-                <td colSpan={7} className={td} style={{ color: "var(--muted-foreground)" }}>
-                  No invoices{status ? " for this filter" : ""}. Use "Generate monthly invoices" for shops near their renewal date.
-                </td>
-              </tr>
-            )}
-            {rows.map(({ inv, shop: shopName, slug }) => {
-              const overdue = inv.status === "due" && inv.dueDate && inv.dueDate < now;
-              return (
-                <tr key={inv.id} className="border-t" style={{ borderColor: "var(--line)" }}>
-                  <td className={`${td} font-mono text-xs`}>{formatInvoiceNumber(inv.seq, inv.createdAt)}</td>
-                  <td className={td}>
-                    <Link className="underline" href={`/tenants/${inv.tenantId}`}>{shopName}</Link>
-                    <span className="ml-1 text-xs" style={{ color: "var(--muted-foreground)" }}>.{slug}</span>
-                  </td>
-                  <td className={td}>{inv.description}</td>
-                  <td className={td}>{taka(inv.amount)}</td>
-                  <td className={td} style={overdue ? { color: "var(--bad)" } : undefined}>
-                    {fmtDate(inv.dueDate)}
-                    {overdue && inv.dueDate && ` (${Math.abs(daysUntil(inv.dueDate, now) ?? 0)}d late)`}
-                  </td>
-                  <td className={td}><Badge value={overdue ? "overdue" : inv.status} /></td>
-                  <td className={td}><Link className="underline" href={`/invoices/${inv.id}`}>View</Link></td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+      <section className="card">
+        <InvoicesTable
+          rows={rows.map(
+            ({ inv, shop: shopName, slug }): InvoiceRow => ({
+              id: inv.id,
+              tenantId: inv.tenantId,
+              seq: inv.seq,
+              createdAt: inv.createdAt,
+              shop: shopName,
+              slug,
+              description: inv.description,
+              amount: inv.amount,
+              dueDate: inv.dueDate,
+              status: inv.status,
+            }),
+          )}
+        />
       </section>
     </div>
   );

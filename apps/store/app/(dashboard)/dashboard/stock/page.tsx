@@ -16,6 +16,7 @@ import { ReceiveModal } from "@/components/inventory/receive-modal";
 import { bdt } from "@/lib/utils";
 import { Package, Truck } from "lucide-react";
 import { SearchInput } from "@/components/ui/search-input";
+import { SortableTable } from "@/components/dashboard/sortable-table";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -143,52 +144,61 @@ export default function StockIntakePage() {
       </div>
 
       {/* PO Table */}
-      <div className="mt-3 overflow-x-auto border border-border">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-border bg-surface text-left text-xs uppercase tracking-widest text-muted-foreground">
-              <th className="px-3 py-2 font-medium">PO #</th>
-              <th className="px-3 py-2 font-medium">Supplier</th>
-              <th className="px-3 py-2 font-medium">Items</th>
-              <th className="px-3 py-2 font-medium">Total</th>
-              <th className="px-3 py-2 font-medium">Created</th>
-              <th className="px-3 py-2 font-medium">Status</th>
-              <th className="px-3 py-2 font-medium">Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filtered.map((o) => (
-              <tr key={o.id} className="border-b border-border last:border-b-0 hover:bg-surface">
-                <td className="px-3 py-2 font-medium">{o.id}</td>
-                <td className="px-3 py-2 text-muted-foreground">{o.supplier}</td>
-                <td className="px-3 py-2 text-muted-foreground">{o.itemCount ?? 0}</td>
-                <td className="px-3 py-2 font-medium">{bdt(o.total)}</td>
-                <td className="px-3 py-2 text-xs text-muted-foreground">
-                  {o.createdAt
-                    ? new Date(o.createdAt).toLocaleDateString("en-BD")
-                    : "—"}
-                </td>
-                <td className="px-3 py-2">
-                  <Pill tone={statusTone(o.status || "")}>{o.status}</Pill>
-                </td>
-                <td className="px-3 py-2">
-                  <Button size="sm" variant="outline" onClick={() => openReceive(o.id)}>
-                    <Truck size={13} className="mr-1" /> Receive
-                  </Button>
-                </td>
-              </tr>
-            ))}
-            {filtered.length === 0 && (
-              <tr>
-                <td colSpan={7} className="p-6 text-center text-sm text-muted-foreground">
-                  {search || statusFilter !== "all"
-                    ? "No POs match your filters."
-                    : "No pending purchase orders. Create one from Purchases page."}
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+      <div className="mt-3">
+        <SortableTable
+          columns={[
+            { key: "id", header: "PO #", sortable: true, className: "font-medium" },
+            {
+              key: "supplier",
+              header: "Supplier",
+              sortable: true,
+              className: "text-muted-foreground",
+            },
+            {
+              key: "itemCount",
+              header: "Items",
+              sortable: true,
+              className: "text-muted-foreground",
+              render: (v: number | undefined) => v ?? 0,
+            },
+            {
+              key: "total",
+              header: "Total",
+              sortable: true,
+              className: "font-medium",
+              render: (v: number) => bdt(v),
+            },
+            {
+              key: "createdAt",
+              header: "Created",
+              sortable: true,
+              className: "text-xs text-muted-foreground",
+              render: (v: string | null) => (v ? new Date(v).toLocaleDateString("en-BD") : "—"),
+            },
+            {
+              key: "status",
+              header: "Status",
+              render: (v: string | null) => <Pill tone={statusTone(v || "")}>{v}</Pill>,
+            },
+            {
+              key: "actions",
+              header: "Action",
+              render: (_v: unknown, o: PurchaseOrder) => (
+                <Button size="sm" variant="outline" onClick={() => openReceive(o.id)}>
+                  <Truck size={13} className="mr-1" /> Receive
+                </Button>
+              ),
+            },
+          ]}
+          data={filtered.map((o) => ({ ...o }))}
+          rowKey={(o) => o.id}
+          pageSize={25}
+          emptyMessage={
+            search || statusFilter !== "all"
+              ? "No POs match your filters."
+              : "No pending purchase orders. Create one from Purchases page."
+          }
+        />
       </div>
 
       {/* Receive Modal */}

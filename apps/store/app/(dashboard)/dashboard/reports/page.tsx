@@ -1,7 +1,8 @@
 "use client";
 
-import { Fragment, useEffect, useMemo, useState } from "react";
-import { Card, Pill, Stat } from "@/components/dashboard/dashboard-shell";
+import { useEffect, useMemo, useState } from "react";
+import { Card, Pill } from "@/components/dashboard/dashboard-shell";
+import { MetricCard } from "@/components/dashboard/metric-cards";
 import {
   useLocations,
   useReports,
@@ -19,6 +20,14 @@ import {
   ChevronDown,
   ChevronRight,
   Filter,
+  ShoppingCart,
+  Banknote,
+  Clock,
+  PackageCheck,
+  XCircle,
+  Tag,
+  Undo2,
+  UserCheck,
   Warehouse,
   Package,
   Users,
@@ -31,6 +40,9 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { DateRangePicker } from "@/components/dashboard/date-range-picker";
+import { SortableTable } from "@/components/dashboard/sortable-table";
+import { TabStrip } from "@/components/dashboard/tab-strip";
+import { FilterChips } from "@/components/ui/filter-chips";
 import { resolveRange, type DateRange } from "@/lib/date-range";
 import type {
   ReportExchange,
@@ -84,8 +96,6 @@ function statusTone(status: string): "success" | "warn" | "danger" | "info" | "m
 /** Online order amounts are stored as whole taka. */
 const taka = (n: number) => bdt(n ?? 0);
 
-const activeCls = "border-primary bg-primary text-primary-foreground";
-const idleCls = "border-border text-muted-foreground hover:text-foreground";
 
 export default function Reports() {
   const [tab, setTab] = useState<Tab>("orders");
@@ -257,54 +267,38 @@ export default function Reports() {
       </div>
 
       {/* Report tabs */}
-      <div className="flex flex-wrap items-center gap-1">
-        {visibleTabs.map((t) => (
-          <button
-            key={t.id}
-            onClick={() => setTab(t.id)}
-            className={
-              "flex items-center gap-1.5 border px-3 py-1.5 text-sm transition-colors " +
-              (tab === t.id ? activeCls : idleCls)
-            }
-          >
-            <t.icon size={14} />
-            {t.label}
-          </button>
-        ))}
-      </div>
+      <TabStrip
+        tabs={visibleTabs.map((t) => ({ key: t.id, label: t.label, icon: t.icon }))}
+        active={tab}
+        onChange={(k) => setTab(k as Tab)}
+      />
 
       {/* ── Orders report ─────────────────────────────────────────────── */}
       {tab === "orders" && (
         <>
           <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-            <Stat label="Total orders" value={orderMetrics.count.toLocaleString()} />
-            <Stat label="Revenue" value={taka(orderMetrics.revenue)} />
-            <Stat label="Avg order" value={taka(orderMetrics.avg)} />
-            <Stat
+            <MetricCard icon={ShoppingCart} label="Total orders" value={orderMetrics.count.toLocaleString()} />
+            <MetricCard icon={Banknote} label="Revenue" value={taka(orderMetrics.revenue)} />
+            <MetricCard icon={Banknote} label="Avg order" value={taka(orderMetrics.avg)} />
+            <MetricCard
+              icon={Clock}
               label="Pending"
               value={orderMetrics.pending.toString()}
-              hint="Awaiting confirmation"
+              sub="Awaiting confirmation"
             />
-            <Stat label="Completed" value={orderMetrics.completed.toString()} hint="Fulfilled" />
-            <Stat label="Returned" value={orderMetrics.returned.toString()} />
+            <MetricCard icon={PackageCheck} label="Completed" value={orderMetrics.completed.toString()} sub="Fulfilled" />
+            <MetricCard icon={Undo2} label="Returned" value={orderMetrics.returned.toString()} />
           </div>
 
-          <div className="mt-3 flex flex-wrap items-center gap-1">
+          <div className="mt-3 flex flex-wrap items-center gap-2">
             <span className="mr-1 flex items-center gap-1 text-xs uppercase tracking-widest text-muted-foreground">
               <Filter size={12} /> Status
             </span>
-            {orderStatuses.map((s) => (
-              <button
-                key={s}
-                onClick={() => setStatusFilter(s)}
-                className={
-                  "border px-2.5 py-1 text-xs transition-colors " +
-                  (statusFilter === s ? activeCls : idleCls)
-                }
-              >
-                {s}
-              </button>
-            ))}
+            <FilterChips
+              items={orderStatuses.map((s) => ({ key: s, label: s }))}
+              active={statusFilter}
+              onChange={(k) => setStatusFilter(k)}
+            />
             <span className="ml-auto text-xs text-muted-foreground">
               {filteredOrders.length} order{filteredOrders.length !== 1 ? "s" : ""}
             </span>
@@ -375,73 +369,76 @@ export default function Reports() {
             </button>
           </div>
 
-          <div className="mt-3 overflow-x-auto border border-border">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-border bg-surface text-left text-xs uppercase tracking-widest text-muted-foreground">
-                  <th className="px-3 py-2 font-medium">Order</th>
-                  <th className="px-3 py-2 font-medium">Customer</th>
-                  <th className="px-3 py-2 font-medium">Payment</th>
-                  <th className="px-3 py-2 font-medium">Status</th>
-                  <th className="px-3 py-2 font-medium">Date</th>
-                  <th className="px-3 py-2 text-right font-medium">Total</th>
-                  <th className="px-3 py-2 text-right font-medium"></th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredOrders.map((o) => {
-                  const open = expanded.has(o.id);
-                  return (
-                    <Fragment key={o.id}>
-                      <tr
-                        onClick={() => toggle(o.id)}
-                        className={
-                          "cursor-pointer border-b border-border last:border-b-0 hover:bg-surface " +
-                          (open ? "bg-surface" : "")
-                        }
-                      >
-                        <td className="px-3 py-2 font-mono text-xs">#{o.id.slice(0, 8)}</td>
-                        <td className="px-3 py-2">{o.customerName}</td>
-                        <td className="px-3 py-2 capitalize text-muted-foreground">
-                          {o.paymentMethod}
-                        </td>
-                        <td className="px-3 py-2">
-                          <Pill tone={statusTone(o.status)}>{o.status}</Pill>
-                        </td>
-                        <td className="px-3 py-2 text-muted-foreground">
-                          {new Date(o.createdAt).toLocaleDateString()}
-                        </td>
-                        <td className="px-3 py-2 text-right font-semibold">{taka(o.total)}</td>
-                        <td className="px-3 py-2 text-right text-muted-foreground">
-                          {o.items.length > 0 ? (
-                            open ? (
-                              <ChevronDown size={14} />
-                            ) : (
-                              <ChevronRight size={14} />
-                            )
-                          ) : null}
-                        </td>
-                      </tr>
-                      {open && (
-                        <tr className="border-b border-border bg-surface/50">
-                          <td colSpan={7} className="px-6 py-3">
-                            <OrderItemsTable items={o.items} />
-                          </td>
-                        </tr>
-                      )}
-                    </Fragment>
-                  );
-                })}
-                {filteredOrders.length === 0 && (
-                  <tr>
-                    <td colSpan={7} className="p-6 text-center text-sm text-muted-foreground">
-                      No orders found.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+          <SortableTable
+            columns={[
+              {
+                key: "id",
+                header: "Order",
+                sortable: true,
+                className: "font-mono text-xs",
+                render: (v) => `#${v.slice(0, 8)}`,
+              },
+              { key: "customerName", header: "Customer", sortable: true },
+              {
+                key: "paymentMethod",
+                header: "Payment",
+                sortable: true,
+                className: "capitalize text-muted-foreground",
+              },
+              {
+                key: "status",
+                header: "Status",
+                sortable: true,
+                render: (v) => <Pill tone={statusTone(v)}>{v}</Pill>,
+              },
+              {
+                key: "createdAt",
+                header: "Date",
+                sortable: true,
+                className: "text-muted-foreground",
+                render: (v) => new Date(v).toLocaleDateString(),
+              },
+              {
+                key: "total",
+                header: "Total",
+                sortable: true,
+                className: "text-right font-semibold",
+                render: (v) => taka(v),
+              },
+              {
+                key: "chevron",
+                header: "",
+                className: "text-right text-muted-foreground",
+                render: (_v, row) =>
+                  row.itemCount > 0 ? (
+                    expanded.has(row.id) ? (
+                      <ChevronDown size={14} />
+                    ) : (
+                      <ChevronRight size={14} />
+                    )
+                  ) : null,
+              },
+            ]}
+            data={filteredOrders.map((o) => ({
+              id: o.id,
+              customerName: o.customerName,
+              paymentMethod: o.paymentMethod,
+              status: o.status,
+              createdAt: o.createdAt,
+              total: o.total,
+              itemCount: o.items.length,
+              items: o.items,
+            }))}
+            rowKey={(row) => row.id}
+            expandedKeys={expanded}
+            onRowClick={(row) => toggle(row.id)}
+            rowClassName={(row) =>
+              "cursor-pointer " + (expanded.has(row.id) ? "bg-surface" : "")
+            }
+            detailRow={(row) => <OrderItemsTable items={row.items} />}
+            pageSize={25}
+            emptyMessage="No orders found."
+          />
         </>
       )}
 
@@ -449,32 +446,28 @@ export default function Reports() {
       {tab === "pos" && (
         <>
           <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-            <Stat label="Total sales" value={saleMetrics.count.toLocaleString()} />
-            <Stat label="Revenue" value={bdt(saleMetrics.revenue)} />
-            <Stat label="Avg ticket" value={bdt(saleMetrics.avg)} />
-            <Stat label="Discounts" value={bdt(saleMetrics.discounts)} hint="Given on this view" />
-            <Stat label="Items sold" value={saleMetrics.itemsSold.toLocaleString()} />
-            <Stat label="Customers" value={saleMetrics.customers.toLocaleString()} />
+            <MetricCard icon={ShoppingCart} label="Total sales" value={saleMetrics.count.toLocaleString()} />
+            <MetricCard icon={Banknote} label="Revenue" value={bdt(saleMetrics.revenue)} />
+            <MetricCard icon={Banknote} label="Avg ticket" value={bdt(saleMetrics.avg)} />
+            <MetricCard icon={Tag} label="Discounts" value={bdt(saleMetrics.discounts)} sub="Given on this view" />
+            <MetricCard icon={Package} label="Items sold" value={saleMetrics.itemsSold.toLocaleString()} />
+            <MetricCard icon={Users} label="Customers" value={saleMetrics.customers.toLocaleString()} />
           </div>
 
-          <div className="mt-3 flex flex-wrap items-center gap-1">
+          <div className="mt-3 flex flex-wrap items-center gap-2">
             {!scopedLocation ? (
               <>
                 <span className="mr-1 flex items-center gap-1 text-xs uppercase tracking-widest text-muted-foreground">
                   <Warehouse size={12} /> Warehouse
                 </span>
-                {["All", ...locations.map((l) => l.name)].map((w) => (
-                  <button
-                    key={w}
-                    onClick={() => setWarehouseFilter(w)}
-                    className={
-                      "border px-2.5 py-1 text-xs transition-colors " +
-                      (warehouseFilter === w ? activeCls : idleCls)
-                    }
-                  >
-                    {w}
-                  </button>
-                ))}
+                <FilterChips
+                  items={["All", ...locations.map((l) => l.name)].map((w) => ({
+                    key: w,
+                    label: w,
+                  }))}
+                  active={warehouseFilter}
+                  onChange={(k) => setWarehouseFilter(k)}
+                />
               </>
             ) : (
               <span className="border border-border px-2.5 py-1 text-xs text-muted-foreground">
@@ -568,105 +561,130 @@ export default function Reports() {
             </button>
           </div>
 
-          <div className="mt-3 overflow-x-auto border border-border">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-border bg-surface text-left text-xs uppercase tracking-widest text-muted-foreground">
-                  <th className="px-3 py-2 font-medium">Sale</th>
-                  <th className="px-3 py-2 font-medium">Date</th>
-                  <th className="px-3 py-2 font-medium">Customer</th>
-                  <th className="px-3 py-2 font-medium">Payment</th>
-                  <th className="px-3 py-2 font-medium">Cashier</th>
-                  <th className="px-3 py-2 font-medium">Warehouse</th>
-                  <th className="px-3 py-2 text-right font-medium">Total</th>
-                  <th className="px-3 py-2 text-right font-medium">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredSales.map((s) => {
-                  const open = expanded.has(s.id);
+          <SortableTable
+            columns={[
+              {
+                key: "saleNumber",
+                header: "Sale",
+                sortable: true,
+                render: (v, row) => (
+                  <div>
+                    <div className="font-mono text-xs">#{v}</div>
+                    <div className="text-[10px] text-muted-foreground">Inv {row.invoiceNumber}</div>
+                  </div>
+                ),
+              },
+              {
+                key: "createdAt",
+                header: "Date",
+                sortable: true,
+                className: "text-muted-foreground",
+                render: (v) => new Date(v).toLocaleDateString(),
+              },
+              {
+                key: "customerName",
+                header: "Customer",
+                sortable: true,
+                render: (v, row) => (
+                  <div>
+                    {v || "Walk-in"}
+                    {row.customerPhone && (
+                      <div className="text-xs text-muted-foreground">{row.customerPhone}</div>
+                    )}
+                  </div>
+                ),
+              },
+              {
+                key: "paymentMethods",
+                header: "Payment",
+                sortable: true,
+                className: "capitalize text-muted-foreground",
+                render: (v) => v.join(" + ") || "—",
+              },
+              {
+                key: "cashierName",
+                header: "Cashier",
+                sortable: true,
+                className: "text-muted-foreground",
+                render: (v) => v || "—",
+              },
+              {
+                key: "warehouse",
+                header: "Warehouse",
+                sortable: true,
+                className: "text-xs text-muted-foreground",
+                render: (v) => v || "—",
+              },
+              {
+                key: "total",
+                header: "Total",
+                sortable: true,
+                className: "text-right font-semibold",
+                render: (v) => bdt(v),
+              },
+              {
+                key: "actions",
+                header: "Actions",
+                className: "text-right",
+                render: (_v, row) => {
+                  const open = expanded.has(row.id);
                   return (
-                    <Fragment key={s.id}>
-                      <tr
-                        onClick={() => toggle(s.id)}
-                        className={
-                          "cursor-pointer border-b border-border last:border-b-0 hover:bg-surface " +
-                          (open ? "bg-surface" : "")
-                        }
+                    <div className="flex items-center justify-end gap-2">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handlePrintPosReceipt(row.sale);
+                        }}
+                        className="rounded border border-border bg-background px-2 py-1 text-xs hover:bg-surface"
+                        title="Print receipt"
                       >
-                        <td className="px-3 py-2">
-                          <div className="font-mono text-xs">#{s.saleNumber}</div>
-                          <div className="text-[10px] text-muted-foreground">
-                            Inv {s.invoiceNumber}
-                          </div>
-                        </td>
-                        <td className="px-3 py-2 text-muted-foreground">
-                          {new Date(s.createdAt).toLocaleDateString()}
-                        </td>
-                        <td className="px-3 py-2">
-                          {s.customerName || "Walk-in"}
-                          {s.customerPhone && (
-                            <div className="text-xs text-muted-foreground">{s.customerPhone}</div>
-                          )}
-                        </td>
-                        <td className="px-3 py-2 capitalize text-muted-foreground">
-                          {s.paymentMethods.join(" + ") || "—"}
-                        </td>
-                        <td className="px-3 py-2 text-muted-foreground">{s.cashierName || "—"}</td>
-                        <td className="px-3 py-2 text-xs text-muted-foreground">
-                          {s.warehouse || "—"}
-                        </td>
-                        <td className="px-3 py-2 text-right font-semibold">{bdt(s.total)}</td>
-                        <td className="px-3 py-2 text-right">
-                          <div className="flex items-center justify-end gap-2">
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handlePrintPosReceipt(s);
-                              }}
-                              className="rounded border border-border bg-background px-2 py-1 text-xs hover:bg-surface"
-                              title="Print receipt"
-                            >
-                              <Printer size={12} />
-                            </button>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                toggle(s.id);
-                              }}
-                              className="text-muted-foreground hover:text-foreground"
-                            >
-                              {s.items.length > 0 ? (
-                                open ? (
-                                  <ChevronDown size={14} />
-                                ) : (
-                                  <ChevronRight size={14} />
-                                )
-                              ) : null}
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                      {open && (
-                        <tr className="border-b border-border bg-surface/50">
-                          <td colSpan={9} className="px-6 py-3">
-                            <SaleItemsTable items={s.items} />
-                          </td>
-                        </tr>
-                      )}
-                    </Fragment>
+                        <Printer size={12} />
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggle(row.id);
+                        }}
+                        className="text-muted-foreground hover:text-foreground"
+                      >
+                        {row.itemCount > 0 ? (
+                          open ? (
+                            <ChevronDown size={14} />
+                          ) : (
+                            <ChevronRight size={14} />
+                          )
+                        ) : null}
+                      </button>
+                    </div>
                   );
-                })}
-                {filteredSales.length === 0 && (
-                  <tr>
-                    <td colSpan={9} className="p-6 text-center text-sm text-muted-foreground">
-                      No POS sales found. Ring up a sale at the till to see it here.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+                },
+              },
+            ]}
+            data={filteredSales.map((s) => ({
+              id: s.id,
+              saleNumber: s.saleNumber,
+              invoiceNumber: s.invoiceNumber,
+              createdAt: s.createdAt,
+              customerName: s.customerName,
+              customerPhone: s.customerPhone,
+              paymentMethods: s.paymentMethods,
+              cashierName: s.cashierName,
+              warehouse: s.warehouse,
+              total: s.total,
+              itemCount: s.items.length,
+              items: s.items,
+              sale: s,
+            }))}
+            rowKey={(row) => row.id}
+            expandedKeys={expanded}
+            onRowClick={(row) => toggle(row.id)}
+            rowClassName={(row) =>
+              "cursor-pointer " + (expanded.has(row.id) ? "bg-surface" : "")
+            }
+            detailRow={(row) => <SaleItemsTable items={row.items} />}
+            pageSize={25}
+            emptyMessage="No POS sales found. Ring up a sale at the till to see it here."
+          />
         </>
       )}
 
@@ -674,37 +692,35 @@ export default function Reports() {
       {tab === "warehouse" && (
         <>
           <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-3">
-            <Stat
+            <MetricCard
+              icon={Banknote}
               label="POS revenue"
               value={bdt(warehouseRevenue)}
-              hint={warehouseSelected ? `At ${warehouseSelected}` : "All warehouses"}
+              sub={warehouseSelected ? `At ${warehouseSelected}` : "All warehouses"}
             />
-            <Stat label="POS orders" value={warehouseOrders.toString()} />
-            <Stat
+            <MetricCard icon={ShoppingCart} label="POS orders" value={warehouseOrders.toString()} />
+            <MetricCard
+              icon={Warehouse}
               label="Warehouses"
               value={String(scopedLocation ? 1 : locations.length)}
-              hint={scopedLocation ? "Scoped to your warehouse" : "Active warehouses"}
+              sub={scopedLocation ? "Scoped to your warehouse" : "Active warehouses"}
             />
           </div>
 
-          <div className="mt-3 flex flex-wrap items-center gap-1">
+          <div className="mt-3 flex flex-wrap items-center gap-2">
             {!scopedLocation ? (
               <>
                 <span className="mr-1 flex items-center gap-1 text-xs uppercase tracking-widest text-muted-foreground">
                   <Warehouse size={12} /> Warehouse
                 </span>
-                {["All", ...locations.map((l) => l.name)].map((w) => (
-                  <button
-                    key={w}
-                    onClick={() => setWarehouseFilter(w)}
-                    className={
-                      "border px-2.5 py-1 text-xs transition-colors " +
-                      (warehouseFilter === w ? activeCls : idleCls)
-                    }
-                  >
-                    {w}
-                  </button>
-                ))}
+                <FilterChips
+                  items={["All", ...locations.map((l) => l.name)].map((w) => ({
+                    key: w,
+                    label: w,
+                  }))}
+                  active={warehouseFilter}
+                  onChange={(k) => setWarehouseFilter(k)}
+                />
               </>
             ) : (
               <span className="border border-border px-2.5 py-1 text-xs text-muted-foreground">
@@ -818,33 +834,38 @@ export default function Reports() {
             return (
               <>
                 <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-                  <Stat label="Total products" value={filteredInventory.length.toLocaleString()} />
-                  <Stat
+                  <MetricCard icon={Package} label="Total products" value={filteredInventory.length.toLocaleString()} />
+                  <MetricCard
+                    icon={Package}
                     label="Total stock"
                     value={filteredInventory.reduce((s, i) => s + i.available, 0).toLocaleString()}
                   />
-                  <Stat
+                  <MetricCard
+                    icon={Package}
                     label="Low stock items"
                     value={filteredInventory
                       .filter((i) => i.available > 0 && i.available <= (i.lowStockThreshold ?? 5))
                       .length.toString()}
-                    hint="Below threshold"
+                    sub="Below threshold"
                   />
-                  <Stat
+                  <MetricCard
+                    icon={XCircle}
                     label="Out of stock"
                     value={filteredInventory.filter((i) => i.available === 0).length.toString()}
                   />
-                  <Stat
+                  <MetricCard
+                    icon={Package}
                     label="Multi-location"
                     value={filteredInventory
                       .filter((i) => i.byLocation?.length > 1)
                       .length.toString()}
-                    hint="Stocked across locations"
+                    sub="Stocked across locations"
                   />
-                  <Stat
+                  <MetricCard
+                    icon={Banknote}
                     label="Total value"
                     value={bdt(filteredInventory.reduce((s, i) => s + i.costValue, 0))}
-                    hint="At cost"
+                    sub="At cost"
                   />
                 </div>
 
@@ -962,66 +983,81 @@ export default function Reports() {
                   )}
                 </div>
 
-                <div className="mt-3 overflow-x-auto border border-border">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="border-b border-border bg-surface text-left text-xs uppercase tracking-widest text-muted-foreground">
-                        <th className="px-3 py-2 font-medium">Product</th>
-                        <th className="px-3 py-2 font-medium">SKU</th>
-                        <th className="px-3 py-2 font-medium">Category</th>
-                        <th className="px-3 py-2 text-right font-medium">Stock</th>
-                        <th className="px-3 py-2 text-right font-medium">Cost</th>
-                        <th className="px-3 py-2 text-right font-medium">Value</th>
-                        <th className="px-3 py-2 font-medium">Locations</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {filteredInventory.map((item) => (
-                        <tr
-                          key={item.variantId}
-                          className="border-b border-border last:border-b-0 hover:bg-surface"
+                <SortableTable
+                  columns={[
+                    { key: "variantName", header: "Product", sortable: true },
+                    {
+                      key: "sku",
+                      header: "SKU",
+                      sortable: true,
+                      className: "font-mono text-xs text-muted-foreground",
+                    },
+                    {
+                      key: "category",
+                      header: "Category",
+                      sortable: true,
+                      className: "text-muted-foreground",
+                      render: (v) => v || "—",
+                    },
+                    {
+                      key: "available",
+                      header: "Stock",
+                      sortable: true,
+                      className: "text-right",
+                      render: (v, row) => (
+                        <Pill
+                          tone={
+                            v === 0
+                              ? "danger"
+                              : v <= row.threshold
+                                ? "warn"
+                                : "success"
+                          }
                         >
-                          <td className="px-3 py-2">{item.variantName}</td>
-                          <td className="px-3 py-2 font-mono text-xs text-muted-foreground">
-                            {item.sku}
-                          </td>
-                          <td className="px-3 py-2 text-muted-foreground">
-                            {item.category || "—"}
-                          </td>
-                          <td className="px-3 py-2 text-right">
-                            <Pill
-                              tone={
-                                item.available === 0
-                                  ? "danger"
-                                  : item.available <= (item.lowStockThreshold ?? 5)
-                                    ? "warn"
-                                    : "success"
-                              }
-                            >
-                              {item.available} units
-                            </Pill>
-                          </td>
-                          <td className="px-3 py-2 text-right">{bdt(item.costPrice || 0)}</td>
-                          <td className="px-3 py-2 text-right font-medium">
-                            {bdt((item.costPrice || 0) * item.available)}
-                          </td>
-                          <td className="px-3 py-2 text-xs text-muted-foreground">
-                            {item.byLocation
-                              ?.map((l) => `${l.location}: ${l.available}`)
-                              .join(", ") || "—"}
-                          </td>
-                        </tr>
-                      ))}
-                      {inventory.length === 0 && (
-                        <tr>
-                          <td colSpan={7} className="p-6 text-center text-sm text-muted-foreground">
-                            No inventory data available.
-                          </td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
-                </div>
+                          {v} units
+                        </Pill>
+                      ),
+                    },
+                    {
+                      key: "costPrice",
+                      header: "Cost",
+                      sortable: true,
+                      className: "text-right",
+                      render: (v) => bdt(v),
+                    },
+                    {
+                      key: "value",
+                      header: "Value",
+                      sortable: true,
+                      className: "text-right font-medium",
+                      render: (v) => bdt(v),
+                    },
+                    {
+                      key: "locations",
+                      header: "Locations",
+                      sortable: true,
+                      className: "text-xs text-muted-foreground",
+                      render: (v) => v || "—",
+                    },
+                  ]}
+                  data={filteredInventory.map((item) => ({
+                    variantId: item.variantId,
+                    variantName: item.variantName,
+                    sku: item.sku,
+                    category: item.category,
+                    available: item.available,
+                    threshold: item.lowStockThreshold ?? 5,
+                    costPrice: item.costPrice || 0,
+                    value: (item.costPrice || 0) * item.available,
+                    locations:
+                      item.byLocation
+                        ?.map((l) => `${l.location}: ${l.available}`)
+                        .join(", ") || "",
+                  }))}
+                  rowKey={(row) => row.variantId}
+                  pageSize={25}
+                  emptyMessage="No inventory data available."
+                />
               </>
             );
           })()}
@@ -1032,8 +1068,9 @@ export default function Reports() {
       {tab === "customers" && (
         <>
           <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-            <Stat label="Total customers" value={customers.length.toLocaleString()} />
-            <Stat
+            <MetricCard icon={Users} label="Total customers" value={customers.length.toLocaleString()} />
+            <MetricCard
+              icon={Users}
               label="Active buyers"
               value={customers
                 .filter(
@@ -1043,7 +1080,8 @@ export default function Reports() {
                 )
                 .length.toLocaleString()}
             />
-            <Stat
+            <MetricCard
+              icon={Users}
               label="Total revenue"
               value={bdt(
                 customers.reduce<number>(
@@ -1054,7 +1092,8 @@ export default function Reports() {
                 ),
               )}
             />
-            <Stat
+            <MetricCard
+              icon={Users}
               label="Avg LTV"
               value={bdt(
                 customers.length
@@ -1076,9 +1115,10 @@ export default function Reports() {
                     )
                   : 0,
               )}
-              hint="Buyer average"
+              sub="Buyer average"
             />
-            <Stat
+            <MetricCard
+              icon={Users}
               label="Repeat buyers"
               value={customers
                 .filter(
@@ -1088,7 +1128,8 @@ export default function Reports() {
                 )
                 .length.toLocaleString()}
             />
-            <Stat
+            <MetricCard
+              icon={Users}
               label="New customers"
               value={customers
                 .filter((c: any) => !c.totalSpent || Number(c.totalSpent) === 0)
@@ -1184,59 +1225,72 @@ export default function Reports() {
             )}
           </div>
 
-          <div className="mt-3 overflow-x-auto border border-border">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-border bg-surface text-left text-xs uppercase tracking-widest text-muted-foreground">
-                  <th className="px-3 py-2 font-medium">Customer</th>
-                  <th className="px-3 py-2 font-medium">Email</th>
-                  <th className="px-3 py-2 font-medium">Phone</th>
-                  <th className="px-3 py-2 text-right font-medium">Orders</th>
-                  <th className="px-3 py-2 text-right font-medium">Total spent</th>
-                  <th className="px-3 py-2 font-medium">Channel</th>
-                </tr>
-              </thead>
-              <tbody>
-                {customers
-                  .sort(
-                    (a, b) =>
-                      (typeof b.totalSpent === "number"
-                        ? b.totalSpent
-                        : Number(b.totalSpent || 0)) -
-                      (typeof a.totalSpent === "number" ? a.totalSpent : Number(a.totalSpent || 0)),
-                  )
-                  .slice(0, 100)
-                  .map((customer: any) => (
-                    <tr
-                      key={customer.id}
-                      className="border-b border-border last:border-b-0 hover:bg-surface"
-                    >
-                      <td className="px-3 py-2">{customer.name}</td>
-                      <td className="px-3 py-2 text-xs text-muted-foreground">{customer.email}</td>
-                      <td className="px-3 py-2 text-xs text-muted-foreground">
-                        {customer.phone || "—"}
-                      </td>
-                      <td className="px-3 py-2 text-right">{customer.orderCount || 0}</td>
-                      <td className="px-3 py-2 text-right font-medium">
-                        {bdt(Number(customer.totalSpent || 0))}
-                      </td>
-                      <td className="px-3 py-2">
-                        <Pill tone={customer.channel === "POS" ? "success" : "info"}>
-                          {customer.channel || "—"}
-                        </Pill>
-                      </td>
-                    </tr>
-                  ))}
-                {customers.length === 0 && (
-                  <tr>
-                    <td colSpan={6} className="p-6 text-center text-sm text-muted-foreground">
-                      No customers yet.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+          <SortableTable
+            columns={[
+              { key: "name", header: "Customer", sortable: true },
+              {
+                key: "email",
+                header: "Email",
+                sortable: true,
+                className: "text-xs text-muted-foreground",
+              },
+              {
+                key: "phone",
+                header: "Phone",
+                sortable: true,
+                className: "text-xs text-muted-foreground",
+                render: (v) => v || "—",
+              },
+              {
+                key: "orderCount",
+                header: "Orders",
+                sortable: true,
+                className: "text-right",
+                render: (v) => v || 0,
+              },
+              {
+                key: "totalSpent",
+                header: "Total spent",
+                sortable: true,
+                className: "text-right font-medium",
+                render: (v) => bdt(v),
+              },
+              {
+                key: "channel",
+                header: "Channel",
+                sortable: true,
+                render: (v) => (
+                  <Pill tone={v === "POS" ? "success" : "info"}>{v || "—"}</Pill>
+                ),
+              },
+            ]}
+            data={customers
+              .slice()
+              .sort(
+                (a, b) =>
+                  (typeof b.totalSpent === "number"
+                    ? b.totalSpent
+                    : Number(b.totalSpent || 0)) -
+                  (typeof a.totalSpent === "number"
+                    ? a.totalSpent
+                    : Number(a.totalSpent || 0)),
+              )
+              .slice(0, 100)
+              .map((customer: any) => ({
+                id: customer.id,
+                name: customer.name,
+                email: customer.email,
+                phone: customer.phone,
+                orderCount: customer.orderCount || 0,
+                totalSpent: Number(customer.totalSpent || 0),
+                channel: customer.channel,
+              }))}
+            rowKey={(row) => row.id}
+            defaultSortColumn="totalSpent"
+            defaultSortDirection="desc"
+            pageSize={25}
+            emptyMessage="No customers yet."
+          />
         </>
       )}
 
@@ -1278,24 +1332,27 @@ export default function Reports() {
           return (
             <>
               <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-                <Stat
+                <MetricCard
+                  icon={Banknote}
                   label="Net revenue"
                   value={bdt(s.netRevenue)}
-                  hint={`list ${bdt(s.grossRevenue)}`}
+                  sub={`list ${bdt(s.grossRevenue)}`}
                 />
-                <Stat label="Discounts" value={bdt(s.discounts)} hint="given this period" />
-                <Stat label="Cost of goods" value={bdt(s.cogs)} hint="actual cost" />
-                <Stat
+                <MetricCard icon={Tag} label="Discounts" value={bdt(s.discounts)} sub="given this period" />
+                <MetricCard icon={Package} label="Cost of goods" value={bdt(s.cogs)} sub="actual cost" />
+                <MetricCard
+                  icon={TrendingUp}
                   label="Gross profit"
                   value={bdt(s.grossProfit)}
-                  hint={`${netMargin}% margin`}
+                  sub={`${netMargin}% margin`}
                 />
-                <Stat
+                <MetricCard
+                  icon={TrendingUp}
                   label="Pre-owned profit"
                   value={bdt(s.preOwnedProfit)}
-                  hint="pre-owned category"
+                  sub="pre-owned category"
                 />
-                <Stat label="Net profit" value={bdt(s.netProfit)} hint="+ exchange − expenses" />
+                <MetricCard icon={DollarSign} label="Net profit" value={bdt(s.netProfit)} sub="+ exchange − expenses" />
               </div>
 
               <div className="mt-3 flex items-center gap-2">
@@ -1377,11 +1434,12 @@ export default function Reports() {
       {tab === "returns" && (
         <>
           <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-            <Stat label="Total returns" value={String(reportReturns.length)} />
-            <Stat label="Refunded" value={String(refundedReturns.length)} hint="completed" />
-            <Stat label="Open" value={String(openReturns.length)} hint="pending / processing" />
-            <Stat label="Refund value" value={bdt(refundedValue)} hint="cash out" />
-            <Stat
+            <MetricCard icon={Undo2} label="Total returns" value={String(reportReturns.length)} />
+            <MetricCard icon={Undo2} label="Refunded" value={String(refundedReturns.length)} sub="completed" />
+            <MetricCard icon={Clock} label="Open" value={String(openReturns.length)} sub="pending / processing" />
+            <MetricCard icon={Banknote} label="Refund value" value={bdt(refundedValue)} sub="cash out" />
+            <MetricCard
+              icon={TrendingUp}
               label="Return rate"
               value={
                 (summary?.salesCount ?? posSales.length)
@@ -1391,12 +1449,13 @@ export default function Reports() {
                     ).toFixed(1) + "%"
                   : "0.0%"
               }
-              hint="returns ÷ sales"
+              sub="returns ÷ sales"
             />
-            <Stat
+            <MetricCard
+              icon={Undo2}
               label="Exchanges"
               value={String(reportExchanges.length)}
-              hint={
+              sub={
                 reportExchanges.length ? `in ${bdt(summary?.exchangeValueIn ?? 0)}` : "trade-ins"
               }
             />
@@ -1478,58 +1537,72 @@ export default function Reports() {
             )}
           </div>
 
-          <div className="mt-3 overflow-x-auto border border-border">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-border bg-surface text-left text-xs uppercase tracking-widest text-muted-foreground">
-                  <th className="px-3 py-2 font-medium">RMA</th>
-                  <th className="px-3 py-2 font-medium">Date</th>
-                  <th className="px-3 py-2 font-medium">Customer</th>
-                  <th className="px-3 py-2 font-medium">Product</th>
-                  <th className="px-3 py-2 text-right font-medium">Qty</th>
-                  <th className="px-3 py-2 font-medium">Status</th>
-                  <th className="px-3 py-2 text-right font-medium">Refund</th>
-                </tr>
-              </thead>
-              <tbody>
-                {reportReturns.map((r) => (
-                  <tr
-                    key={r.id}
-                    className="border-b border-border last:border-b-0 hover:bg-surface"
+          <SortableTable
+            columns={[
+              {
+                key: "id",
+                header: "RMA",
+                sortable: true,
+                className: "font-mono text-xs",
+                render: (v) => v.slice(0, 14),
+              },
+              {
+                key: "createdAt",
+                header: "Date",
+                sortable: true,
+                className: "text-xs text-muted-foreground",
+                render: (v) => new Date(v).toLocaleDateString(),
+              },
+              {
+                key: "customerName",
+                header: "Customer",
+                sortable: true,
+                render: (v) => v || "—",
+              },
+              {
+                key: "productName",
+                header: "Product",
+                sortable: true,
+                render: (v) => v || "—",
+              },
+              { key: "qty", header: "Qty", sortable: true, className: "text-right" },
+              {
+                key: "status",
+                header: "Status",
+                sortable: true,
+                render: (v) => (
+                  <Pill
+                    tone={
+                      ["refunded", "completed"].includes((v ?? "").toLowerCase())
+                        ? "success"
+                        : "warn"
+                    }
                   >
-                    <td className="px-3 py-2 font-mono text-xs">{r.id.slice(0, 14)}</td>
-                    <td className="px-3 py-2 text-xs text-muted-foreground">
-                      {new Date(r.createdAt).toLocaleDateString()}
-                    </td>
-                    <td className="px-3 py-2">{r.customerName || "—"}</td>
-                    <td className="px-3 py-2">{r.productName || "—"}</td>
-                    <td className="px-3 py-2 text-right">{r.qty}</td>
-                    <td className="px-3 py-2">
-                      <Pill
-                        tone={
-                          ["refunded", "completed"].includes((r.status ?? "").toLowerCase())
-                            ? "success"
-                            : "warn"
-                        }
-                      >
-                        {r.status || "—"}
-                      </Pill>
-                    </td>
-                    <td className="px-3 py-2 text-right font-medium">
-                      {r.refundAmount ? bdt(r.refundAmount) : "—"}
-                    </td>
-                  </tr>
-                ))}
-                {reportReturns.length === 0 && (
-                  <tr>
-                    <td colSpan={7} className="p-6 text-center text-sm text-muted-foreground">
-                      No returns in this period.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+                    {v || "—"}
+                  </Pill>
+                ),
+              },
+              {
+                key: "refundAmount",
+                header: "Refund",
+                sortable: true,
+                className: "text-right font-medium",
+                render: (v) => (v ? bdt(v) : "—"),
+              },
+            ]}
+            data={reportReturns.map((r) => ({
+              id: r.id,
+              createdAt: r.createdAt,
+              customerName: r.customerName,
+              productName: r.productName,
+              qty: r.qty,
+              status: r.status,
+              refundAmount: r.refundAmount,
+            }))}
+            rowKey={(row) => row.id}
+            pageSize={25}
+            emptyMessage="No returns in this period."
+          />
         </>
       )}
 
@@ -1537,18 +1610,21 @@ export default function Reports() {
       {tab === "staff" && (
         <>
           <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            <Stat label="Total staff" value={staff.length.toString()} />
-            <Stat
+            <MetricCard icon={Users} label="Total staff" value={staff.length.toString()} />
+            <MetricCard
+              icon={UserCheck}
               label="Active cashiers"
               value={new Set(posSales.map((s) => s.cashierName).filter(Boolean)).size.toString()}
             />
-            <Stat
+            <MetricCard
+              icon={Banknote}
               label="Staff sales"
               value={bdt(
                 posSales.filter((s) => s.cashierName).reduce((s, sale) => s + sale.total, 0),
               )}
             />
-            <Stat
+            <MetricCard
+              icon={Banknote}
               label="Avg per cashier"
               value={bdt(
                 new Set(posSales.map((s) => s.cashierName).filter(Boolean)).size
@@ -1642,54 +1718,51 @@ export default function Reports() {
             )}
           </div>
 
-          <div className="mt-3 overflow-x-auto border border-border">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-border bg-surface text-left text-xs uppercase tracking-widest text-muted-foreground">
-                  <th className="px-3 py-2 font-medium">Staff</th>
-                  <th className="px-3 py-2 font-medium">Role</th>
-                  <th className="px-3 py-2 text-right font-medium">Sales</th>
-                  <th className="px-3 py-2 text-right font-medium">Revenue</th>
-                  <th className="px-3 py-2 text-right font-medium">Avg sale</th>
-                </tr>
-              </thead>
-              <tbody>
-                {staff.map((s: any) => {
-                  const cashierSales = posSales.filter((ps) => ps.cashierId === s.userId);
-                  const revenue = cashierSales.reduce((sum, sale) => sum + sale.total, 0);
-                  return (
-                    <tr
-                      key={s.id}
-                      className="border-b border-border last:border-b-0 hover:bg-surface"
-                    >
-                      <td className="px-3 py-2">{s.firstName + " " + s.lastName}</td>
-                      <td className="px-3 py-2">
-                        <Pill
-                          tone={
-                            s.role === "owner" ? "success" : s.role === "manager" ? "info" : "muted"
-                          }
-                        >
-                          {s.role}
-                        </Pill>
-                      </td>
-                      <td className="px-3 py-2 text-right">{cashierSales.length}</td>
-                      <td className="px-3 py-2 text-right font-medium">{bdt(revenue)}</td>
-                      <td className="px-3 py-2 text-right text-muted-foreground">
-                        {cashierSales.length ? bdt(revenue / cashierSales.length) : "—"}
-                      </td>
-                    </tr>
-                  );
-                })}
-                {staff.length === 0 && (
-                  <tr>
-                    <td colSpan={5} className="p-6 text-center text-sm text-muted-foreground">
-                      No staff records found.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+          <SortableTable
+            columns={[
+              { key: "name", header: "Staff", sortable: true },
+              {
+                key: "role",
+                header: "Role",
+                sortable: true,
+                render: (v) => (
+                  <Pill tone={v === "owner" ? "success" : v === "manager" ? "info" : "muted"}>
+                    {v}
+                  </Pill>
+                ),
+              },
+              { key: "sales", header: "Sales", sortable: true, className: "text-right" },
+              {
+                key: "revenue",
+                header: "Revenue",
+                sortable: true,
+                className: "text-right font-medium",
+                render: (v) => bdt(v),
+              },
+              {
+                key: "avg",
+                header: "Avg sale",
+                sortable: true,
+                className: "text-right text-muted-foreground",
+                render: (v) => (v != null ? bdt(v) : "—"),
+              },
+            ]}
+            data={staff.map((s: any) => {
+              const cashierSales = posSales.filter((ps) => ps.cashierId === s.userId);
+              const revenue = cashierSales.reduce((sum, sale) => sum + sale.total, 0);
+              return {
+                id: s.id,
+                name: s.firstName + " " + s.lastName,
+                role: s.role,
+                sales: cashierSales.length,
+                revenue,
+                avg: cashierSales.length ? revenue / cashierSales.length : null,
+              };
+            })}
+            rowKey={(row) => row.id}
+            pageSize={25}
+            emptyMessage="No staff records found."
+          />
         </>
       )}
     </>
@@ -1702,26 +1775,33 @@ function OrderItemsTable({ items }: { items: ReportOrderItem[] }) {
       <div className="mb-1 text-[10px] uppercase tracking-widest text-muted-foreground">
         Items · {items.reduce((s, i) => s + i.qty, 0)} unit{items.length !== 1 ? "s" : ""}
       </div>
-      <table className="w-full text-xs">
-        <thead>
-          <tr className="text-left text-muted-foreground">
-            <th className="pb-1 font-medium">Product</th>
-            <th className="pb-1 text-right font-medium">Qty</th>
-            <th className="pb-1 text-right font-medium">Price</th>
-            <th className="pb-1 text-right font-medium">Total</th>
-          </tr>
-        </thead>
-        <tbody>
-          {items.map((item, i) => (
-            <tr key={i} className="border-t border-border/50">
-              <td className="py-1">{item.name}</td>
-              <td className="py-1 text-right">{item.qty}</td>
-              <td className="py-1 text-right">{taka(item.price)}</td>
-              <td className="py-1 text-right font-medium">{taka(item.price * item.qty)}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      <SortableTable
+        columns={[
+          { key: "name", header: "Product", sortable: true },
+          { key: "qty", header: "Qty", sortable: true, className: "text-right" },
+          {
+            key: "price",
+            header: "Price",
+            sortable: true,
+            className: "text-right",
+            render: (v) => taka(v),
+          },
+          {
+            key: "total",
+            header: "Total",
+            sortable: true,
+            className: "text-right font-medium",
+            render: (v) => taka(v),
+          },
+        ]}
+        data={items.map((item) => ({
+          name: item.name,
+          qty: item.qty,
+          price: item.price,
+          total: item.price * item.qty,
+        }))}
+        rowKey={(row) => row.name + "-" + row.qty}
+      />
     </div>
   );
 }
@@ -1733,32 +1813,50 @@ function SaleItemsTable({ items }: { items: ReportSaleItem[] }) {
         Items · {items.reduce((s, i) => s + i.qty, 0)} unit
         {items.reduce((s, i) => s + i.qty, 0) !== 1 ? "s" : ""}
       </div>
-      <table className="w-full text-xs">
-        <thead>
-          <tr className="text-left text-muted-foreground">
-            <th className="pb-1 font-medium">Product</th>
-            <th className="pb-1 font-medium">SKU</th>
-            <th className="pb-1 font-medium">IMEI / Serial</th>
-            <th className="pb-1 text-right font-medium">Qty</th>
-            <th className="pb-1 text-right font-medium">Unit Price</th>
-            <th className="pb-1 text-right font-medium">Total</th>
-          </tr>
-        </thead>
-        <tbody>
-          {items.map((item, i) => (
-            <tr key={i} className="border-t border-border/50">
-              <td className="py-1">{item.name}</td>
-              <td className="py-1 font-mono text-muted-foreground">{item.sku || "—"}</td>
-              <td className="py-1 font-mono text-muted-foreground">
-                {item.imeis.length ? item.imeis.join(", ") : "—"}
-              </td>
-              <td className="py-1 text-right">{item.qty}</td>
-              <td className="py-1 text-right">{bdt(item.unitPrice)}</td>
-              <td className="py-1 text-right font-medium">{bdt(item.lineTotal)}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      <SortableTable
+        columns={[
+          { key: "name", header: "Product", sortable: true },
+          {
+            key: "sku",
+            header: "SKU",
+            sortable: true,
+            className: "font-mono text-muted-foreground",
+            render: (v) => v || "—",
+          },
+          {
+            key: "imeis",
+            header: "IMEI / Serial",
+            sortable: true,
+            className: "font-mono text-muted-foreground",
+            render: (v) => (v.length ? v.join(", ") : "—"),
+          },
+          { key: "qty", header: "Qty", sortable: true, className: "text-right" },
+          {
+            key: "unitPrice",
+            header: "Unit Price",
+            sortable: true,
+            className: "text-right",
+            render: (v) => bdt(v),
+          },
+          {
+            key: "lineTotal",
+            header: "Total",
+            sortable: true,
+            className: "text-right font-medium",
+            render: (v) => bdt(v),
+          },
+        ]}
+        data={items.map((item, i) => ({
+          _key: i,
+          name: item.name,
+          sku: item.sku,
+          imeis: item.imeis,
+          qty: item.qty,
+          unitPrice: item.unitPrice,
+          lineTotal: item.lineTotal,
+        }))}
+        rowKey={(row) => row._key}
+      />
     </div>
   );
 }

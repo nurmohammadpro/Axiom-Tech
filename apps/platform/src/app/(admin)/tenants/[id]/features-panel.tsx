@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useFormStatus } from "react-dom";
+import { SortableTable } from "@/components/sortable-table";
 
 export interface FeatureRow {
   key: string;
@@ -42,86 +43,97 @@ export function FeaturesPanel({
         </div>
         <SaveButton disabled={!dirty} />
       </div>
-      <div className="overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead>
-            <tr style={{ color: "var(--muted-foreground)" }} className="text-left text-xs">
-              <th className="py-1.5 pr-3 font-medium">Feature</th>
-              <th className="py-1.5 pr-3 font-medium">Plan</th>
-              <th className="py-1.5 pr-3 font-medium">Override</th>
-              <th className="py-1.5 font-medium">Shop gets</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((r) => {
+      <SortableTable<FeatureRow>
+        data={rows}
+        rowKey={(r) => r.key}
+        columns={[
+          {
+            key: "label",
+            header: "Feature",
+            sortable: true,
+            render: (v) => <span className="font-medium">{v}</span>,
+          },
+          {
+            key: "inPlan",
+            header: "Plan",
+            sortable: true,
+            render: (v) => (
+              <span className="text-xs" style={{ color: "var(--muted-foreground)" }}>
+                {v ? "included" : "—"}
+              </span>
+            ),
+          },
+          {
+            key: "override",
+            header: "Override",
+            render: (_v, r) => {
               const state = overrides[r.key]; // true=on, false=off, undefined=inherit
+              return (
+                <div className="inline-flex border" style={{ borderColor: "var(--line)" }}>
+                  {(
+                    [
+                      ["", "Inherit"],
+                      ["on", "On"],
+                      ["off", "Off"],
+                    ] as const
+                  ).map(([value, label]) => {
+                    const isActive = value === "" ? state === undefined : state === (value === "on");
+                    return (
+                      <label
+                        key={value}
+                        className="cursor-pointer px-2 py-1 text-xs"
+                        style={
+                          isActive
+                            ? { background: "var(--primary)", color: "var(--primary-foreground)" }
+                            : { color: "var(--muted-foreground)" }
+                        }
+                      >
+                        <input
+                          type="radio"
+                          name={`f_${r.key}`}
+                          value={value}
+                          className="sr-only"
+                          checked={isActive}
+                          onChange={() =>
+                            setOverrides((prev) => {
+                              const next = { ...prev };
+                              if (value === "") delete next[r.key];
+                              else next[r.key] = value === "on";
+                              return next;
+                            })
+                          }
+                        />
+                        {label}
+                      </label>
+                    );
+                  })}
+                </div>
+              );
+            },
+          },
+          {
+            key: "effective",
+            header: "Shop gets",
+            render: (_v, r) => {
+              const state = overrides[r.key];
               const effective = state ?? r.inPlan;
               const changed = state !== undefined;
               return (
-                <tr key={r.key} className="border-t" style={{ borderColor: "var(--line)" }}>
-                  <td className="py-2 pr-3 font-medium">{r.label}</td>
-                  <td className="py-2 pr-3 text-xs" style={{ color: "var(--muted-foreground)" }}>
-                    {r.inPlan ? "included" : "—"}
-                  </td>
-                  <td className="py-2 pr-3">
-                    <div className="inline-flex border" style={{ borderColor: "var(--line)" }}>
-                      {(
-                        [
-                          ["", "Inherit"],
-                          ["on", "On"],
-                          ["off", "Off"],
-                        ] as const
-                      ).map(([value, label]) => {
-                        const isActive = value === "" ? state === undefined : state === (value === "on");
-                        return (
-                          <label
-                            key={value}
-                            className="cursor-pointer px-2 py-1 text-xs"
-                            style={
-                              isActive
-                                ? { background: "var(--primary)", color: "var(--primary-foreground)" }
-                                : { color: "var(--muted-foreground)" }
-                            }
-                          >
-                            <input
-                              type="radio"
-                              name={`f_${r.key}`}
-                              value={value}
-                              className="sr-only"
-                              checked={isActive}
-                              onChange={() =>
-                                setOverrides((prev) => {
-                                  const next = { ...prev };
-                                  if (value === "") delete next[r.key];
-                                  else next[r.key] = value === "on";
-                                  return next;
-                                })
-                              }
-                            />
-                            {label}
-                          </label>
-                        );
-                      })}
-                    </div>
-                  </td>
-                  <td className="py-2 text-xs">
-                    <span
-                      className={
-                        "rounded px-1.5 py-0.5 font-medium " +
-                        (effective ? "bg-emerald-100 text-emerald-800" : "bg-neutral-200 text-neutral-700")
-                      }
-                      title={changed ? "Changed from the plan — save to apply" : undefined}
-                    >
-                      {effective ? "on" : "off"}
-                      {changed ? " *" : ""}
-                    </span>
-                  </td>
-                </tr>
+                <span
+                  className={
+                    "rounded px-1.5 py-0.5 font-medium text-xs " +
+                    (effective ? "bg-emerald-100 text-emerald-800" : "bg-neutral-200 text-neutral-700")
+                  }
+                  title={changed ? "Changed from the plan — save to apply" : undefined}
+                >
+                  {effective ? "on" : "off"}
+                  {changed ? " *" : ""}
+                </span>
               );
-            })}
-          </tbody>
-        </table>
-      </div>
+            },
+          },
+        ]}
+      />
       {dirty && (
         <p className="text-xs" style={{ color: "var(--bad)" }}>
           Unsaved changes — click Save to apply.

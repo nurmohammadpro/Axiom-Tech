@@ -6,10 +6,10 @@ import { addDays } from "date-fns";
 import { db } from "@/db";
 import { payments, plans, tenants } from "@/db/schema";
 import { taka } from "@/lib/domain";
-import { fmtDate, daysUntil, methodLabel } from "@/lib/format";
 import { tenantCounts } from "@/lib/tenants";
 import { billingTotals } from "@/lib/invoices";
-import { Stat, td, th } from "../../ui";
+import { Stat } from "../../ui";
+import { RecentPaymentsTable, RenewalsTable, TrialsEndingTable } from "./admin-tables";
 
 export default async function Dashboard() {
   const now = new Date();
@@ -57,57 +57,39 @@ export default async function Dashboard() {
       <div className="grid gap-4 md:grid-cols-2">
         <section className="card overflow-hidden">
           <h2 className="px-4 pt-4 text-sm font-bold">Trials ending in 3 days</h2>
-          <table className="mt-2 w-full">
-            <tbody>
-              {trialsEnding.length === 0 && <tr><td className={td} style={{ color: "var(--muted-foreground)" }}>None</td></tr>}
-              {trialsEnding.map((t) => (
-                <tr key={t.id} className="border-t" style={{ borderColor: "var(--line)" }}>
-                  <td className={td}><Link className="font-medium underline" href={`/tenants/${t.id}`}>{t.name}</Link></td>
-                  <td className={td} style={{ color: "var(--muted-foreground)" }}>{fmtDate(t.trialEndsAt)} ({daysUntil(t.trialEndsAt)}d)</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <div className="mt-2 px-2 pb-2">
+            <TrialsEndingTable
+              rows={trialsEnding.map((t) => ({ id: t.id, name: t.name, date: t.trialEndsAt }))}
+            />
+          </div>
         </section>
 
         <section className="card overflow-hidden">
           <h2 className="px-4 pt-4 text-sm font-bold">Renewals due within 7 days</h2>
-          <table className="mt-2 w-full">
-            <tbody>
-              {renewals.length === 0 && <tr><td className={td} style={{ color: "var(--muted-foreground)" }}>None</td></tr>}
-              {renewals.map((t) => (
-                <tr key={t.id} className="border-t" style={{ borderColor: "var(--line)" }}>
-                  <td className={td}><Link className="font-medium underline" href={`/tenants/${t.id}`}>{t.name}</Link></td>
-                  <td className={td} style={{ color: "var(--muted-foreground)" }}>{fmtDate(t.currentPeriodEnd)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <div className="mt-2 px-2 pb-2">
+            <RenewalsTable
+              rows={renewals.map((t) => ({ id: t.id, name: t.name, date: t.currentPeriodEnd }))}
+            />
+          </div>
         </section>
       </div>
 
-      <section className="card overflow-x-auto">
+      <section className="card">
         <h2 className="px-4 pt-4 text-sm font-bold">Recent payments</h2>
-        <table className="mt-2 w-full">
-          <thead>
-            <tr style={{ color: "var(--muted-foreground)" }}>
-              <th className={th}>Shop</th><th className={th}>Kind</th><th className={th}>Amount</th><th className={th}>Method</th><th className={th}>Reference</th><th className={th}>Date</th>
-            </tr>
-          </thead>
-          <tbody>
-            {recent.length === 0 && <tr><td colSpan={6} className={td} style={{ color: "var(--muted-foreground)" }}>No payments yet</td></tr>}
-            {recent.map(({ p, shop, shopId }) => (
-              <tr key={p.id} className="border-t" style={{ borderColor: "var(--line)" }}>
-                <td className={td}><Link className="underline" href={`/tenants/${shopId}`}>{shop}</Link></td>
-                <td className={`${td} capitalize`}>{p.kind}</td>
-                <td className={td}>{taka(p.amount)}</td>
-                <td className={td}>{methodLabel(p.method)}</td>
-                <td className={td}>{p.reference ?? "-"}</td>
-                <td className={td}>{fmtDate(p.receivedAt)}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <div className="mt-2 px-2 pb-2">
+          <RecentPaymentsTable
+            rows={recent.map(({ p, shop, shopId }) => ({
+              id: p.id,
+              shop,
+              shopId,
+              kind: p.kind,
+              amount: p.amount,
+              method: p.method,
+              reference: p.reference,
+              receivedAt: p.receivedAt,
+            }))}
+          />
+        </div>
       </section>
     </div>
   );

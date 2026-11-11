@@ -156,3 +156,9 @@
   .print-only { display: block !important; }
   .card { border-color: #d0d4da; }
 }
+
+/* Data Table v3 tokens (shared SortableTable) */
+:root {
+  --color-brand-primary: oklch(0.55 0.2 285);
+  --table-row-selected: oklch(0.95 0.02 260);
+}

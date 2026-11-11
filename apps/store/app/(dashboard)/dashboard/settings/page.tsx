@@ -11,6 +11,7 @@ import type { PaymentAccount, PaymentAccountsByMethod } from "@/lib/store-settin
 import { toast } from "sonner";
 import { Save, RotateCcw, CreditCard, Receipt, Gift, Plus, X, Upload, Trash2, Check, Palette } from "lucide-react";
 import { TabStrip } from "@/components/dashboard/tab-strip";
+import { SortableTable } from "@/components/dashboard/sortable-table";
 
 const tabs = [
   { id: "General", icon: null },
@@ -445,57 +446,57 @@ function AccountGroupEditor({
           No {title.toLowerCase()} accounts configured yet.
         </div>
       ) : (
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-border text-left text-xs uppercase tracking-widest text-muted-foreground">
-              {fields.map((f) => (
-                <th key={f.key} className="px-2 py-1 font-medium">
-                  {f.label}
-                </th>
-              ))}
-              <th className="px-2 py-1 font-medium">Default</th>
-              <th className="px-2 py-1" />
-            </tr>
-          </thead>
-          <tbody>
-            {accounts.map((a) => (
-              <tr key={a.id} className="border-b border-border last:border-b-0">
-                {fields.map((f) => (
-                  <td key={f.key} className="px-2 py-1">
-                    <input
-                      value={a[f.key] ?? ""}
-                      onChange={(e) => updateField(a.id, f.key, e.target.value)}
-                      className="w-full rounded border border-border bg-background px-2 py-1 text-sm"
-                    />
-                  </td>
-                ))}
-                <td className="px-2 py-1">
-                  <button
-                    type="button"
-                    onClick={() => setDefault(a.id)}
-                    className={
-                      a.isDefault
-                        ? "font-medium text-emerald-600"
-                        : "text-muted-foreground hover:text-foreground"
-                    }
-                  >
-                    {a.isDefault ? "✓ Default" : "Set default"}
-                  </button>
-                </td>
-                <td className="px-2 py-1 text-right">
-                  <button
-                    type="button"
-                    onClick={() => remove(a.id)}
-                    className="text-muted-foreground hover:text-sale"
-                    aria-label="Remove account"
-                  >
-                    <X size={14} />
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <SortableTable
+          columns={[
+            ...fields.map((f) => ({
+              key: f.key,
+              header: f.label,
+              sortable: true,
+              render: (value: string, a: PaymentAccount) => (
+                <input
+                  value={a[f.key] ?? ""}
+                  onChange={(e) => updateField(a.id, f.key, e.target.value)}
+                  className="w-full rounded border border-border bg-background px-2 py-1 text-sm"
+                />
+              ),
+            })),
+            {
+              key: "isDefault",
+              header: "Default",
+              render: (value: boolean, a: PaymentAccount) => (
+                <button
+                  type="button"
+                  onClick={() => setDefault(a.id)}
+                  className={
+                    value
+                      ? "font-medium text-emerald-600"
+                      : "text-muted-foreground hover:text-foreground"
+                  }
+                >
+                  {value ? "✓ Default" : "Set default"}
+                </button>
+              ),
+            },
+            {
+              key: "actions",
+              header: "",
+              className: "text-right",
+              render: (_v: any, a: PaymentAccount) => (
+                <button
+                  type="button"
+                  onClick={() => remove(a.id)}
+                  className="text-muted-foreground hover:text-sale"
+                  aria-label="Remove account"
+                >
+                  <X size={14} />
+                </button>
+              ),
+            },
+          ]}
+          data={accounts.map((a) => ({ ...a }))}
+          rowKey={(a) => a.id}
+          emptyMessage={`No ${title.toLowerCase()} accounts configured yet.`}
+        />
       )}
     </div>
   );

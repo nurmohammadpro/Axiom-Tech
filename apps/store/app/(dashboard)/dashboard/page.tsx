@@ -16,6 +16,7 @@ import * as apiNs from "@/lib/api";
 import { MetricCard, TargetRing, pctChange, absChange } from "@/components/dashboard/metric-cards";
 import { Banknote, PackagePlus, RefreshCw, Undo2, ShoppingBag, TrendingUp, TriangleAlert } from "lucide-react";
 import { bdt } from "@/lib/utils";
+import { SortableTable } from "@/components/dashboard/sortable-table";
 import { UpgradeBanner } from "@/components/dashboard/upgrade-banner";
 import { OnboardingChecklist } from "@/components/dashboard/onboarding-checklist";
 import type { DashboardRange } from "@/lib/api";
@@ -55,7 +56,7 @@ function formatCurrency(n: number) {
   return bdt(n);
 }
 
-interface SaleRow {
+type SaleRow = {
   id: string;
   saleNumber?: string | null;
   channel: string;
@@ -547,55 +548,67 @@ export default function Overview() {
               <div className="text-sm text-muted-foreground">No sales yet.</div>
             </Card>
           ) : (
-            <div className="overflow-x-auto border border-border">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-border bg-surface text-left text-xs uppercase tracking-widest text-muted-foreground">
-                    <th className="px-3 py-2 font-medium">ID</th>
-                    <th className="px-3 py-2 font-medium">Channel</th>
-                    <th className="px-3 py-2 font-medium">Customer</th>
-                    <th className="px-3 py-2 font-medium">Status</th>
-                    <th className="px-3 py-2 font-medium">Total</th>
-                    <th className="px-3 py-2 font-medium">Date</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {recentSales.map((o) => (
-                    <tr
-                      key={o.id}
-                      className="border-b border-border last:border-b-0 hover:bg-surface"
+            <SortableTable<SaleRow>
+              columns={[
+                {
+                  key: "id",
+                  header: "ID",
+                  sortable: true,
+                  className: "font-mono text-xs",
+                  render: (_v, o) => (o.saleNumber || o.id).slice(0, 10),
+                },
+                {
+                  key: "channel",
+                  header: "Channel",
+                  sortable: true,
+                  render: (v) => <Pill tone={v === "POS" ? "info" : "muted"}>{v}</Pill>,
+                },
+                {
+                  key: "customerName",
+                  header: "Customer",
+                  sortable: true,
+                  className: "text-sm",
+                  render: (v) => v || "—",
+                },
+                {
+                  key: "status",
+                  header: "Status",
+                  sortable: true,
+                  render: (v) => (
+                    <Pill
+                      tone={
+                        v === "completed" || v === "delivered"
+                          ? "success"
+                          : v === "cancelled"
+                            ? "danger"
+                            : "warn"
+                      }
                     >
-                      <td className="px-3 py-2 font-mono text-xs">
-                        {(o.saleNumber || o.id).slice(0, 10)}
-                      </td>
-                      <td className="px-3 py-2">
-                        <Pill tone={o.channel === "POS" ? "info" : "muted"}>{o.channel}</Pill>
-                      </td>
-                      <td className="px-3 py-2 text-sm">{o.customerName || "—"}</td>
-                      <td className="px-3 py-2">
-                        <Pill
-                          tone={
-                            o.status === "completed" || o.status === "delivered"
-                              ? "success"
-                              : o.status === "cancelled"
-                                ? "danger"
-                                : "warn"
-                          }
-                        >
-                          {o.status}
-                        </Pill>
-                      </td>
-                      <td className="px-3 py-2 font-medium">
-                        {typeof o.total === "number" ? bdt(o.total) : `৳${o.total}`}
-                      </td>
-                      <td className="px-3 py-2 text-xs text-muted-foreground">
-                        {o.createdAt ? new Date(o.createdAt).toLocaleDateString() : "—"}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                      {v}
+                    </Pill>
+                  ),
+                },
+                {
+                  key: "total",
+                  header: "Total",
+                  sortable: true,
+                  className: "font-medium",
+                  render: (v) => (typeof v === "number" ? bdt(v) : `৳${v}`),
+                },
+                {
+                  key: "createdAt",
+                  header: "Date",
+                  sortable: true,
+                  className: "text-xs text-muted-foreground",
+                  render: (v) => (v ? new Date(v).toLocaleDateString() : "—"),
+                },
+              ]}
+              data={recentSales}
+              rowKey={(o) => o.id}
+              defaultSortColumn="createdAt"
+              defaultSortDirection="desc"
+              emptyMessage="No sales yet."
+            />
           )}
         </div>
 
