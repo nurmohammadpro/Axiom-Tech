@@ -868,6 +868,7 @@ export default function Inventory() {
           <div className="mt-3">
             <SortableTable
               rowKey={(item) => item.variantId}
+              selectable
               pageSize={25}
               columns={columns}
               data={filtered}

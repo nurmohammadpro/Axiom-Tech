@@ -355,7 +355,7 @@ export default function Customers() {
             <SortableTable
               data={paginated}
               rowKey={(c) => c.id}
-              pageSize={25}
+              selectable
               defaultSortColumn="totalSpent"
               defaultSortDirection="desc"
               emptyMessage="No customers found."
