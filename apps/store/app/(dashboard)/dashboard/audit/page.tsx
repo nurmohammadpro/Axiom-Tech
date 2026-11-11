@@ -4,7 +4,7 @@ import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { Card, Pill, SortableTable } from "@/components/dashboard/dashboard-shell";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { TabStrip } from "@/components/dashboard/tab-strip";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
 import {
@@ -845,22 +845,18 @@ export default function Audit() {
 
       {/* Tabs */}
       <div className="mb-4">
-        <Tabs value={tab} onValueChange={(v) => setTab(v as TabValue)}>
+        <div>
           <div className="flex items-center justify-between">
-            <TabsList>
-              <TabsTrigger value="entries">
-                <List size={14} className="mr-2" /> Entries
-              </TabsTrigger>
-              <TabsTrigger value="stats">
-                <BarChart3 size={14} className="mr-2" /> Statistics
-              </TabsTrigger>
-              <TabsTrigger value="analytics">
-                <TrendingUp size={14} className="mr-2" /> Analytics
-              </TabsTrigger>
-              <TabsTrigger value="compliance">
-                <ShieldAlert size={14} className="mr-2" /> Compliance
-              </TabsTrigger>
-            </TabsList>
+            <TabStrip
+              tabs={[
+                { key: "entries", label: "Entries", icon: List },
+                { key: "stats", label: "Statistics", icon: BarChart3 },
+                { key: "analytics", label: "Analytics", icon: TrendingUp },
+                { key: "compliance", label: "Compliance", icon: ShieldAlert },
+              ]}
+              active={tab}
+              onChange={(k) => setTab(k as TabValue)}
+            />
 
             <div className="flex items-center gap-2">
               <Button
@@ -920,7 +916,7 @@ export default function Audit() {
               </Button>
             </div>
           </div>
-        </Tabs>
+        </div>
       </div>
 
       {/* Entries tab */}

@@ -5,7 +5,6 @@ import { useRef, useState } from "react";
 import { signIn } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Eye, EyeOff } from "lucide-react";
 
 export default function SignIn() {
   const router = useRouter();
@@ -13,7 +12,6 @@ export default function SignIn() {
   const passwordRef = useRef<HTMLInputElement>(null);
   const [error, setError] = useState("");
   const [pending, setPending] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -55,24 +53,12 @@ export default function SignIn() {
         </label>
         <label className="block">
           <span className="mb-1 block text-xs font-medium text-muted-foreground">Password</span>
-          <div className="relative">
-            <Input
-              ref={passwordRef}
-              type={showPassword ? "text" : "password"}
-              required
-              autoComplete="current-password"
-              className="pr-9"
-            />
-            <button
-              type="button"
-              onClick={() => setShowPassword((v) => !v)}
-              aria-label={showPassword ? "Hide password" : "Show password"}
-              className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-              tabIndex={-1}
-            >
-              {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
-            </button>
-          </div>
+          <Input
+            ref={passwordRef}
+            type="password"
+            required
+            autoComplete="current-password"
+          />
         </label>
         <Button type="submit" disabled={pending} className="w-full">
           {pending ? "Signing in…" : "Sign in"}

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Card, Pill, Stat, Table } from "@/components/dashboard/dashboard-shell";
 import { Button } from "@/components/ui/button";
+import { TabStrip } from "@/components/dashboard/tab-strip";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -312,22 +313,12 @@ export default function Staff() {
   return (
     <>
       {/* One page for Staff + HR: Team profiles, Leave, Payroll, Setup */}
-      <div className="mb-3 flex flex-wrap items-center gap-1">
-        {TABS.map((t) => (
-          <button
-            key={t.id}
-            onClick={() => setTab(t.id)}
-            className={
-              "border px-3 py-1.5 text-sm transition-colors " +
-              (tab === t.id
-                ? "border-primary bg-primary text-primary-foreground"
-                : "border-border text-muted-foreground hover:text-foreground")
-            }
-          >
-            {t.label}
-          </button>
-        ))}
-      </div>
+      <TabStrip
+        className="mb-3"
+        tabs={TABS.map((t) => ({ key: t.id, label: t.label }))}
+        active={tab}
+        onChange={(k) => setTab(k as typeof tab)}
+      />
 
       {tab === "leave" ? (
         <LeavesView />
