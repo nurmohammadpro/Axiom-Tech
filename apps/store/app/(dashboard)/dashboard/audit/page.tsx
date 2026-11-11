@@ -1169,7 +1169,7 @@ export default function Audit() {
                       return (
                         <div
                           key={`expanded-${e.id}`}
-                          className="border border-border border-t-0 bg-surface/50 px-6 py-3"
+                          className="rounded-lg border border-border border-t-0 bg-surface/50 px-6 py-3"
                         >
                           <div className="text-xs font-medium text-muted-foreground mb-2">
                             Full details

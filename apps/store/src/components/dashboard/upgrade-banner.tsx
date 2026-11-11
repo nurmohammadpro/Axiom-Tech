@@ -19,7 +19,7 @@ export function UpgradeBanner() {
   if (!feature) return null;
   const name = LABELS[feature] ?? "This feature";
   return (
-    <div role="status" className="mb-4 flex items-center gap-2 border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+    <div role="status" className="rounded-md mb-4 flex items-center gap-2 border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
       <Lock size={14} />
       <span className="flex-1">{name} is not included in your current plan. Contact Axiom Tech to upgrade.</span>
       <button type="button" aria-label="Dismiss" onClick={() => setFeature(null)}><X size={14} /></button>

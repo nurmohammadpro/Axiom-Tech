@@ -193,7 +193,7 @@ function AddressForm({
         <input
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          className="w-full border border-border bg-background px-3 py-1.5 text-sm outline-none focus:border-foreground"
+          className="rounded-md w-full border border-border bg-background px-3 py-1.5 text-sm outline-none focus:border-foreground"
         />
       </div>
     );

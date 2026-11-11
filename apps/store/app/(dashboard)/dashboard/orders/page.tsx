@@ -819,7 +819,7 @@ export default function Orders() {
             </SelectContent>
           </Select>
         ) : (
-          <span className="border border-border bg-surface px-2.5 py-1.5 text-xs text-muted-foreground">
+          <span className="rounded-md border border-border bg-surface px-2.5 py-1.5 text-xs text-muted-foreground">
             Warehouse: <span className="font-medium text-foreground">{scopedLocation}</span>
           </span>
         )}
@@ -853,7 +853,7 @@ export default function Orders() {
       </div>
 
       {selected.size > 0 && (
-        <div className="my-2 flex flex-wrap items-center gap-2 border border-border bg-surface px-3 py-2 text-xs">
+        <div className="rounded-lg my-2 flex flex-wrap items-center gap-2 border border-border bg-surface px-3 py-2 text-xs">
           <span className="font-medium">{selected.size} selected</span>
           <Button
             size="sm"

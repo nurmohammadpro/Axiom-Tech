@@ -170,7 +170,7 @@ export default function Analytics() {
                 });
                 toast.success("PDF exported");
               }}
-              className="flex items-center gap-1 border border-border bg-background px-2.5 py-1 text-xs hover:bg-surface"
+              className="rounded-md flex items-center gap-1 border border-border bg-background px-2.5 py-1 text-xs hover:bg-surface"
             >
               <Download size={12} /> PDF
             </button>
@@ -195,7 +195,7 @@ export default function Analytics() {
                 );
                 toast.success("CSV exported");
               }}
-              className="flex items-center gap-1 border border-border bg-background px-2.5 py-1 text-xs hover:bg-surface"
+              className="rounded-md flex items-center gap-1 border border-border bg-background px-2.5 py-1 text-xs hover:bg-surface"
             >
               <Download size={12} /> CSV
             </button>

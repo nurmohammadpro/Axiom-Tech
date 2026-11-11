@@ -365,7 +365,7 @@ export default function EditProduct() {
           value={value}
           onChange={(e) => onChange(e.target.value)}
           placeholder={opts?.placeholder}
-          className="w-full border border-border bg-background px-3 py-1.5 text-sm outline-none focus:border-foreground"
+          className="rounded-md w-full border border-border bg-background px-3 py-1.5 text-sm outline-none focus:border-foreground"
         />
       </div>
     );
@@ -471,13 +471,13 @@ export default function EditProduct() {
               value={imageUrl}
               onChange={(e) => setImageUrl(e.target.value)}
               placeholder="Paste image URL…"
-              className="flex-1 border border-border bg-background px-2 py-1.5 text-sm outline-none focus:border-foreground"
+              className="rounded-md flex-1 border border-border bg-background px-2 py-1.5 text-sm outline-none focus:border-foreground"
             />
             <Button type="button" onClick={addImage} disabled={!imageUrl.trim()} variant="surface">
               Add
             </Button>
           </div>
-          <label className="mt-2 flex cursor-pointer items-center justify-center gap-2 border border-dashed border-border py-3 text-xs text-muted-foreground hover:border-foreground">
+          <label className="rounded-lg mt-2 flex cursor-pointer items-center justify-center gap-2 border border-dashed border-border py-3 text-xs text-muted-foreground hover:border-foreground">
             <Upload size={14} /> Upload from device
             <input
               type="file"
@@ -615,7 +615,7 @@ export default function EditProduct() {
                     value={spec.label}
                     onChange={(e) => updateSpec(i, "label", e.target.value)}
                     placeholder="e.g. Processor"
-                    className="w-full border border-border bg-background px-2 py-1 text-sm outline-none focus:border-foreground"
+                    className="rounded-md w-full border border-border bg-background px-2 py-1 text-sm outline-none focus:border-foreground"
                   />
                 </div>
                 <div className="sm:col-span-2">
@@ -681,7 +681,7 @@ function SpecValueEditor({ value, onChange }: { value: string; onChange: (val: s
         <button
           type="button"
           onClick={applyBold}
-          className="border border-border px-2 py-0.5 text-xs font-bold hover:bg-surface"
+          className="rounded-md border border-border px-2 py-0.5 text-xs font-bold hover:bg-surface"
           title="Bold"
         >
           B
@@ -689,7 +689,7 @@ function SpecValueEditor({ value, onChange }: { value: string; onChange: (val: s
         <button
           type="button"
           onClick={applyBullet}
-          className="border border-border px-2 py-0.5 text-xs hover:bg-surface"
+          className="rounded-md border border-border px-2 py-0.5 text-xs hover:bg-surface"
           title="Bullet list"
         >
           • List
@@ -702,7 +702,7 @@ function SpecValueEditor({ value, onChange }: { value: string; onChange: (val: s
         onChange={(e) => onChange(e.target.value)}
         rows={3}
         placeholder="e.g. A18 Pro chip** with 6-core GPU&#10;&#10;- Up to 20% faster CPU&#10;- 16-core Neural Engine"
-        className="w-full resize-y border border-border bg-background px-2 py-1.5 text-sm outline-none focus:border-foreground"
+        className="rounded-md w-full resize-y border border-border bg-background px-2 py-1.5 text-sm outline-none focus:border-foreground"
       />
     </div>
   );

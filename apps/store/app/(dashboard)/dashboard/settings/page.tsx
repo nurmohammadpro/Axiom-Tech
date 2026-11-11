@@ -872,7 +872,7 @@ function PosMethodsManager({
                 patch(methods.map((x, i) => (i === idx ? { ...x, name: e.target.value } : x)))
               }
               disabled={!isOwner || m.id === "cash"}
-              className="h-8 w-40 border border-border px-2 text-sm outline-none focus:border-primary disabled:opacity-60"
+              className="rounded-md h-8 w-40 border border-border px-2 text-sm outline-none focus:border-primary disabled:opacity-60"
             />
             <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
               <input
@@ -903,9 +903,9 @@ function PosMethodsManager({
             onChange={(e) => setNewName(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && add()}
             placeholder="New method name (e.g. Rocket)"
-            className="h-8 w-52 border border-border px-2 text-sm outline-none focus:border-primary"
+            className="rounded-md h-8 w-52 border border-border px-2 text-sm outline-none focus:border-primary"
           />
-          <button onClick={add} className="border border-border px-3 py-1.5 text-xs hover:bg-surface">
+          <button onClick={add} className="rounded-md border border-border px-3 py-1.5 text-xs hover:bg-surface">
             Add
           </button>
           {dirty && (

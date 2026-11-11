@@ -147,7 +147,7 @@ export function TransfersTab({ scopedFrom }: { scopedFrom?: string | null }) {
             <label className="grid gap-1 text-sm">
               <span className="text-xs text-muted-foreground">From</span>
               {scopedFrom ? (
-                <div className="flex h-9 items-center border border-border bg-surface px-3 text-sm font-medium">
+                <div className="rounded-lg flex h-9 items-center border border-border bg-surface px-3 text-sm font-medium">
                   {scopedFrom}
                 </div>
               ) : (
@@ -196,7 +196,7 @@ export function TransfersTab({ scopedFrom }: { scopedFrom?: string | null }) {
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 placeholder="e.g. Monthly restock of flagship inventory"
-                className="w-full border border-border bg-background px-2 py-1.5 text-sm outline-none focus:border-foreground"
+                className="rounded-md w-full border border-border bg-background px-2 py-1.5 text-sm outline-none focus:border-foreground"
               />
             </label>
           </div>
@@ -224,7 +224,7 @@ export function TransfersTab({ scopedFrom }: { scopedFrom?: string | null }) {
                     min={1}
                     value={it.qty}
                     onChange={(e) => updateItem(it.id, { qty: e.target.value })}
-                    className="w-20 border border-border bg-background px-2 py-1.5 text-sm outline-none focus:border-foreground"
+                    className="rounded-md w-20 border border-border bg-background px-2 py-1.5 text-sm outline-none focus:border-foreground"
                   />
                   <button
                     onClick={() => removeItem(it.id)}

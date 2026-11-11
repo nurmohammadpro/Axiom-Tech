@@ -25,7 +25,7 @@ function InlineEdit({
       <input
         value={label}
         onChange={(e) => setLabel(e.target.value)}
-        className="w-56 border border-border bg-background px-2 py-0.5 text-sm outline-none focus:border-foreground"
+        className="rounded-md w-56 border border-border bg-background px-2 py-0.5 text-sm outline-none focus:border-foreground"
       />
       <button
         onClick={async () => {
@@ -80,7 +80,7 @@ function AddForm({
         value={label}
         onChange={(e) => setLabel(e.target.value)}
         placeholder="Spec label (e.g. Processor)"
-        className="min-w-0 flex-1 border border-border bg-background px-3 py-1.5 text-sm outline-none focus:border-foreground"
+        className="rounded-md min-w-0 flex-1 border border-border bg-background px-3 py-1.5 text-sm outline-none focus:border-foreground"
       />
       <Button type="submit" variant="default" disabled={busy || !label.trim()}>
         {busy ? "Saving…" : "Save"}

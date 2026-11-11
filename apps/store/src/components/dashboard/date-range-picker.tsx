@@ -42,18 +42,18 @@ export function DateRangePicker({
             type="date"
             value={from}
             onChange={(e) => setFrom(e.target.value)}
-            className="border border-border bg-background px-2 py-1 text-xs"
+            className="rounded-md border border-border bg-background px-2 py-1 text-xs"
           />
           <span className="text-xs text-muted-foreground">→</span>
           <input
             type="date"
             value={to}
             onChange={(e) => setTo(e.target.value)}
-            className="border border-border bg-background px-2 py-1 text-xs"
+            className="rounded-md border border-border bg-background px-2 py-1 text-xs"
           />
           <button
             onClick={() => onChange(resolveRange("custom", { from, to }))}
-            className="border border-primary bg-primary px-2.5 py-1 text-xs text-primary-foreground hover:bg-primary/90"
+            className="rounded-md border border-primary bg-primary px-2.5 py-1 text-xs text-primary-foreground hover:bg-primary/90"
           >
             Apply
           </button>

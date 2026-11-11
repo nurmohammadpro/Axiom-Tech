@@ -216,7 +216,7 @@ export function VariantEditor({
                 value={quantity}
                 onChange={(e) => onQuantityChange(e.target.value)}
                 placeholder="0"
-                className="w-full border border-border bg-background px-2 py-1 text-sm outline-none focus:border-foreground"
+                className="rounded-md w-full border border-border bg-background px-2 py-1 text-sm outline-none focus:border-foreground"
               />
             </div>
           )}
@@ -259,7 +259,7 @@ export function VariantEditor({
                       value={dim.name}
                       onChange={(e) => updateDimension(i, "name", e.target.value)}
                       placeholder="e.g. Storage"
-                      className="w-full border border-border bg-background px-2 py-1 text-sm outline-none focus:border-foreground"
+                      className="rounded-md w-full border border-border bg-background px-2 py-1 text-sm outline-none focus:border-foreground"
                     />
                   </div>
                   <div>
@@ -288,7 +288,7 @@ export function VariantEditor({
                         });
                       }}
                       placeholder="e.g. 128GB, 256GB"
-                      className="w-full border border-border bg-background px-2 py-1 text-sm outline-none focus:border-foreground"
+                      className="rounded-md w-full border border-border bg-background px-2 py-1 text-sm outline-none focus:border-foreground"
                     />
                   </div>
                 </div>
@@ -359,7 +359,7 @@ export function VariantEditor({
                             value={v.cost}
                             onChange={(e) => updateVariantField(v.id, "cost", e.target.value)}
                             placeholder="0.00"
-                            className="w-full border border-border bg-background px-2 py-1 text-sm outline-none focus:border-foreground"
+                            className="rounded-md w-full border border-border bg-background px-2 py-1 text-sm outline-none focus:border-foreground"
                           />
                         </div>
                       )}
@@ -372,7 +372,7 @@ export function VariantEditor({
                           value={v.sell}
                           onChange={(e) => updateVariantField(v.id, "sell", e.target.value)}
                           placeholder="0.00"
-                          className="w-full border border-border bg-background px-2 py-1 text-sm outline-none focus:border-foreground"
+                          className="rounded-md w-full border border-border bg-background px-2 py-1 text-sm outline-none focus:border-foreground"
                         />
                       </div>
                     </div>
@@ -396,7 +396,7 @@ export function VariantEditor({
                           value={v.qty}
                           onChange={(e) => updateVariantField(v.id, "qty", e.target.value)}
                           placeholder="0"
-                          className="w-full border border-border bg-background px-2 py-1 text-sm outline-none focus:border-foreground"
+                          className="rounded-md w-full border border-border bg-background px-2 py-1 text-sm outline-none focus:border-foreground"
                         />
                       </div>
                     )}

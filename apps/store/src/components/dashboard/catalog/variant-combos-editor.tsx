@@ -138,7 +138,7 @@ export function VariantCombosEditor({
             value={storageInput}
             onChange={(e) => onStorageInputChange(e.target.value)}
             placeholder="e.g. 128GB, 256GB"
-            className="w-full border border-border bg-background px-3 py-1.5 text-sm outline-none focus:border-foreground"
+            className="rounded-md w-full border border-border bg-background px-3 py-1.5 text-sm outline-none focus:border-foreground"
           />
         </div>
         <div>
@@ -149,7 +149,7 @@ export function VariantCombosEditor({
             value={colorInput}
             onChange={(e) => onColorInputChange(e.target.value)}
             placeholder="e.g. Black, Blue"
-            className="w-full border border-border bg-background px-3 py-1.5 text-sm outline-none focus:border-foreground"
+            className="rounded-md w-full border border-border bg-background px-3 py-1.5 text-sm outline-none focus:border-foreground"
           />
         </div>
       </div>
@@ -175,7 +175,7 @@ export function VariantCombosEditor({
             {rows.map((row) => (
               <div key={row.key} className="grid items-center gap-2" style={gridStyle}>
                 <div
-                  className="truncate border border-border bg-surface px-2 py-1.5 text-sm"
+                  className="rounded-md truncate border border-border bg-surface px-2 py-1.5 text-sm"
                   title={row.label}
                 >
                   {row.label}
@@ -221,7 +221,7 @@ export function VariantCombosEditor({
             {legacyRows.map((row) => (
               <div key={row.key} className="grid items-center gap-2" style={legacyGridStyle}>
                 <div
-                  className="truncate border border-border bg-surface px-2 py-1.5 text-sm"
+                  className="rounded-md truncate border border-border bg-surface px-2 py-1.5 text-sm"
                   title={row.label}
                 >
                   {row.label}

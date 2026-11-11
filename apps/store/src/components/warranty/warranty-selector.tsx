@@ -49,7 +49,7 @@ export function WarrantySelector({
           value={value ?? ""}
           onChange={(e) => onChange(e.target.value ? Number(e.target.value) : null)}
           disabled={disabled || isLoading}
-          className="flex-1 border border-border bg-background px-2 py-1.5 text-sm outline-none transition-colors hover:border-border/80 focus:border-foreground/80 disabled:opacity-50"
+          className="rounded-md flex-1 border border-border bg-background px-2 py-1.5 text-sm outline-none transition-colors hover:border-border/80 focus:border-foreground/80 disabled:opacity-50"
         >
           <option value="">{placeholder}</option>
           {policies.map((policy) => (

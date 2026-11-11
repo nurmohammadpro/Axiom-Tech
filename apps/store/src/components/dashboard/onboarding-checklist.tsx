@@ -57,7 +57,7 @@ export function OnboardingChecklist() {
   ];
 
   return (
-    <div className="border border-border bg-background p-4">
+    <div className="rounded-lg border border-border bg-card p-4">
       <div className="flex items-start justify-between gap-3">
         <div>
           <div className="text-sm font-semibold">Set up your shop</div>

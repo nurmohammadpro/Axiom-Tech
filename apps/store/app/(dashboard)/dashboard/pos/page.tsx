@@ -521,7 +521,7 @@ export default function PosPage() {
         <div className="flex w-full gap-2">
           <button
             onClick={() => printReceipt(done.receipt)}
-            className="flex flex-1 items-center justify-center gap-1.5 border border-border bg-background px-4 py-2.5 text-sm font-medium hover:bg-surface"
+            className="rounded-md flex flex-1 items-center justify-center gap-1.5 border border-border bg-background px-4 py-2.5 text-sm font-medium hover:bg-surface"
           >
             <Printer size={15} /> Print receipt
           </button>
@@ -580,7 +580,7 @@ export default function PosPage() {
         </div>
         <div className="mb-2 text-[11px] text-muted-foreground">{SCAN_HINT}</div>
         {offline.data && (
-          <div className="mb-2 flex items-center gap-1.5 border border-amber-200 bg-amber-50 px-2 py-1 text-xs text-amber-700">
+          <div className="rounded-md mb-2 flex items-center gap-1.5 border border-amber-200 bg-amber-50 px-2 py-1 text-xs text-amber-700">
             <WifiOff size={12} /> Offline — catalog is cached; charges need internet
           </div>
         )}
@@ -601,7 +601,7 @@ export default function PosPage() {
               title="Nothing matches"
               hint="Try a different name, SKU, or scan a barcode. Stock just received appears after a refresh."
               action={
-                <button onClick={() => void refetchCatalog()} className="border border-border px-3 py-1.5 text-xs hover:bg-surface">
+                <button onClick={() => void refetchCatalog()} className="rounded-md border border-border px-3 py-1.5 text-xs hover:bg-surface">
                   Refresh catalog
                 </button>
               }
@@ -652,7 +652,7 @@ export default function PosPage() {
               <button
                 key={h.id}
                 onClick={() => recallSale(h)}
-                className="flex items-center gap-1 border border-border px-2 py-1 text-xs hover:border-primary"
+                className="rounded-md flex items-center gap-1 border border-border px-2 py-1 text-xs hover:border-primary"
                 title={new Date(h.at).toLocaleTimeString()}
               >
                 <Play size={10} /> {h.label} · {h.lines.length}
@@ -815,7 +815,7 @@ export default function PosPage() {
                         setOtherPays((prev) => prev.map((x) => (x.key === p.key ? { ...x, reference: e.target.value } : x)))
                       }
                       placeholder="TrxID"
-                      className="h-8 w-24 border border-border bg-background px-2 text-xs outline-none focus:border-primary"
+                      className="rounded-md h-8 w-24 border border-border bg-background px-2 text-xs outline-none focus:border-primary"
                     />
                     <button
                       onClick={() => setOtherPays((prev) => prev.filter((x) => x.key !== p.key))}
@@ -848,7 +848,7 @@ export default function PosPage() {
               {moreOpen && (
                 <div
                   role="menu"
-                  className="absolute bottom-full left-0 z-30 mb-1 w-40 border border-border bg-background py-1 shadow-md"
+                  className="rounded-md absolute bottom-full left-0 z-30 mb-1 w-40 border border-border bg-background py-1 shadow-md"
                 >
                   {otherMethods.map((m) => (
                     <button
@@ -964,7 +964,7 @@ export default function PosPage() {
                 ].map(([k, d]) => (
                   <tr key={k} className="border-b border-border last:border-b-0">
                     <td className="py-1.5 pr-3">
-                      <kbd className="border border-border px-1.5 py-0.5 font-mono text-xs">{k}</kbd>
+                      <kbd className="rounded-md border border-border px-1.5 py-0.5 font-mono text-xs">{k}</kbd>
                     </td>
                     <td className="py-1.5 text-xs text-muted-foreground">{d}</td>
                   </tr>

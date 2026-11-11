@@ -462,7 +462,7 @@ export function InStoreReturnModal({
               </div>
 
               {result && !result.found && (
-                <div className="border border-dashed border-border px-3 py-6 text-center text-xs text-muted-foreground">
+                <div className="rounded-lg border border-dashed border-border px-3 py-6 text-center text-xs text-muted-foreground">
                   {result.reason || "No sale found."}
                 </div>
               )}
@@ -566,7 +566,7 @@ export function InStoreReturnModal({
           {/* ── Form ── */}
           {phase === "form" && sale && selectedLine && (
             <>
-              <div className="flex items-center justify-between border border-border bg-surface px-3 py-2 text-sm">
+              <div className="rounded-lg flex items-center justify-between border border-border bg-surface px-3 py-2 text-sm">
                 <div className="min-w-0">
                   <div className="truncate font-medium">{lineName(selectedLine)}</div>
                   <div className="font-mono text-xs text-muted-foreground">
@@ -699,7 +699,7 @@ export function InStoreReturnModal({
           )}
 
           {error && (
-            <div className="border border-sale/40 bg-sale/10 px-3 py-2 text-xs text-sale">
+            <div className="rounded-md border border-sale/40 bg-sale/10 px-3 py-2 text-xs text-sale">
               {error}
             </div>
           )}

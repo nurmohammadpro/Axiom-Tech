@@ -153,10 +153,10 @@ export default function Overview() {
       {(outOfStockSample.length > 0 || lowStockSample.length > 0) && (
         <div className="mb-4 space-y-2">
           {stats && stats.outOfStockItems > 0 && (
-            <div className="flex items-center gap-2 border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+            <div className="flex items-center gap-2 rounded-lg border border-[var(--color-danger-border)] bg-[var(--color-danger-subtle)] px-3 py-2 text-sm text-[var(--color-danger-foreground)]">
               <AlertTriangle size={14} />
               <span className="font-medium">{stats.outOfStockItems} out of stock</span>
-              <span className="text-red-600">
+              <span className="text-[var(--color-danger-foreground)]/80">
                 —{" "}
                 {outOfStockSample
                   .slice(0, 3)
@@ -173,10 +173,10 @@ export default function Overview() {
             </div>
           )}
           {stats && stats.lowStockItems > 0 && (
-            <div className="flex items-center gap-2 border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-700">
+            <div className="flex items-center gap-2 rounded-lg border border-[var(--color-warning-border)] bg-[var(--color-warning-subtle)] px-3 py-2 text-sm text-[var(--color-warning-foreground)]">
               <AlertTriangle size={14} />
               <span className="font-medium">{stats.lowStockItems} low stock</span>
-              <span className="text-amber-600">
+              <span className="text-[var(--color-warning-foreground)]/80">
                 —{" "}
                 {lowStockSample
                   .slice(0, 3)
@@ -726,13 +726,13 @@ function MonthlyTargetRing({ stats }: { stats: DashboardStats | undefined }) {
           }}
           placeholder="৳ e.g. 500000"
           inputMode="numeric"
-          className="mt-2 w-full border border-border bg-background px-2 py-1.5 text-sm outline-none focus:border-primary"
+          className="rounded-md mt-2 w-full border border-border bg-background px-2 py-1.5 text-sm outline-none focus:border-primary"
         />
         <div className="mt-2 flex gap-1.5">
           <button onClick={() => void save()} disabled={saving} className="flex-1 bg-primary px-2 py-1.5 text-xs font-semibold text-primary-foreground">
             {saving ? "…" : "Set"}
           </button>
-          <button onClick={() => setEditing(false)} className="border border-border px-2 py-1.5 text-xs">Cancel</button>
+          <button onClick={() => setEditing(false)} className="rounded-md border border-border px-2 py-1.5 text-xs">Cancel</button>
         </div>
       </div>
     );
@@ -749,7 +749,7 @@ function MonthlyTargetRing({ stats }: { stats: DashboardStats | undefined }) {
     return (
       <div className="rounded-lg border border-dashed border-border p-3 text-center">
         <div className="text-[9.5px] uppercase tracking-[0.1em] text-muted-foreground">Monthly target</div>
-        <button onClick={() => setEditing(true)} className="mt-1.5 w-full border border-primary px-2 py-1.5 text-xs font-semibold text-primary">
+        <button onClick={() => setEditing(true)} className="rounded-md mt-1.5 w-full border border-primary px-2 py-1.5 text-xs font-semibold text-primary">
           + Set target
         </button>
       </div>

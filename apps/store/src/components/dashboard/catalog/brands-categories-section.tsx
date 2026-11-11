@@ -34,7 +34,7 @@ function InlineEdit({
         <input
           value={name}
           onChange={(e) => setName(e.target.value)}
-          className="w-28 border border-border bg-background px-2 py-0.5 text-sm outline-none focus:border-foreground"
+          className="rounded-md w-28 border border-border bg-background px-2 py-0.5 text-sm outline-none focus:border-foreground"
         />
         <button
           onClick={async () => {
@@ -107,13 +107,13 @@ function AddForm({
           value={name}
           onChange={(e) => setName(e.target.value)}
           placeholder={`${label} name`}
-          className="min-w-0 flex-1 border border-border bg-background px-3 py-1.5 text-sm outline-none focus:border-foreground"
+          className="rounded-md min-w-0 flex-1 border border-border bg-background px-3 py-1.5 text-sm outline-none focus:border-foreground"
         />
         {parentOptions && (
           <select
             value={parentId}
             onChange={(e) => setParentId(e.target.value)}
-            className="border border-border bg-background px-2 py-1.5 text-sm"
+            className="rounded-md border border-border bg-background px-2 py-1.5 text-sm"
             aria-label="Parent category"
           >
             <option value="">Top-level</option>

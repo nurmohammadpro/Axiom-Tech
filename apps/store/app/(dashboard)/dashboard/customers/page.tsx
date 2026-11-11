@@ -588,7 +588,7 @@ export default function Customers() {
                           <span className="font-semibold">{bdt(p.total)}</span>
                           <button
                             onClick={() => generateInvoicePDF(p)}
-                            className="flex items-center gap-1 border border-border px-2 py-1 text-xs text-muted-foreground hover:bg-background hover:text-foreground"
+                            className="rounded-md flex items-center gap-1 border border-border px-2 py-1 text-xs text-muted-foreground hover:bg-background hover:text-foreground"
                             title="Download invoice PDF"
                           >
                             <FileText size={11} /> Invoice

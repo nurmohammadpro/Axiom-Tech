@@ -117,7 +117,7 @@ export function SpecPicker({
                   value={spec.label}
                   onChange={(e) => updateSpec(i, "label", e.target.value)}
                   placeholder="e.g. Processor"
-                  className="w-full border border-border bg-background px-2 py-1 text-sm outline-none focus:border-foreground"
+                  className="rounded-md w-full border border-border bg-background px-2 py-1 text-sm outline-none focus:border-foreground"
                 />
               </div>
               <div className="sm:col-span-2">
@@ -129,7 +129,7 @@ export function SpecPicker({
                   onChange={(e) => updateSpec(i, "value", e.target.value)}
                   placeholder="e.g. A18 Pro chip **with 6-core GPU**"
                   rows={2}
-                  className="w-full border border-border bg-background px-2 py-1 text-sm outline-none focus:border-foreground"
+                  className="rounded-md w-full border border-border bg-background px-2 py-1 text-sm outline-none focus:border-foreground"
                 />
                 <p className="mt-0.5 text-[10px] text-muted-foreground">
                   Use **bold** for emphasis. Lines starting with - become bullet lists.

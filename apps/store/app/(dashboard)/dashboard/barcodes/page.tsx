@@ -1422,7 +1422,7 @@ export default function Barcodes() {
                   min={1}
                   value={copies}
                   onChange={(e) => setCopies(Math.max(1, parseInt(e.target.value) || 1))}
-                  className="border border-border bg-background px-2 py-1.5 text-sm"
+                  className="rounded-md border border-border bg-background px-2 py-1.5 text-sm"
                 />
               </label>
             </div>

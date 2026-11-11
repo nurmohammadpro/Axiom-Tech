@@ -200,7 +200,7 @@ function InlineSearchField({
         onKeyDown={handleKeyDown}
         placeholder={placeholder}
         autoComplete="off"
-        className="w-full border border-border bg-background py-1.5 pl-3 pr-8 text-sm outline-none transition-colors hover:border-border/80 focus:border-foreground/80"
+        className="rounded-md w-full border border-border bg-background py-1.5 pl-3 pr-8 text-sm outline-none transition-colors hover:border-border/80 focus:border-foreground/80"
       />
       <Search
         size={14}
@@ -227,7 +227,7 @@ function InlineSearchField({
         </ul>
       )}
       {open && text.trim() && results.length === 0 && (
-        <div className="absolute z-30 mt-1 w-full border border-border bg-popover px-3 py-2 text-xs text-muted-foreground">
+        <div className="rounded-md absolute z-30 mt-1 w-full border border-border bg-popover px-3 py-2 text-xs text-muted-foreground">
           {emptyMessage || "No results found."}
         </div>
       )}
@@ -919,7 +919,7 @@ function CustomerVerificationModal({
             onChange={(e) => setNotes(e.target.value)}
             placeholder="Add verification notes..."
             rows={3}
-            className="w-full border border-border bg-background px-3 py-2 text-sm"
+            className="rounded-md w-full border border-border bg-background px-3 py-2 text-sm"
           />
         </div>
 
@@ -1876,7 +1876,7 @@ function ExchangeForm({
                           );
                         }}
                         placeholder="123456789012345"
-                        className="w-full border border-border bg-background px-2 py-1 text-sm"
+                        className="rounded-md w-full border border-border bg-background px-2 py-1 text-sm"
                       />
                     </div>
                     <div>
@@ -1891,7 +1891,7 @@ function ExchangeForm({
                           );
                         }}
                         placeholder="123456789012346"
-                        className="w-full border border-border bg-background px-2 py-1 text-sm"
+                        className="rounded-md w-full border border-border bg-background px-2 py-1 text-sm"
                       />
                     </div>
                   </div>
@@ -1907,7 +1907,7 @@ function ExchangeForm({
                         );
                       }}
                       placeholder="Serial number"
-                      className="w-full border border-border bg-background px-2 py-1 text-sm"
+                      className="rounded-md w-full border border-border bg-background px-2 py-1 text-sm"
                     />
                   </div>
                   <div className="grid grid-cols-2 gap-2">
@@ -1927,7 +1927,7 @@ function ExchangeForm({
                           );
                         }}
                         placeholder="85"
-                        className="w-full border border-border bg-background px-2 py-1 text-sm"
+                        className="rounded-md w-full border border-border bg-background px-2 py-1 text-sm"
                       />
                     </div>
                     <div>
@@ -1942,7 +1942,7 @@ function ExchangeForm({
                             prev.map((u, i) => (i === index ? { ...u, conditionGrade: val } : u)),
                           );
                         }}
-                        className="w-full border border-border bg-background px-2 py-1 text-sm"
+                        className="rounded-md w-full border border-border bg-background px-2 py-1 text-sm"
                       >
                         {CONDITION_OPTIONS.map((opt) => (
                           <option key={opt} value={opt}>
@@ -1967,7 +1967,7 @@ function ExchangeForm({
                           );
                         }}
                         placeholder="8GB"
-                        className="w-full border border-border bg-background px-2 py-1 text-sm"
+                        className="rounded-md w-full border border-border bg-background px-2 py-1 text-sm"
                       />
                     </div>
                     <div>
@@ -1984,7 +1984,7 @@ function ExchangeForm({
                           );
                         }}
                         placeholder="128GB"
-                        className="w-full border border-border bg-background px-2 py-1 text-sm"
+                        className="rounded-md w-full border border-border bg-background px-2 py-1 text-sm"
                       />
                     </div>
                     <div>
@@ -2001,7 +2001,7 @@ function ExchangeForm({
                           );
                         }}
                         placeholder="Black"
-                        className="w-full border border-border bg-background px-2 py-1 text-sm"
+                        className="rounded-md w-full border border-border bg-background px-2 py-1 text-sm"
                       />
                     </div>
                   </div>
@@ -2319,7 +2319,7 @@ function ExchangeForm({
                           }}
                           inputMode="decimal"
                           placeholder="0"
-                          className="w-full flex-1 border border-border bg-surface/50 px-2 py-1 text-right text-sm outline-none"
+                          className="rounded-lg w-full flex-1 border border-border bg-surface/50 px-2 py-1 text-right text-sm outline-none"
                         />
                         <input
                           ref={(el) => {
@@ -2334,7 +2334,7 @@ function ExchangeForm({
                             }
                           }}
                           placeholder="Ref"
-                          className="w-32 shrink-0 border border-border bg-surface/50 px-2 py-1 text-sm outline-none"
+                          className="rounded-lg w-32 shrink-0 border border-border bg-surface/50 px-2 py-1 text-sm outline-none"
                         />
                         <button
                           type="button"

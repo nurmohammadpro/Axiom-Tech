@@ -49,7 +49,7 @@ export default function Settings() {
         <input
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          className="w-full border border-border bg-background px-3 py-1.5 text-sm outline-none transition-colors hover:border-border/80 focus:border-foreground/80"
+          className="rounded-md w-full border border-border bg-background px-3 py-1.5 text-sm outline-none transition-colors hover:border-border/80 focus:border-foreground/80"
         />
       </div>
     );

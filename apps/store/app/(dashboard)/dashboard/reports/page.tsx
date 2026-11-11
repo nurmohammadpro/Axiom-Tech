@@ -262,7 +262,7 @@ export default function Reports() {
   return (
     <>
       {/* Date range — applies to every report tab */}
-      <div className="mb-3 border border-border bg-surface/50 px-3 py-2">
+      <div className="rounded-lg mb-3 border border-border bg-surface/50 px-3 py-2">
         <DateRangePicker value={range} onChange={setRange} />
       </div>
 
@@ -339,7 +339,7 @@ export default function Reports() {
                 });
                 toast.success("PDF exported");
               }}
-              className="ml-2 flex items-center gap-1 border border-border bg-background px-2.5 py-1 text-xs hover:bg-surface"
+              className="rounded-md ml-2 flex items-center gap-1 border border-border bg-background px-2.5 py-1 text-xs hover:bg-surface"
             >
               <Download size={12} /> PDF
             </button>
@@ -363,7 +363,7 @@ export default function Reports() {
                 );
                 toast.success("CSV exported");
               }}
-              className="flex items-center gap-1 border border-border bg-background px-2.5 py-1 text-xs hover:bg-surface"
+              className="rounded-md flex items-center gap-1 border border-border bg-background px-2.5 py-1 text-xs hover:bg-surface"
             >
               <Download size={12} /> CSV
             </button>
@@ -470,7 +470,7 @@ export default function Reports() {
                 />
               </>
             ) : (
-              <span className="border border-border px-2.5 py-1 text-xs text-muted-foreground">
+              <span className="rounded-md border border-border px-2.5 py-1 text-xs text-muted-foreground">
                 Warehouse: <span className="font-medium text-foreground">{scopedLocation}</span>
               </span>
             )}
@@ -518,7 +518,7 @@ export default function Reports() {
                 });
                 toast.success("PDF exported");
               }}
-              className="ml-2 flex items-center gap-1 border border-border bg-background px-2.5 py-1 text-xs hover:bg-surface"
+              className="rounded-md ml-2 flex items-center gap-1 border border-border bg-background px-2.5 py-1 text-xs hover:bg-surface"
             >
               <Download size={12} /> PDF
             </button>
@@ -555,7 +555,7 @@ export default function Reports() {
                 );
                 toast.success("CSV exported");
               }}
-              className="flex items-center gap-1 border border-border bg-background px-2.5 py-1 text-xs hover:bg-surface"
+              className="rounded-md flex items-center gap-1 border border-border bg-background px-2.5 py-1 text-xs hover:bg-surface"
             >
               <Download size={12} /> CSV
             </button>
@@ -723,7 +723,7 @@ export default function Reports() {
                 />
               </>
             ) : (
-              <span className="border border-border px-2.5 py-1 text-xs text-muted-foreground">
+              <span className="rounded-md border border-border px-2.5 py-1 text-xs text-muted-foreground">
                 <span className="font-medium text-foreground">{scopedLocation}</span>
               </span>
             )}
@@ -757,7 +757,7 @@ export default function Reports() {
                     });
                     toast.success("PDF exported");
                   }}
-                  className="flex items-center gap-1 border border-border bg-background px-2.5 py-1 text-xs hover:bg-surface"
+                  className="rounded-md flex items-center gap-1 border border-border bg-background px-2.5 py-1 text-xs hover:bg-surface"
                 >
                   <Download size={12} /> PDF
                 </button>
@@ -770,7 +770,7 @@ export default function Reports() {
                     );
                     toast.success("CSV exported");
                   }}
-                  className="flex items-center gap-1 border border-border bg-background px-2.5 py-1 text-xs hover:bg-surface"
+                  className="rounded-md flex items-center gap-1 border border-border bg-background px-2.5 py-1 text-xs hover:bg-surface"
                 >
                   <Download size={12} /> CSV
                 </button>
@@ -944,7 +944,7 @@ export default function Reports() {
                           });
                           toast.success("PDF exported");
                         }}
-                        className="flex items-center gap-1 border border-border bg-background px-2.5 py-1 text-xs hover:bg-surface"
+                        className="rounded-md flex items-center gap-1 border border-border bg-background px-2.5 py-1 text-xs hover:bg-surface"
                       >
                         <Download size={12} /> PDF
                       </button>
@@ -975,7 +975,7 @@ export default function Reports() {
                           );
                           toast.success("CSV exported");
                         }}
-                        className="flex items-center gap-1 border border-border bg-background px-2.5 py-1 text-xs hover:bg-surface"
+                        className="rounded-md flex items-center gap-1 border border-border bg-background px-2.5 py-1 text-xs hover:bg-surface"
                       >
                         <Download size={12} /> CSV
                       </button>
@@ -1194,7 +1194,7 @@ export default function Reports() {
                     });
                     toast.success("PDF exported");
                   }}
-                  className="flex items-center gap-1 border border-border bg-background px-2.5 py-1 text-xs hover:bg-surface"
+                  className="rounded-md flex items-center gap-1 border border-border bg-background px-2.5 py-1 text-xs hover:bg-surface"
                 >
                   <Download size={12} /> PDF
                 </button>
@@ -1217,7 +1217,7 @@ export default function Reports() {
                     );
                     toast.success("CSV exported");
                   }}
-                  className="flex items-center gap-1 border border-border bg-background px-2.5 py-1 text-xs hover:bg-surface"
+                  className="rounded-md flex items-center gap-1 border border-border bg-background px-2.5 py-1 text-xs hover:bg-surface"
                 >
                   <Download size={12} /> CSV
                 </button>
@@ -1378,7 +1378,7 @@ export default function Reports() {
                     });
                     toast.success("PDF exported");
                   }}
-                  className="flex items-center gap-1 border border-border bg-background px-2.5 py-1 text-xs hover:bg-surface"
+                  className="rounded-md flex items-center gap-1 border border-border bg-background px-2.5 py-1 text-xs hover:bg-surface"
                 >
                   <Download size={12} /> PDF
                 </button>
@@ -1391,7 +1391,7 @@ export default function Reports() {
                     );
                     toast.success("CSV exported");
                   }}
-                  className="flex items-center gap-1 border border-border bg-background px-2.5 py-1 text-xs hover:bg-surface"
+                  className="rounded-md flex items-center gap-1 border border-border bg-background px-2.5 py-1 text-xs hover:bg-surface"
                 >
                   <Download size={12} /> CSV
                 </button>
@@ -1496,7 +1496,7 @@ export default function Reports() {
                     });
                     toast.success("PDF exported");
                   }}
-                  className="flex items-center gap-1 border border-border bg-background px-2.5 py-1 text-xs hover:bg-surface"
+                  className="rounded-md flex items-center gap-1 border border-border bg-background px-2.5 py-1 text-xs hover:bg-surface"
                 >
                   <Download size={12} /> PDF
                 </button>
@@ -1529,7 +1529,7 @@ export default function Reports() {
                     );
                     toast.success("CSV exported");
                   }}
-                  className="flex items-center gap-1 border border-border bg-background px-2.5 py-1 text-xs hover:bg-surface"
+                  className="rounded-md flex items-center gap-1 border border-border bg-background px-2.5 py-1 text-xs hover:bg-surface"
                 >
                   <Download size={12} /> CSV
                 </button>
@@ -1686,7 +1686,7 @@ export default function Reports() {
                     });
                     toast.success("PDF exported");
                   }}
-                  className="flex items-center gap-1 border border-border bg-background px-2.5 py-1 text-xs hover:bg-surface"
+                  className="rounded-md flex items-center gap-1 border border-border bg-background px-2.5 py-1 text-xs hover:bg-surface"
                 >
                   <Download size={12} /> PDF
                 </button>
@@ -1710,7 +1710,7 @@ export default function Reports() {
                     );
                     toast.success("CSV exported");
                   }}
-                  className="flex items-center gap-1 border border-border bg-background px-2.5 py-1 text-xs hover:bg-surface"
+                  className="rounded-md flex items-center gap-1 border border-border bg-background px-2.5 py-1 text-xs hover:bg-surface"
                 >
                   <Download size={12} /> CSV
                 </button>

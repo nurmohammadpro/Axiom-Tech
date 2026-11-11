@@ -365,7 +365,7 @@ export function SortableTable<T extends Record<string, any>>({
               <select
                 value={pageSize}
                 onChange={() => setPage(1)}
-                className="h-7 border border-border bg-background px-1 text-xs"
+                className="rounded-md h-7 border border-border bg-background px-1 text-xs"
                 aria-label="Rows per page"
               >
                 <option value={pageSize}>{pageSize}</option>
@@ -373,7 +373,7 @@ export function SortableTable<T extends Record<string, any>>({
               <button
                 onClick={() => setPage((v) => Math.max(1, v - 1))}
                 disabled={safePage <= 1}
-                className="border border-border px-2 py-1 hover:bg-surface disabled:opacity-40"
+                className="rounded-md border border-border px-2 py-1 hover:bg-surface disabled:opacity-40"
                 aria-label="Previous page"
               >
                 ‹
@@ -384,7 +384,7 @@ export function SortableTable<T extends Record<string, any>>({
               <button
                 onClick={() => setPage((v) => Math.min(pageCount, v + 1))}
                 disabled={safePage >= pageCount}
-                className="border border-border px-2 py-1 hover:bg-surface disabled:opacity-40"
+                className="rounded-md border border-border px-2 py-1 hover:bg-surface disabled:opacity-40"
                 aria-label="Next page"
               >
                 ›

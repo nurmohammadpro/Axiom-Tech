@@ -280,7 +280,7 @@ export default function SupplierDetailPage() {
                   });
                   toast.success("PDF exported");
                 }}
-                className="flex items-center gap-1 border border-border bg-background px-2.5 py-1 text-xs hover:bg-surface"
+                className="rounded-md flex items-center gap-1 border border-border bg-background px-2.5 py-1 text-xs hover:bg-surface"
               >
                 <Download size={12} /> PDF
               </button>
@@ -300,7 +300,7 @@ export default function SupplierDetailPage() {
                   );
                   toast.success("CSV exported");
                 }}
-                className="flex items-center gap-1 border border-border bg-background px-2.5 py-1 text-xs hover:bg-surface"
+                className="rounded-md flex items-center gap-1 border border-border bg-background px-2.5 py-1 text-xs hover:bg-surface"
               >
                 <Download size={12} /> CSV
               </button>
@@ -308,14 +308,14 @@ export default function SupplierDetailPage() {
           )}
           <button
             onClick={() => printIdentity(supplier, storeInfo)}
-            className="flex items-center gap-1 border border-border bg-background px-2.5 py-1 text-xs hover:bg-surface"
+            className="rounded-md flex items-center gap-1 border border-border bg-background px-2.5 py-1 text-xs hover:bg-surface"
           >
             <Printer size={12} /> Print
           </button>
           <button
             onClick={handleIdentityPdf}
             disabled={pdfLoading}
-            className="flex items-center gap-1 border border-border bg-background px-2.5 py-1 text-xs hover:bg-surface disabled:opacity-60"
+            className="rounded-md flex items-center gap-1 border border-border bg-background px-2.5 py-1 text-xs hover:bg-surface disabled:opacity-60"
           >
             <FileText size={12} /> {pdfLoading ? "Preparing…" : "Identity PDF"}
           </button>
@@ -444,7 +444,7 @@ export default function SupplierDetailPage() {
               key: "paymentMethod",
               header: "Method",
               render: (v: string) => (
-                <span className="inline-flex items-center border border-border px-1.5 py-0.5 text-[11px]">
+                <span className="rounded-md inline-flex items-center border border-border px-1.5 py-0.5 text-[11px]">
                   {methodLabels[v] || v}
                 </span>
               ),

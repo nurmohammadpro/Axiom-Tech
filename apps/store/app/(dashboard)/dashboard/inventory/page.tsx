@@ -752,7 +752,7 @@ export default function Inventory() {
                     });
                     toast.success("PDF exported");
                   }}
-                  className="flex items-center gap-1 border border-border bg-background px-2.5 py-1 text-xs hover:bg-surface"
+                  className="rounded-md flex items-center gap-1 border border-border bg-background px-2.5 py-1 text-xs hover:bg-surface"
                 >
                   <Download size={12} /> PDF
                 </button>
@@ -791,7 +791,7 @@ export default function Inventory() {
                     );
                     toast.success("CSV exported");
                   }}
-                  className="flex items-center gap-1 border border-border bg-background px-2.5 py-1 text-xs hover:bg-surface"
+                  className="rounded-md flex items-center gap-1 border border-border bg-background px-2.5 py-1 text-xs hover:bg-surface"
                 >
                   <Download size={12} /> CSV
                 </button>
@@ -800,7 +800,7 @@ export default function Inventory() {
           </div>
 
           {selected.size > 0 && (
-            <div className="mt-3 flex flex-wrap items-center gap-2 border border-border bg-surface px-3 py-2 text-xs">
+            <div className="rounded-lg mt-3 flex flex-wrap items-center gap-2 border border-border bg-surface px-3 py-2 text-xs">
               <span className="font-medium">{selected.size} selected</span>
               <span className="text-muted-foreground">—</span>
               <button
@@ -815,7 +815,7 @@ export default function Inventory() {
                   void qc.invalidateQueries({ queryKey: ["dashboard", "inventory"] });
                   toast.success(`Activated ${ids.length} variant(s)`);
                 }}
-                className="border border-border bg-background px-2 py-1 hover:bg-background"
+                className="rounded-md border border-border bg-background px-2 py-1 hover:bg-background"
               >
                 Activate
               </button>
@@ -831,7 +831,7 @@ export default function Inventory() {
                   void qc.invalidateQueries({ queryKey: ["dashboard", "inventory"] });
                   toast.success(`Deactivated ${ids.length} variant(s)`);
                 }}
-                className="border border-border bg-background px-2 py-1 hover:bg-background"
+                className="rounded-md border border-border bg-background px-2 py-1 hover:bg-background"
               >
                 Deactivate
               </button>
@@ -852,7 +852,7 @@ export default function Inventory() {
                   );
                   toast.success("CSV exported");
                 }}
-                className="border border-border bg-background px-2 py-1 hover:bg-background"
+                className="rounded-md border border-border bg-background px-2 py-1 hover:bg-background"
               >
                 Export CSV
               </button>

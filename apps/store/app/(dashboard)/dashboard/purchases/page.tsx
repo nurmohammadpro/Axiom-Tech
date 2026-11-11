@@ -1448,7 +1448,7 @@ function VerificationModal({
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               placeholder="Add notes about this verification decision..."
-              className="w-full border border-border bg-background px-3 py-2 text-sm outline-none focus:border-foreground/80 min-h-[80px]"
+              className="rounded-md w-full border border-border bg-background px-3 py-2 text-sm outline-none focus:border-foreground/80 min-h-[80px]"
             />
           </div>
         </div>
